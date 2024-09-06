@@ -10,6 +10,7 @@ local Script = {
     ESPTable = {
         Door = {},
         Entity = {},
+        Gold = {},
         Item = {},
         Objective = {},
         Player = {},
@@ -20,16 +21,26 @@ local Script = {
 
 local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
 local SideEntityName = {"FigureRagdoll", "GiggleCeiling", "Snare"}
-local DefaultNames = {
+local ShortNames = {
     ["BackdoorRush"] = "Blitz",
     ["JeffTheKiller"] = "Jeff The Killer"
 }
+
+local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChild("EntityModules")
 
 local gameData = ReplicatedStorage:WaitForChild("GameData")
 local floor = gameData:WaitForChild("Floor")
 local floorName = floor.Value
 
+local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
+
 local localPlayer = Players.LocalPlayer
+
+local playerGui = localPlayer.PlayerGui
+local mainUI = playerGui:WaitForChild("MainUI")
+local mainGame = mainUI:WaitForChild("Initiator"):WaitForChild("Main_Game")
+local mainGameSrc = require(mainGame)
+
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local alive = localPlayer:GetAttribute("Alive")
 local humanoid
@@ -70,6 +81,7 @@ local Tabs = {
 	Main = Window:AddTab("Main"),
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
+    Floor = Window:AddTab("Floor"),
 	["UI Settings"] = Window:AddTab("UI Settings"),
 }
 
@@ -147,12 +159,12 @@ function Script.Functions.ESP(args: ESP)
             ESPManager.RSConnection:Disconnect()
         end
 
-        if ESPManager.IsEntity and ESPManager.Object then
+        if ESPManager.IsEntity and ESPManager.Object and ESPManager.Object.PrimaryPart then
             ESPManager.Object.PrimaryPart.Transparency = ESPManager.Object.PrimaryPart:GetAttribute("Transparency")
         end
 
-        highlight:Destroy()
-        billboardGui:Destroy()
+        if highlight then highlight:Destroy() end
+        if billboardGui then billboardGui:Destroy() end
 
         if Script.ESPTable[ESPManager.Type][tableIndex] then
             Script.ESPTable[ESPManager.Type][tableIndex] = nil
@@ -237,9 +249,27 @@ function Script.Functions.EntityESP(entity)
     Script.Functions.ESP({
         Type = "Entity",
         Object = entity,
-        Text = Script.Functions.GetEntityName(entity.Name),
+        Text = Script.Functions.GetShortName(entity.Name),
         Color = Options.EntityEspColor.Value,
         IsEntity = entity.Name ~= "JeffTheKiller",
+    })
+end
+
+function Script.Functions.ItemESP(item)
+    Script.Functions.ESP({
+        Type = "Item",
+        Object = item,
+        Text = Script.Functions.GetShortName(item.Name),
+        Color = Options.ItemEspColor.Value
+    })
+end
+
+function Script.Functions.GoldESP(gold)
+    Script.Functions.ESP({
+        Type = "Gold",
+        Object = gold,
+        Text = string.format("Gold [%s]", gold:GetAttribute("GoldValue")),
+        Color = Options.GoldEspColor.Value
     })
 end
 
@@ -257,7 +287,50 @@ function Script.Functions.RoomESP(room)
     end)
 end
 
+function Script.Functions.ChildCheck(room, child)
+    if Toggles.InstaInteract.Value and child:IsA("ProximityPrompt") then
+        child:SetAttribute("Hold", child.HoldDuration)
+        child.HoldDuration = 0
+    end
+
+    if child:IsA("Model") then
+        if (child:GetAttribute("Pickup") or child:GetAttribute("PropType")) and not child:GetAttribute("FuseID") then
+            if Toggles.ItemESP.Value then
+                Script.Functions.ItemESP(child)
+            end
+        end
+
+        if Toggles.EntityESP.Value then
+            if table.find(SideEntityName, child.Name) then
+                if not child.PrimaryPart then
+                    local attemps = 0
+
+                    repeat
+                        task.wait()
+                    until child.PrimaryPart or attemps > 1000
+                end
+
+                Script.Functions.ESP({
+                    Type = "Entity",
+                    Object = child,
+                    Text = Script.Functions.GetShortName(child.Name),
+                    TextParent = child.PrimaryPart,
+                    Color = Options.EntityEspColor.Value
+                })
+            end
+        end
+
+        if child.Name == "GoldPile" and Toggles.GoldESP.Value then
+            Script.Functions.GoldESP(child)
+        end
+    end
+end
+
 function Script.Functions.SetupRoomConnection(room)
+    for _, child in pairs(room:GetDescendants()) do
+        task.spawn(Script.Functions.ChildCheck, room, child)
+    end
+
     room.DescendantAdded:Connect(function(child)
         if Toggles.ObjectiveESP.Value and child.Name == "FuseObtain" then
             Script.Functions.ESP({
@@ -268,24 +341,7 @@ function Script.Functions.SetupRoomConnection(room)
             })
         end
 
-        task.delay(0.1, function()
-            if Toggles.InstaInteract.Value and child:IsA("ProximityPrompt") then
-                child:SetAttribute("Hold", child.HoldDuration)
-                child.HoldDuration = 0
-            end
-
-            if Toggles.EntityESP.Value then
-                if table.find(SideEntityName, child.Name) then
-                    Script.Functions.ESP({
-                        Type = "Entity",
-                        Object = child,
-                        Text = Script.Functions.GetEntityName(child.Name),
-                        TextParent = child.PrimaryPart,
-                        Color = Options.EntityEspColor.Value
-                    })
-                end
-            end
-        end)
+        task.delay(0.1, Script.Functions.ChildCheck, room, child)
     end)
 end
 
@@ -318,12 +374,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     end
 end
 
-function Script.Functions.GetEntityName(entityName: string)
-    if DefaultNames[entityName] then
-        return DefaultNames[entityName]
+function Script.Functions.GetShortName(entityName: string)
+    if ShortNames[entityName] then
+        return ShortNames[entityName]
     end
 
-    return tostring(entityName):gsub("Backdoor", ""):gsub("Ceiling", ""):gsub("Moving", "")
+    return tostring(entityName):gsub("Backdoor", ""):gsub("Ceiling", ""):gsub("Moving", ""):gsub("Wall", ""):gsub("Pack", " Pack")
 end
 
 function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
@@ -369,7 +425,29 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     })
 end
 
+local MiscGroupBox = Tabs.Main:AddRightGroupbox("Misc") do
+    MiscGroupBox:AddButton({
+        Text = "Play Again",
+        Func = function()
+            remotesFolder.PlayAgain:FireServer()
+        end,
+        DoubleClick = true
+    })
+end
+
 --// Exploits \\--
+
+local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
+    AntiEntityGroupBox:AddToggle("AntiHalt", {
+        Text = "Anti-Halt",
+        Default = false
+    })
+
+    AntiEntityGroupBox:AddToggle("AntiScreech", {
+        Text = "Anti-Screech",
+        Default = false
+    })
+end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddToggle("SpeedBypass", {
@@ -401,6 +479,20 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
         Default = false,
     }):AddColorPicker("EntityEspColor", {
         Default = Color3.new(1, 0, 0),
+    })
+
+    ESPGroupBox:AddToggle("ItemESP", {
+        Text = "Item",
+        Default = false,
+    }):AddColorPicker("ItemEspColor", {
+        Default = Color3.new(1, 0, 1),
+    })
+
+    ESPGroupBox:AddToggle("GoldESP", {
+        Text = "Gold",
+        Default = false,
+    }):AddColorPicker("GoldEspColor", {
+        Default = Color3.new(1, 1, 0),
     })
 end
 
@@ -449,6 +541,24 @@ Toggles.InstaInteract:OnChanged(function(value)
                 prompt.HoldDuration = prompt:GetAttribute("Hold") or 0
             end
         end
+    end
+end)
+
+Toggles.AntiHalt:OnChanged(function(value)
+    if not entityModules then return end
+    local module = entityModules:FindFirstChild("Shade") or entityModules:FindFirstChild("_Shade")
+
+    if module then
+        module.Name = value and "_Shade" or "Shade"
+    end
+end)
+
+Toggles.AntiScreech:OnChanged(function(value)
+    if not mainGame then return end
+    local module = mainGame:FindFirstChild("Screech", true) or mainGame:FindFirstChild("_Screech", true)
+
+    if module then
+        module.Name = value and "_Screech" or "Screech"
     end
 end)
 
@@ -522,7 +632,7 @@ Toggles.EntityESP:OnChanged(function(value)
                 Script.Functions.ESP({
                     Type = "Entity",
                     Object = entity,
-                    Text = Script.Functions.GetEntityName(entity.Name),
+                    Text = Script.Functions.GetShortName(entity.Name),
                     TextParent = entity.PrimaryPart,
                     Color = Options.EntityEspColor.Value
                 })
@@ -537,6 +647,46 @@ end)
 
 Options.EntityEspColor:OnChanged(function(value)
     for _, esp in pairs(Script.ESPTable.Entity) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.ItemESP:OnChanged(function(value)
+    if value then
+        for _, item in pairs(workspace.CurrentRooms:GetDescendants()) do
+            if item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID") then
+                Script.Functions.ItemESP(item)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Item) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.ItemEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Item) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.GoldESP:OnChanged(function(value)
+    if value then
+        for _, gold in pairs(workspace.CurrentRooms:GetDescendants()) do
+            if gold.Name == "GoldPile" then
+                Script.Functions.GoldESP(gold)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Gold) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.GoldEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Gold) do
         esp.SetColor(value)
     end
 end)
@@ -564,7 +714,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 until Script.Functions.DistanceFromCharacter(child) < 2000 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
-                    local entityName = Script.Functions.GetEntityName(child)
+                    local entityName = Script.Functions.GetShortName(child)
 
                     if Toggles.EntityESP.Value then
                         Script.Functions.EntityESP(child)  
@@ -577,9 +727,12 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     end)
 end))
 
+for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+    task.spawn(Script.Functions.SetupRoomConnection, room)
+end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
-    Script.Functions.RoomESP(room)
+    task.spawn(Script.Functions.RoomESP, room)
 end))
 
 Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
@@ -631,10 +784,31 @@ Library:OnUnload(function()
         character:SetAttribute("SpeedBoostBehind", 0)
     end
 
+    if mainGame then
+        local module = mainGame:FindFirstChild("_Screech", true)
+
+        if module then
+            module.Name = "Screech"
+        end
+    end
+
+    if collision then
+        collision.CanCollide = not mainGameSrc.crouching
+        if collision:FindFirstChild("CollisionCrouch") then
+            collision.CollisionCrouch.CanCollide = mainGameSrc.crouching
+        end
+    end
+
+    collisionClone:Destroy()
+
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
             esp.Destroy()
         end
+    end
+
+    for _, connection in pairs(Script.Connections) do
+        connection:Disconnect()
     end
 
 	print("Unloaded!")
