@@ -38,6 +38,7 @@ local PromptTable = {
         "PushPrompt",
         "SkullPrompt",
         "UnlockPrompt",
+        "ValvePrompt"
     },
 
     Objects = {
@@ -224,9 +225,16 @@ function Script.Functions.DoorESP(room)
     local locked = room:GetAttribute("RequiresKey")
 
     if door and not door:GetAttribute("Opened") then
+        local doors = 0
+        for _, door in pairs(door:GetChildren()) do
+            if door.Name == "Door" then
+                doors += 1
+            end
+        end
+
         local doorEsp = Script.Functions.ESP({
             Type = "Door",
-            Object = door:WaitForChild("Door"),
+            Object = doors > 1 and door or door:WaitForChild("Door"),
             Text = locked and string.format("Door %s [Locked]", room.Name + 1) or string.format("Door %s", room.Name + 1),
             Color = Options.DoorEspColor.Value
         })
@@ -339,6 +347,17 @@ function Script.Functions.ObjectiveESPCheck(child)
                 Color = Options.ObjectiveEspColor.Value
             })
         end
+    elseif child.Name == "WaterPump" then
+        local wheel = child:WaitForChild("Wheel", 5)
+
+        if wheel then
+            Script.Functions.ESP({
+                Type = "Objective",
+                Object = wheel,
+                Text = "Water Pump",
+                Color = Options.ObjectiveEspColor.Value
+            })
+        end
     end
 end
 
@@ -437,7 +456,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     if humanoid then
         Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
-            if not Toggles.SpeedBypass.Value and latestRoom.Value < 99 then
+            if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 then
                 if humanoid.JumpHeight > 0 then
                     lastSpeed = Options.SpeedSlider.Value
                     Options.SpeedSlider:SetMax(3)
@@ -1043,7 +1062,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
     if character then
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
-            character:SetAttribute("SpeedBoostBehind", 500)
+            character:SetAttribute("SpeedBoostBehind", 80)
         else
             character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
         end
