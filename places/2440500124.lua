@@ -20,17 +20,44 @@ local Script = {
 }
 
 local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
-local SideEntityName = {"FigureRagdoll", "GiggleCeiling", "Snare"}
+local SideEntityName = {"FigureRagdoll", "GiggleCeiling", "GrumbleRig", "Snare"}
 local ShortNames = {
     ["BackdoorRush"] = "Blitz",
     ["JeffTheKiller"] = "Jeff The Killer"
+}
+
+local PromptTable = {
+    Clip = {
+        "FusesPrompt",
+        "HerbPrompt",
+        "HidePrompt",
+        "LeverPrompt",
+        "LootPrompt",
+        "ModulePrompt",
+        "Prompt",
+        "PushPrompt",
+        "SkullPrompt",
+        "UnlockPrompt",
+    },
+
+    Objects = {
+        "LeverForGate",
+        "LiveBreakerPolePickup",
+        "LiveHintBook",
+        "Button",
+    },
+
+    Excluded = {
+        "HintPrompt",
+        "InteractPrompt"
+    }
 }
 
 local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChild("EntityModules")
 
 local gameData = ReplicatedStorage:WaitForChild("GameData")
 local floor = gameData:WaitForChild("Floor")
-local floorName = floor.Value
+local latestRoom = gameData:WaitForChild("LatestRoom")
 
 local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
 
@@ -47,6 +74,8 @@ local humanoid
 local rootPart
 local collision
 local collisionClone
+
+local isMines = floor.Value == "Mines"
 
 type ESP = {
     Color: Color3,
@@ -73,7 +102,7 @@ local Window = Library:CreateWindow({
 	AutoShow = true,
 	Resizable = true,
 	ShowCustomCursor = true,
-	TabPadding = 8,
+	TabPadding = 6,
 	MenuFadeTime = 0
 })
 
@@ -121,6 +150,7 @@ function Script.Functions.ESP(args: ESP)
         highlight.FillTransparency = Options.ESPFillTransparency.Value
         highlight.OutlineColor = ESPManager.Color
         highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
+        highlight.Enabled = Toggles.ESPHighlight.Value
         highlight.Parent = ESPManager.Object
     end
 
@@ -177,6 +207,7 @@ function Script.Functions.ESP(args: ESP)
             return
         end
 
+        highlight.Enabled = Toggles.ESPHighlight.Value
         highlight.FillTransparency = Options.ESPFillTransparency.Value
         highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
         textLabel.TextSize = Options.ESPTextSize.Value
@@ -205,11 +236,6 @@ function Script.Functions.DoorESP(room)
 end 
 
 function Script.Functions.ObjectiveESP(room)
-    print("called in room:", room.Name)
-    local loaded = false
-    task.spawn(function() if room:WaitForChild("Assets", 5) then loaded = true end  end)
-    if not loaded then return end
-
     if room:GetAttribute("RequiresKey") then
         local key = room:FindFirstChild("KeyObtain", true)
 
@@ -274,23 +300,71 @@ function Script.Functions.GoldESP(gold)
 end
 
 function Script.Functions.RoomESP(room)
-    task.spawn(function()
-        local waitLoad = room:GetAttribute("RequiresGenerator") == true or room.Name == "50"
+    local waitLoad = room:GetAttribute("RequiresGenerator") == true or room.Name == "50"
 
-        if Toggles.DoorESP.Value then
-            Script.Functions.DoorESP(room)
-        end
-        
-        if Toggles.ObjectiveESP.Value then
-            task.delay(waitLoad and 3 or 1, Script.Functions.ObjectiveESP, room)
-        end
-    end)
+    if Toggles.DoorESP.Value then
+        Script.Functions.DoorESP(room)
+    end
+    
+    if Toggles.ObjectiveESP.Value then
+        task.delay(waitLoad and 3 or 1, Script.Functions.ObjectiveESP, room)
+    end
 end
 
-function Script.Functions.ChildCheck(room, child)
-    if Toggles.InstaInteract.Value and child:IsA("ProximityPrompt") then
-        child:SetAttribute("Hold", child.HoldDuration)
-        child.HoldDuration = 0
+function Script.Functions.ObjectiveESPCheck(child)
+    if child.Name == "LiveHintBook" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Book",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "FuseObtain" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Fuse",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "MinesAnchor" then
+        local sign = child:WaitForChild("Sign", 5)
+
+        if sign and sign:FindFirstChild("TextLabel") then
+            Script.Functions.ESP({
+                Type = "Objective",
+                Object = child,
+                Text = string.format("Anchor %s", sign.TextLabel.Text),
+                Color = Options.ObjectiveEspColor.Value
+            })
+        end
+    end
+end
+
+function Script.Functions.ChildCheck(child, includeESP)
+    if child:IsA("ProximityPrompt") then
+        if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
+        if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
+        if not child:GetAttribute("Enabled") then child:SetAttribute("Enabled", child.Enabled) end
+        if not child:GetAttribute("Clip") then child:SetAttribute("Clip", child.RequiresLineOfSight) end
+
+        child.MaxActivationDistance = child:GetAttribute("Distance") * Options.PromptReachMultiplier.Value
+
+        if Toggles.InstaInteract.Value then
+            child.HoldDuration = 0
+        end
+
+        if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.Objects, child.Parent.Name)) then
+            child.RequiresLineOfSight = false
+            if child.Name == "ModulePrompt" then
+                child.Enabled = true
+
+                child:GetPropertyChangedSignal("Enabled"):Connect(function()
+                    if Toggles.PromptClip.Value then
+                        child.Enabled = true
+                    end
+                end)
+            end
+        end
     end
 
     if child:IsA("Model") then
@@ -300,48 +374,57 @@ function Script.Functions.ChildCheck(room, child)
             end
         end
 
-        if Toggles.EntityESP.Value then
-            if table.find(SideEntityName, child.Name) then
-                if not child.PrimaryPart then
-                    local attemps = 0
+        if child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
+            child:WaitForChild("Hitbox", 5).CanTouch = false
+        end
 
-                    repeat
-                        task.wait()
-                    until child.PrimaryPart or attemps > 1000
-                end
-
-                Script.Functions.ESP({
-                    Type = "Entity",
-                    Object = child,
-                    Text = Script.Functions.GetShortName(child.Name),
-                    TextParent = child.PrimaryPart,
-                    Color = Options.EntityEspColor.Value
-                })
-            end
+        if child:GetAttribute("LoadModule") == "DupeRoom" and Toggles.AntiDupe.Value then
+            Script.Functions.DisableDupe(child, true)
         end
 
         if child.Name == "GoldPile" and Toggles.GoldESP.Value then
             Script.Functions.GoldESP(child)
+        end
+    elseif child:IsA("BasePart") then
+        if child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
+            child.CanTouch = false
+        end
+    end
+
+    if includeESP then
+        if Toggles.ObjectiveESP.Value then
+            task.spawn(Script.Functions.ObjectiveESPCheck, child)
+        end
+    end
+
+    if Toggles.EntityESP.Value then
+        if table.find(SideEntityName, child.Name) then
+            if not child.PrimaryPart then
+                local waiting = 0
+
+                repeat
+                    waiting += task.wait()
+                until child.PrimaryPart or waiting > 3
+            end
+
+            Script.Functions.ESP({
+                Type = "Entity",
+                Object = child,
+                Text = Script.Functions.GetShortName(child.Name),
+                TextParent = child.PrimaryPart,
+                Color = Options.EntityEspColor.Value
+            })
         end
     end
 end
 
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
-        task.spawn(Script.Functions.ChildCheck, room, child)
+        task.spawn(Script.Functions.ChildCheck, child, false)
     end
 
     room.DescendantAdded:Connect(function(child)
-        if Toggles.ObjectiveESP.Value and child.Name == "FuseObtain" then
-            Script.Functions.ESP({
-                Type = "Objective",
-                Object = child,
-                Text = "Fuse",
-                Color = Options.ObjectiveEspColor.Value
-            })
-        end
-
-        task.delay(0.1, Script.Functions.ChildCheck, room, child)
+        task.delay(0.1, Script.Functions.ChildCheck, child, true)
     end)
 end
 
@@ -379,7 +462,7 @@ function Script.Functions.GetShortName(entityName: string)
         return ShortNames[entityName]
     end
 
-    return tostring(entityName):gsub("Backdoor", ""):gsub("Ceiling", ""):gsub("Moving", ""):gsub("Wall", ""):gsub("Pack", " Pack")
+    return tostring(entityName):gsub("Backdoor", ""):gsub("Ceiling", ""):gsub("Moving", ""):gsub("Ragdoll", ""):gsub("Rig", ""):gsub("Wall", ""):gsub("Pack", " Pack")
 end
 
 function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
@@ -390,14 +473,29 @@ function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
     return (rootPart.Position - position).Magnitude
 end
 
-function Script.Functions.Alert(message: string, time_obj: Instance | number)
+function Script.Functions.DisableDupe(dupeRoom, value)
+    local doorFake = dupeRoom:WaitForChild("DoorFake", 5)
+
+    if doorFake then
+        doorFake:WaitForChild("Hidden", 5).CanTouch = not value
+
+        local lock = doorFake:WaitForChild("LockPart", 5)
+        if lock and lock:FindFirstChild("UnlockPrompt") then
+            lock.UnlockPrompt.Enabled = not value
+        end
+    end
+end
+
+function Script.Functions.Alert(message: string, time_obj: number)
     Library:Notify(message, time_obj or 5)
 
-    local sound = Instance.new("Sound", workspace) do
-        sound.SoundId = "rbxassetid://4590662766"
-        sound.Volume = 2
-        sound.PlayOnRemove = true
-        sound:Destroy()
+    if Toggles.NotifySound.Value then
+        local sound = Instance.new("Sound", workspace) do
+            sound.SoundId = "rbxassetid://4590662766"
+            sound.Volume = 2
+            sound.PlayOnRemove = true
+            sound:Destroy()
+        end
     end
 end
 
@@ -425,6 +523,26 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     })
 end
 
+local ReachGroupBox = Tabs.Main:AddLeftGroupbox("Reach") do
+    ReachGroupBox:AddToggle("DoorReach", {
+        Text = "Door Reach",
+        Default = false
+    })
+
+    ReachGroupBox:AddToggle("PromptClip", {
+        Text = "Prompt Clip",
+        Default = false
+    })
+
+    ReachGroupBox:AddSlider("PromptReachMultiplier", {
+        Text = "Prompt Reach Multiplier",
+        Default = 1,
+        Min = 1,
+        Max = 2,
+        Rounding = 1
+    })
+end
+
 local MiscGroupBox = Tabs.Main:AddRightGroupbox("Misc") do
     MiscGroupBox:AddButton({
         Text = "Play Again",
@@ -445,6 +563,11 @@ local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
 
     AntiEntityGroupBox:AddToggle("AntiScreech", {
         Text = "Anti-Screech",
+        Default = false
+    })
+
+    AntiEntityGroupBox:AddToggle("AntiDupe", {
+        Text = "Anti-Dupe",
         Default = false
     })
 end
@@ -497,12 +620,9 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
 end
 
 local ESPSettingsGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP Settings") do
-    ESPSettingsGroupBox:AddSlider("ESPTextSize", {
-        Text = "Text Size",
-        Default = 22,
-        Min = 16,
-        Max = 26,
-        Rounding = 0
+    ESPSettingsGroupBox:AddToggle("ESPHighlight", {
+        Text = "Enable Highlight",
+        Default = true,
     })
 
     ESPSettingsGroupBox:AddSlider("ESPFillTransparency", {
@@ -520,6 +640,14 @@ local ESPSettingsGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP Settings") do
         Max = 1,
         Rounding = 2
     })
+
+    ESPSettingsGroupBox:AddSlider("ESPTextSize", {
+        Text = "Text Size",
+        Default = 22,
+        Min = 16,
+        Max = 26,
+        Rounding = 0
+    })
 end
 
 local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
@@ -529,17 +657,124 @@ local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
     })
 end
 
+local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
+    local NotifyTab = NotifyTabBox:AddTab("Notifier") do
+        NotifyTab:AddToggle("NotifyEntity", {
+            Text = "Notify Entity",
+            Default = false,
+        })
+    end
+
+    local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
+        NotifySettingsTab:AddToggle("NotifySound", {
+            Text = "Play Alert Sound",
+            Default = true,
+        })
+    end
+end
+
+local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
+    SelfGroupBox:AddToggle("NoCamShake", {
+        Text = "No Camera Shake",
+        Default = false,
+    })
+end
+
+
+
+--// Floor \\--
+do
+    if isMines then
+        local Mines_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
+            Mines_AntiEntityGroupBox:AddToggle("AntiGiggle", {
+                Text = "Anti-Giggle",
+                Default = false
+            })
+
+            Mines_AntiEntityGroupBox:AddToggle("AntiGloomEgg", {
+                Text = "Anti-GloomEgg",
+                Default = false
+            })
+        end
+        
+
+        Toggles.AntiGiggle:OnChanged(function(value)
+            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                for _, giggle in pairs(room:GetChildren()) do
+                    if giggle.Name == "GiggleCeiling" then
+                        giggle:WaitForChild("Hitbox", 5).CanTouch = not value
+                    end
+                end
+            end
+        end)
+
+        -- this shits bad, but it doesnt go through all parts, so its optimized :cold_face:
+        Toggles.AntiGloomEgg:OnChanged(function(value)
+            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                for _, gloomPile in pairs(room:GetChildren()) do
+                    if gloomPile.Name == "GloomPile" then
+                        for _, gloomEgg in pairs(gloomPile:GetDescendants()) do
+                            if gloomEgg.Name == "Egg" then
+                                gloomEgg.CanTouch = not value
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end
+
 --// Features Callback \\--
 
 Toggles.InstaInteract:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") then
             if value then
-                prompt:SetAttribute("Hold", prompt.HoldDuration)
+                if not prompt:GetAttribute("Hold") then prompt:SetAttribute("Hold", prompt.HoldDuration) end
                 prompt.HoldDuration = 0
             else
                 prompt.HoldDuration = prompt:GetAttribute("Hold") or 0
             end
+        end
+    end
+end)
+
+Toggles.PromptClip:OnChanged(function(value)
+    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") then
+            print(prompt.Parent.Name, not table.find(PromptTable.Excluded, prompt.Name), table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name))
+        end
+        
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
+            if value then
+                if not prompt:GetAttribute("Enabled") then prompt:SetAttribute("Enabled", prompt.Enabled) end
+                if not prompt:GetAttribute("Clip") then prompt:SetAttribute("Clip", prompt.RequiresLineOfSight) end
+
+                prompt.RequiresLineOfSight = false
+                if prompt.Name == "ModulePrompt" then
+                    prompt.Enabled = true
+    
+                    prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
+                        if Toggles.PromptClip.Value then
+                            prompt.Enabled = true
+                        end
+                    end)
+                end
+            else
+                prompt.Enabled = prompt:GetAttribute("Enabled") or true
+                prompt.RequiresLineOfSight = prompt:GetAttribute("Clip") or true
+            end
+        end
+    end
+end)
+
+Options.PromptReachMultiplier:OnChanged(function(value)
+    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) then
+            if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
+
+            prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
         end
     end
 end)
@@ -559,6 +794,16 @@ Toggles.AntiScreech:OnChanged(function(value)
 
     if module then
         module.Name = value and "_Screech" or "Screech"
+    end
+end)
+
+Toggles.AntiDupe:OnChanged(function(value)
+    for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+        for _, dupeRoom in pairs(room:GetChildren()) do
+            if dupeRoom:GetAttribute("LoadModule") == "DupeRoom" then
+                Script.Functions.DisableDupe(dupeRoom, value)
+            end
+        end
     end
 end)
 
@@ -597,19 +842,10 @@ end)
 Toggles.ObjectiveESP:OnChanged(function(value)
     if value then
         for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
-            Script.Functions.ObjectiveESP(room)
-
-            if floorName == "Mines" then
-                for _, fuse in pairs(room:GetDescendants()) do
-                    if fuse.Name == "FuseObtain" then
-                        Script.Functions.ESP({
-                            Type = "Objective",
-                            Object = fuse,
-                            Text = "Fuse",
-                            Color = Options.ObjectiveEspColor.Value
-                        })
-                    end
-                end
+            task.spawn(Script.Functions.ObjectiveESP, room)
+            
+            for _, child in pairs(room:GetDescendants()) do
+                task.spawn(Script.Functions.ObjectiveESPCheck, child)
             end
         end
     else
@@ -720,7 +956,9 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         Script.Functions.EntityESP(child)  
                     end
 
-                    Script.Functions.Alert(entityName .. " has spawned!")
+                    if Toggles.NotifyEntity.Value then
+                        Script.Functions.Alert(entityName .. " has spawned!")
+                    end
                 end
             end)
         end
@@ -743,6 +981,31 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(functi
     alive = localPlayer:GetAttribute("Alive")
 end))
 
+Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
+    if child.Name == "MainUI" then
+        mainUI = child
+
+        task.delay(1, function()
+            if mainUI then
+                mainGame = mainUI:WaitForChild("Initiator"):WaitForChild("Main_Game")
+
+                if mainGame then
+                    mainGameSrc = require(mainGame)
+                    if not mainGame:WaitForChild("RemoteListener", 5) then return end
+
+                    if Toggles.AntiScreech.Value then
+                        local module = mainGame:FindFirstChild("Screech", true)
+
+                        if module then
+                            module.Name = "_Screech"
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end))
+
 Library:GiveSignal(Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
     if Toggles.Fullbright.Value then
         Lighting.Ambient = Color3.new(1, 1, 1)
@@ -750,6 +1013,12 @@ Library:GiveSignal(Lighting:GetPropertyChangedSignal("Ambient"):Connect(function
 end))
 
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
+    if mainGameSrc then
+        if Toggles.NoCamShake.Value then
+            mainGameSrc.csgo = CFrame.new()
+        end
+    end
+
     if character then
         character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
 
@@ -770,6 +1039,14 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         if character:FindFirstChild("LowerTorso") then
             character.LowerTorso.CanCollide = not Toggles.Noclip.Value
         end
+
+        if Toggles.DoorReach.Value and workspace.CurrentRooms:FindFirstChild(latestRoom.Value) then
+            local door = workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("Door")
+
+            if door and door:FindFirstChild("ClientOpen") then
+                door.ClientOpen:FireServer()
+            end
+        end
     end
 end))
 
@@ -782,6 +1059,20 @@ task.spawn(Script.Functions.SetupCharacterConnection, character)
 Library:OnUnload(function()
     if character then
         character:SetAttribute("SpeedBoostBehind", 0)
+    end
+
+    if alive then
+        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+    else
+        Lighting.Ambient = Color3.new(0, 0, 0)
+    end
+
+    if entityModules then
+        local module = entityModules:FindFirstChild("_Shade")
+
+        if module then
+            module.Name = "Shade"
+        end
     end
 
     if mainGame then
