@@ -77,6 +77,8 @@ local collisionClone
 
 local isMines = floor.Value == "Mines"
 
+local lastSpeed = 0
+
 type ESP = {
     Color: Color3,
     IsEntity: boolean,
@@ -434,6 +436,19 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
 
     if humanoid then
+        Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
+            if not Toggles.SpeedBypass.Value and latestRoom.Value < 99 then
+                if humanoid.JumpHeight > 0 then
+                    lastSpeed = Options.SpeedSlider.Value
+                    Options.SpeedSlider:SetMax(3)
+                elseif lastSpeed > 0 then
+                    Options.SpeedSlider:SetMax(7)
+                    Options.SpeedSlider:SetValue(lastSpeed)
+                    lastSpeed = 0
+                end
+            end
+        end)
+
         Script.Connections["Died"] = humanoid.Died:Connect(function()
             if collisionClone then
                 collisionClone:Destroy()
@@ -685,6 +700,13 @@ end
 --// Floor \\--
 do
     if isMines then
+        local Mines_MovementGroupBox = Tabs.Floor:AddLeftGroupbox("Movement") do
+            Mines_MovementGroupBox:AddToggle("FastLadder", {
+                Text = "Fast Ladder",
+                Default = false
+            })
+        end
+
         local Mines_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
             Mines_AntiEntityGroupBox:AddToggle("AntiGiggle", {
                 Text = "Anti-Giggle",
@@ -1020,7 +1042,12 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
-        character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
+        if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
+            character:SetAttribute("SpeedBoostBehind", 500)
+        else
+            character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
+        end
+        
 
         if rootPart then
             rootPart.CanCollide = not Toggles.Noclip.Value
