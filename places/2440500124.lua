@@ -622,7 +622,7 @@ function Script.Functions.ChildCheck(child, includeESP)
             })
         end
 
-        if child:GetAttribute("LoadModule") == "Wardrobe" and Toggles.HidingSpotESP.Value then
+        if child:GetAttribute("LoadModule") == "Wardrobe" or child:GetAttribute("LoadModule") == "Bed" and Toggles.HidingSpotESP.Value then
             Script.Functions.HidingSpotESP(child)
         end
 
@@ -1052,8 +1052,9 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         Default = false
     }):AddKeyPicker("AutoInteractKey", {
         Default = "R",
-        Mode = "Hold",
+        Mode = "Toggle",
         Text = "Auto Interact",
+        SyncToggleState = true
     })
 
     AutomationGroupBox:AddToggle("AutoHeartbeat", {
@@ -1169,8 +1170,9 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
             Default = false
         }):AddKeyPicker("MinecartSpamKey", {
             Default = "Q",
-            Mode = "Hold",
+            Mode = "Toggle",
             Text = "Spam Minecart Interact",
+            SyncToggleState = true
         })
 
         AutomationGroupBox:AddToggle("AutoAnchorSolver", {
@@ -1846,7 +1848,7 @@ end)
 Toggles.HidingSpotESP:OnChanged(function(value)
     if value then
         for _, wardrobe in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if wardrobe:IsA("Model") and wardrobe:GetAttribute("LoadModule") == "Wardrobe" then
+            if wardrobe:IsA("Model") and wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" then
                 Script.Functions.HidingSpotESP(wardrobe)
             end
         end
@@ -2056,7 +2058,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if Toggles.AutoInteract.Value and Options.AutoInteractKey:GetState() then
+        if Toggles.AutoInteract.Value then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
@@ -2101,7 +2103,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if isMines and Toggles.MinecartSpam.Value and Options.MinecartSpamKey:GetState() then
+        if isMines and Toggles.MinecartSpam.Value then
             local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
                 return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
             end)
