@@ -622,7 +622,7 @@ function Script.Functions.ChildCheck(child, includeESP)
             })
         end
 
-        if child:GetAttribute("LoadModule") == "Wardrobe" or child:GetAttribute("LoadModule") == "Bed" and Toggles.HidingSpotESP.Value then
+        if (child:GetAttribute("LoadModule") == "Wardrobe" or child:GetAttribute("LoadModule") == "Bed") and Toggles.HidingSpotESP.Value then
             Script.Functions.HidingSpotESP(child)
         end
 
