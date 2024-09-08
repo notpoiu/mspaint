@@ -613,7 +613,7 @@ function Script.Functions.ChildCheck(child, includeESP)
             if child then child:SetAttribute("Solving", nil) end
         end
 
-        if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" and child.Parent.Name == "Parts" then
+        if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" then
             Script.Functions.ESP({
                 Type = "None",
                 Object = child,
