@@ -1052,9 +1052,9 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         Default = false
     }):AddKeyPicker("AutoInteractKey", {
         Default = "R",
-        Mode = "Toggle",
         Text = "Auto Interact",
-        SyncToggleState = true
+        Mode = Library.IsMobile and "Toggle" or "Key",
+        SyncToggleState = Library.IsMobile
     })
 
     AutomationGroupBox:AddToggle("AutoHeartbeat", {
@@ -1170,9 +1170,9 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
             Default = false
         }):AddKeyPicker("MinecartSpamKey", {
             Default = "Q",
-            Mode = "Toggle",
             Text = "Spam Minecart Interact",
-            SyncToggleState = true
+            Mode = Library.IsMobile and "Toggle" or "Key",
+            SyncToggleState = Library.IsMobile
         })
 
         AutomationGroupBox:AddToggle("AutoAnchorSolver", {
@@ -2058,7 +2058,9 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if Toggles.AutoInteract.Value then
+        local isEnabledMobile = (Toggles.AutoInteract.Value and Library.IsMobile)
+        local isEnabledPC = (Options.AutoInteractKey:GetState() and Toggles.AutoInteract.Value and not Library.IsMobile)
+        if isEnabledMobile or isEnabledPC then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
@@ -2103,7 +2105,9 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if isMines and Toggles.MinecartSpam.Value then
+        local isEnabledMobile = (Toggles.MinecartSpam.Value and Library.IsMobile)
+        local isEnabledPC = (Options.MinecartSpamKey:GetState() and Toggles.MinecartSpam.Value and not Library.IsMobile)
+        if isMines and (isEnabledMobile or isEnabledPC) then
             local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
                 return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
             end)
