@@ -603,7 +603,7 @@ function Script.Functions.ChildCheck(child, includeESP)
             if child then child:SetAttribute("Solving", nil) end
         end
 
-        if (child:GetAttribute("Pickup") or child:GetAttribute("PropType")) and not child:GetAttribute("FuseID") then
+        if Script.Functions.ItemCondition(child) then
             if Toggles.ItemESP.Value then
                 Script.Functions.ItemESP(child)
             end
@@ -663,6 +663,10 @@ function Script.Functions.ChildCheck(child, includeESP)
     end
 end
 
+function Script.Functions.ItemCondition(item)
+    return item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID")
+end
+
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
         task.spawn(Script.Functions.ChildCheck, child, false)
@@ -694,6 +698,20 @@ function Script.Functions.SetupRoomConnection(room)
                 Script.Functions.Alert("Deleted Seek successfully! You can open the next door", 5)
             end
         end)
+    end)
+end
+
+function Script.Functions.SetupDropConnection(drop)
+    if Toggles.ItemESP.Value then
+        Script.Functions.ItemESP(drop)
+    end
+
+    task.spawn(function()
+        local prompt = drop:WaitForChild("ModulePrompt", 3)
+
+        if prompt then
+            table.insert(PromptTable.GamePrompts, prompt)
+        end
     end)
 end
 
@@ -748,6 +766,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                         break
                     end
                 end
+            end
+        end)
+
+        Script.Connections["CanJump"] = character:GetAttributeChangedSignal("CanJump"):Connect(function()
+            if not character:GetAttribute("CanJump") and Toggles.EnableJump.Value then
+                character:SetAttribute("CanJump", true)
             end
         end)
     end
@@ -1333,6 +1357,11 @@ task.spawn(function()
         end
     elseif isMines then
         local Mines_MovementGroupBox = Tabs.Floor:AddLeftGroupbox("Movement") do
+            Mines_MovementGroupBox:AddToggle("EnableJump", {
+                Text = "Enable Jump",
+                Default = false
+            })
+
             Mines_MovementGroupBox:AddToggle("FastLadder", {
                 Text = "Fast Ladder",
                 Default = false
@@ -1420,6 +1449,12 @@ task.spawn(function()
             })
         end
         
+        Toggles.EnableJump:OnChanged(function(value)
+            if character then
+                character:SetAttribute("CanJump", value)
+            end
+        end)
+
         Options.MaxSlopeAngle:OnChanged(function(value)
             if humanoid then
                 humanoid.MaxSlopeAngle = value
@@ -1539,7 +1574,7 @@ Toggles.AntiSnare:OnChanged(function(value)
         if not room:FindFirstChild("Assets") then continue end
 
         for _, snare in pairs(room.Assets:GetChildren()) do
-            if snare.Name == "SS" then
+            if snare.Name == "Snare" then
                 snare:WaitForChild("Hitbox", 5).CanTouch = not value
             end
         end
@@ -1555,7 +1590,12 @@ Toggles.SpeedBypass:OnChanged(function(value)
             task.wait(0.225)
         end
     else
-        Options.SpeedSlider:SetMax(7)
+        if isMines and Toggles.EnableJump.Value then
+            Options.SpeedSlider:SetMax(3)
+        else
+            Options.SpeedSlider:SetMax(7)
+        end
+        
         if collisionClone then collisionClone.Massless = true end
     end
 end)
@@ -1628,8 +1668,14 @@ end)
 
 Toggles.ItemESP:OnChanged(function(value)
     if value then
+        for _, item in pairs(workspace.Drops:GetChilren()) do
+            if Script.Functions.ItemCondition(item) then
+                Script.Functions.ItemESP(item)
+            end
+        end
+
         for _, item in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID") then
+            if Script.Functions.ItemCondition(item) then
                 Script.Functions.ItemESP(item)
             end
         end
@@ -1772,6 +1818,13 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     end)
 end))
 
+for _, drop in pairs(workspace.Drops:GetChildren()) do
+    task.spawn(Script.Functions.SetupDropConnection, drop)
+end
+Library:GiveSignal(workspace.Drops.ChildAdded:Connect(function(child)
+    task.spawn(Script.Functions.SetupDropConnection, child)
+end))
+
 for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
     task.spawn(Script.Functions.SetupRoomConnection, room)
 end
@@ -1843,7 +1896,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         else
             character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
         end
-        
+
         if rootPart then
             rootPart.CanCollide = not Toggles.Noclip.Value
         end
