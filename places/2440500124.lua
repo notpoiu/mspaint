@@ -1681,7 +1681,7 @@ task.spawn(function()
         if Lighting:FindFirstChild("CaveAtmosphere") then
             Library:GiveSignal(Lighting.CaveAtmosphere:GetPropertyChangedSignal("Density"):Connect(function()
                 if Toggles.NoFog.Value then
-                    ighting.CaveAtmosphere.Density = 0
+                    Lighting.CaveAtmosphere.Density = 0
                 end
             end))
         end
