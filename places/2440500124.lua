@@ -1360,7 +1360,7 @@ task.spawn(function()
             Mines_AutomationGroupBox:AddButton({
                 Text = "Beat Door 200",
                 Func = function()
-                    if latestRoom.Value < 100 then Script.Functions.Alert("You haven't reached door 200...") end
+                    if latestRoom.Value < 99 then Script.Functions.Alert("You haven't reached door 200...") end
 
                     local bypassing = Toggles.SpeedBypass.Value
                     local startPos = rootPart.CFrame
