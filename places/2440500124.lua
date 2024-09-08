@@ -1120,7 +1120,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         Mode = "Hold",
         Default = "R",
         Text = "Auto Interact",
-        Mode = Library.IsMobile and "Toggle" or "Key",
+        Mode = Library.IsMobile and "Toggle" or "Hold",
         SyncToggleState = Library.IsMobile
     })
 
@@ -1238,7 +1238,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         }):AddKeyPicker("MinecartSpamKey", {
             Default = "Q",
             Text = "Spam Minecart Interact",
-            Mode = Library.IsMobile and "Toggle" or "Key",
+            Mode = Library.IsMobile and "Toggle" or "Hold",
             SyncToggleState = Library.IsMobile
         })
 
