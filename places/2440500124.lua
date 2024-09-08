@@ -462,6 +462,13 @@ function Script.Functions.ObjectiveESPCheck(child)
             Text = "Book",
             Color = Options.ObjectiveEspColor.Value
         })
+    elseif child.Name == "LiveBreakerPolePickup" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Breaker",
+            Color = Options.ObjectiveEspColor.Value
+        })
     elseif child.Name == "FuseObtain" then
         Script.Functions.ESP({
             Type = "Objective",
@@ -968,6 +975,7 @@ function Script.Functions.GetShortName(entityName: string)
         ["Ragdoll"] = "",
         ["Rig"] = "",
         ["Wall"] = "",
+        ["Key"] = " Key",
         ["Pack"] = " Pack",
         ["Swarm"] = " Swarm",
     }
@@ -1242,16 +1250,6 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 end
 
 local MiscGroupBox = Tabs.Main:AddRightGroupbox("Misc") do
-    MiscGroupBox:AddButton({
-        Text = "Die",
-        Func = function()
-            if humanoid then
-                humanoid.Health = 0
-            end
-        end,
-        DoubleClick = true
-    })
-
     MiscGroupBox:AddButton({
         Text = "Revive",
         Func = function()
