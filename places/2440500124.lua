@@ -1972,7 +1972,7 @@ Library:OnUnload(function()
         end
     end
 
-    collisionClone:Destroy()
+    if collisionClone then collisionClone:Destroy() end
 
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
