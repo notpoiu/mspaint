@@ -52,7 +52,7 @@ local PromptTable = {
     GamePrompts = {},
 
     Aura = {
-        ["ActivateEventPrompt"] = true,
+        ["ActivateEventPrompt"] = false,
         ["FusesPrompt"] = true,
         ["LeverPrompt"] = true,
         ["LootPrompt"] = true,
