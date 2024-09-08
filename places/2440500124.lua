@@ -613,6 +613,15 @@ function Script.Functions.ChildCheck(child, includeESP)
             if child then child:SetAttribute("Solving", nil) end
         end
 
+        if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" and child.Parent.Name == "Parts" then
+            Script.Functions.ESP({
+                Type = "None",
+                Object = child,
+                Text = "Ladder",
+                Color = Color3.new(0, 0, 1)
+            })
+        end
+
         if child:GetAttribute("LoadModule") == "Wardrobe" and Toggles.HidingSpotESP.Value then
             Script.Functions.HidingSpotESP(child)
         end
@@ -828,6 +837,29 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     end
 
     if isMines then
+        if character then
+            Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()
+                local function cleanup()
+                    if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
+                    Script.Connections["AnticheatBypassTheMines"]:Disconnect()
+    
+                    for _, esp in pairs(Script.ESPTable.None) do
+                        esp.Destroy()
+                    end
+                end
+                
+                if not Toggles.TheMinesAnticheatBypass.Value then return cleanup() end
+                
+                if character:GetAttribute("Climbing") then
+                    task.wait(1)
+                    character:SetAttribute("Climbing", false)
+    
+                    cleanup()
+                    Script.Functions.Alert("Bypassed the anticheat successfully, this will only last until the next cutscene!", 7)
+                end
+            end)
+        end
+
         if humanoid then
             humanoid.MaxSlopeAngle = Options.MaxSlopeAngle.Value
         end
@@ -1474,6 +1506,11 @@ task.spawn(function()
                     character:PivotTo(startPos)
                 end
             })
+
+            Mines_AutomationGroupBox:AddToggle("TheMinesAnticheatBypass", {
+                Text = "Anticheat Bypass",
+                Default = false
+            })
         end
 
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visual") do
@@ -1482,6 +1519,35 @@ task.spawn(function()
                 Default = true
             })
         end
+
+        Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
+            if value then
+                local progress_part = Instance.new("Part", workspace) do
+                    progress_part.Position = Vector3.new(9e9, 9e9, 9e9)
+                    progress_part.Size = Vector3.new(1, 1, 1)
+                    progress_part.Transparency = 1
+                    progress_part.Anchored = true
+                    progress_part.CanCollide = false
+                    progress_part.Name = "_internal_mspaint_acbypassprogress"
+                end
+
+                Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progress_part)
+
+                -- Ladder ESP
+                for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+                    if v:IsA("Model") and v.Name == "Ladder" and v.Parent.Name == "Parts" then
+                        Script.Functions.ESP({
+                            Type = "None",
+                            Object = v,
+                            Text = "Ladder",
+                            Color = Color3.new(0, 0, 1)
+                        })
+                    end
+                end
+            else
+                remotesFolder.ClimbLadder:FireServer()
+            end
+        end)
         
         Toggles.EnableJump:OnChanged(function(value)
             if character then
@@ -1527,6 +1593,14 @@ task.spawn(function()
                 fog.Density = value and 0 or 0.679
             end
         end)
+        
+        if Lighting:FindFirstChild("CaveAtmosphere") then
+            Library:GiveSignal(Lighting.CaveAtmosphere:GetPropertyChangedSignal("Density"):Connect(function()
+                if Toggles.NoFog.Value then
+                    ighting.CaveAtmosphere.Density = 0
+                end
+            end))
+        end
     end
 end)
 
