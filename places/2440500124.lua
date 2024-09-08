@@ -1107,7 +1107,6 @@ end
 
 local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
     AutomationGroupBox:AddToggle("AutoInteract", {
-        Mode = Library.IsMobile and "Toggle" or "Hold",
         Text = "Auto Interact",
         Default = false
     }):AddKeyPicker("AutoInteractKey", {
