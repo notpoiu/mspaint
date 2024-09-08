@@ -1454,6 +1454,13 @@ task.spawn(function()
                 end
             })
         end
+
+        local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visual") do
+            Mines_VisualGroupBox:AddToggle("NoFog", {
+                Text = "No Fog",
+                Default = true
+            })
+        end
         
         Toggles.EnableJump:OnChanged(function(value)
             if character then
@@ -1489,6 +1496,14 @@ task.spawn(function()
                         end
                     end
                 end
+            end
+        end)
+
+        Toggles.NoFog:OnChanged(function(value)
+            local fog = Lighting:FindFirstChild("CaveAtmosphere")
+
+            if fog then
+                fog.Density = value and 0 or 0.679
             end
         end)
     end
