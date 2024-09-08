@@ -21,6 +21,7 @@ local Script = {
         Item = {},
         Objective = {},
         Player = {},
+        HidingSpot = {},
         None = {}
     },
     Functions = {},
@@ -389,6 +390,15 @@ function Script.Functions.PlayerESP(player: Player)
     end)
 end
 
+function Script.Functions.HidingSpotESP(spot)
+    Script.Functions.ESP({
+        Type = "HidingSpot",
+        Object = spot,
+        Text = HidingPlaceName[floor.Value],
+        Color = Options.HidingSpotEspColor.Value
+    })
+end
+
 function Script.Functions.RoomESP(room)
     local waitLoad = room:GetAttribute("RequiresGenerator") == true or room.Name == "50"
 
@@ -601,6 +611,10 @@ function Script.Functions.ChildCheck(child, includeESP)
             until not child or not mainGameSrc.stopcam or not Toggles.AutoBreakerSolver.Value or not using
 
             if child then child:SetAttribute("Solving", nil) end
+        end
+
+        if child:GetAttribute("LoadModule") == "Wardrobe" and Toggles.HidingSpotESP.Value then
+            Script.Functions.HidingSpotESP(child)
         end
 
         if Script.Functions.ItemCondition(child) then
@@ -1247,6 +1261,13 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
     }):AddColorPicker("PlayerEspColor", {
         Default = Color3.new(1, 1, 1),
     })
+
+    ESPGroupBox:AddToggle("HidingSpotESP", {
+        Text = HidingPlaceName[floor.Value] .. "ESP",
+        Default = false,
+    }):AddColorPicker("HidingSpotEspColor", {
+        Default = Color3.new(1, 1, 1),
+    })
 end
 
 local ESPSettingsGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP Settings") do
@@ -1745,6 +1766,26 @@ end)
 
 Options.PlayerEspColor:OnChanged(function(value)
     for _, esp in pairs(Script.ESPTable.Player) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.HidingSpotESP:OnChanged(function(value)
+    if value then
+        for _, wardrobe in pairs(workspace.CurrentRooms:GetDescendants()) do
+            if wardrobe:IsA("Model") and wardrobe:GetAttribute("LoadModule") == "Wardrobe" then
+                Script.Functions.HidingSpotESP(wardrobe)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.HidingSpot) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.HidingSpotEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.HidingSpot) do
         esp.SetColor(value)
     end
 end)
