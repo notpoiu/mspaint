@@ -140,12 +140,12 @@ local Options = getgenv().Linoria.Options
 local Toggles = getgenv().Linoria.Toggles
 
 local Window = Library:CreateWindow({
-	Title = "mspaint.lua",
+	Title = "mspaint",
 	Center = true,
 	AutoShow = true,
 	Resizable = true,
 	ShowCustomCursor = true,
-	TabPadding = 6,
+	TabPadding = 4,
 	MenuFadeTime = 0
 })
 
@@ -538,6 +538,68 @@ function Script.Functions.ChildCheck(child, includeESP)
     end
 
     if child:IsA("Model") then
+        if mainGameSrc.stopcam and child.Name == "ElevatorBreaker" and Toggles.AutoBreakerSolver.Value then
+            local autoConnections = {}
+            local using = false
+
+            if not child:GetAttribute("Solving") then
+                child:SetAttribute("Solving", true)
+                using = true 
+
+                local code = child:FindFirstChild("Code", true)
+
+                local breakers = {}
+                for _, breaker in pairs(child:GetChildren()) do
+                    if breaker.Name == "BreakerSwitch" then
+                        local id = string.format("%02d", breaker:GetAttribute("ID"))
+                        breakers[id] = breaker
+                    end
+                end
+
+                if code and code:FindFirstChild("Frame") then
+                    local correct = child.Box.Correct
+                    local used = {}
+                    
+                    autoConnections["Reset"] = correct:GetPropertyChangedSignal("Playing"):Connect(function()
+                        if correct.Playing then
+                            table.clear(used)
+                        end
+                    end)
+
+                    autoConnections["Code"] = code:GetPropertyChangedSignal("Text"):Connect(function()
+                        task.wait(0.1)
+                        local newCode = code.Text
+                        local isEnabled = code.Frame.BackgroundTransparency == 0
+
+                        local breaker = breakers[newCode]
+
+                        if newCode == "??" and #used == 9 then
+                            for i = 1, 10 do
+                                local id = string.format("%02d", i)
+
+                                if not table.find(used, id) then
+                                    breaker = breakers[id]
+                                end
+                            end
+                        end
+
+                        if breaker then
+                            table.insert(used, newCode)
+                            if breaker:GetAttribute("Enabled") ~= isEnabled then
+                                Script.Functions.EnableBreaker(breaker, isEnabled)
+                            end
+                        end
+                    end)
+                end
+            end
+
+            repeat
+                task.wait()
+            until not child or not mainGameSrc.stopcam or not Toggles.AutoBreakerSolver.Value or not using
+
+            if child then child:SetAttribute("Solving", nil) end
+        end
+
         if (child:GetAttribute("Pickup") or child:GetAttribute("PropType")) and not child:GetAttribute("FuseID") then
             if Toggles.ItemESP.Value then
                 Script.Functions.ItemESP(child)
@@ -563,12 +625,6 @@ function Script.Functions.ChildCheck(child, includeESP)
             for i,v in pairs(child:GetDescendants()) do
                 if v:IsA("BasePart") then v.CanTouch = false end
             end
-        end
-
-        if isHotel and child.Name == "RoomsDoor_Entrance" and Toggles.RoomsUnlocker.Value then
-            if child:FindFirstChild("Chain1") then v.Lock1:FindFirstChildOfClass("ProximityPrompt").Enabled = Toggles.RoomsUnlocker.Value end
-            if child:FindFirstChild("Chain2") then v.Lock2:FindFirstChildOfClass("ProximityPrompt").Enabled = Toggles.RoomsUnlocker.Value end
-            child.Door.EnterPrompt.Enabled = not Toggles.RoomsUnlocker.Value
         end
     elseif child:IsA("BasePart") then        
         if child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
@@ -617,7 +673,7 @@ function Script.Functions.SetupRoomConnection(room)
                 Script.Functions.Alert("Deleting Seek, do not open the next door...", child:FindFirstChildOfClass("BasePart"))
                 
                 if fireTouch then
-                    repeat task.wait()
+                    repeat
                         for _, v in pairs(child:GetChildren()) do
                             fireTouch(v, rootPart, 1)
                             task.wait()
@@ -846,6 +902,23 @@ function Script.Functions.GetPadlockCode(paper: Tool)
     return "_____"
 end
 
+function Script.Functions.EnableBreaker(breaker, value)
+    breaker:SetAttribute("Enabled", value)
+
+    if value then
+        breaker:FindFirstChild("PrismaticConstraint", true).TargetPosition = -0.2
+        breaker.Light.Material = Enum.Material.Neon
+        breaker.Light.Attachment.Spark:Emit(1)
+        breaker.Sound.Pitch = 1.3
+    else
+        breaker:FindFirstChild("PrismaticConstraint", true).TargetPosition = 0.2
+        breaker.Light.Material = Enum.Material.Glass
+        breaker.Sound.Pitch = 1.2
+    end
+
+    breaker.Sound:Play()
+end
+
 function Script.Functions.Alert(message: string, time_obj: number)
     Library:Notify(message, time_obj or 5)
 
@@ -924,6 +997,11 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
             Default = false
         })
 
+        AutomationGroupBox:AddToggle("AutoBreakerSolver", {
+            Text = "Auto Breaker Box",
+            Default = false
+        })
+
         Toggles.AutoLibrarySolver:OnChanged(function(value)
             if value then
                 for _, player in pairs(Players:GetPlayers()) do
@@ -943,6 +1021,76 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
                         end
                     end
                 end
+            end
+        end)
+
+        Toggles.AutoBreakerSolver:OnChanged(function(value)
+            local autoConnections = {}
+            local using = false
+
+            if mainGameSrc.stopcam and workspace.CurrentRooms:FindFirstChild("100") then
+                local elevatorBreaker = workspace.CurrentRooms["100"]:FindFirstChild("ElevatorBreaker")
+
+                if elevatorBreaker and not elevatorBreaker:GetAttribute("Solving") then
+                    elevatorBreaker:SetAttribute("Solving", true)
+                    using = true 
+
+                    local code = elevatorBreaker:FindFirstChild("Code", true)
+
+                    local breakers = {}
+                    for _, breaker in pairs(elevatorBreaker:GetChildren()) do
+                        if breaker.Name == "BreakerSwitch" then
+                            local id = string.format("%02d", breaker:GetAttribute("ID"))
+                            breakers[id] = breaker
+                        end
+                    end
+
+                    if code and code:FindFirstChild("Frame") then
+                        local correct = elevatorBreaker.Box.Correct
+                        local used = {}
+                        
+                        autoConnections["Reset"] = correct:GetPropertyChangedSignal("Playing"):Connect(function()
+                            if correct.Playing then
+                                table.clear(used)
+                            end
+                        end)
+
+                        autoConnections["Code"] = code:GetPropertyChangedSignal("Text"):Connect(function()
+                            task.wait(0.1)
+                            local newCode = code.Text
+                            local isEnabled = code.Frame.BackgroundTransparency == 0
+
+                            local breaker = breakers[newCode]
+
+                            if newCode == "??" and #used == 9 then
+                                for i = 1, 10 do
+                                    local id = string.format("%02d", i)
+
+                                    if not table.find(used, id) then
+                                        breaker = breakers[id]
+                                    end
+                                end
+                            end
+
+                            if breaker then
+                                table.insert(used, newCode)
+                                if breaker:GetAttribute("Enabled") ~= isEnabled then
+                                    Script.Functions.EnableBreaker(breaker, isEnabled)
+                                end
+                            end
+                        end)
+                    end
+                end
+
+                repeat
+                    task.wait()
+                until not elevatorBreaker or not mainGameSrc.stopcam or not Toggles.AutoBreakerSolver.Value or not using
+
+                if elevatorBreaker then elevatorBreaker:SetAttribute("Solving", nil) end
+            end
+
+            for _, connection in pairs(autoConnections) do
+                connection:Disconnect()
             end
         end)
     elseif isMines then
@@ -1178,25 +1326,6 @@ task.spawn(function()
                         end
                     end
                 end
-            end)
-        end
-
-        local Hotel_BypassGroupBox = Tabs.Floor:AddLeftGroupbox("Bypass") do
-            Hotel_BypassGroupBox:AddToggle("RoomsUnlocker", {
-                Text = "No Locks A-000",
-                Default = false
-            })
-
-            Toggles.RoomsUnlocker:OnChanged(function(value)
-                task.spawn(function()
-                    for i, v in pairs(workspace.CurrentRooms:GetDescendants()) do
-                        if v.Name == "RoomsDoor_Entrance" then
-                            if v:FindFirstChild("Chain1") then v.Lock1:FindFirstChildOfClass("ProximityPrompt").Enabled = value end
-                            if v:FindFirstChild("Chain2") then v.Lock2:FindFirstChildOfClass("ProximityPrompt").Enabled = value end
-                            v.Door.EnterPrompt.Enabled = not value
-                        end
-                    end
-                end)
             end)
         end
     elseif isMines then
