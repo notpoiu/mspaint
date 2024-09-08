@@ -850,7 +850,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 if not Toggles.TheMinesAnticheatBypass.Value then return cleanup() end
                 
                 if character:GetAttribute("Climbing") then
-                    task.wait(1.5)
+                    task.wait(1)
                     character:SetAttribute("Climbing", false)
     
                     cleanup()
