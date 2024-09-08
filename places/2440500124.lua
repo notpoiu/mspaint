@@ -1620,25 +1620,27 @@ Toggles.InstaInteract:OnChanged(function(value)
 end)
 
 Toggles.PromptClip:OnChanged(function(value)
-    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
-            if value then
-                if not prompt:GetAttribute("Enabled") then prompt:SetAttribute("Enabled", prompt.Enabled) end
-                if not prompt:GetAttribute("Clip") then prompt:SetAttribute("Clip", prompt.RequiresLineOfSight) end
-
-                prompt.RequiresLineOfSight = false
-                if prompt.Name == "ModulePrompt" then
-                    prompt.Enabled = true
+    if value then
+        for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
+            if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
+                if value then
+                    if not prompt:GetAttribute("Enabled") then prompt:SetAttribute("Enabled", prompt.Enabled) end
+                    if not prompt:GetAttribute("Clip") then prompt:SetAttribute("Clip", prompt.RequiresLineOfSight) end
     
-                    prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
-                        if Toggles.PromptClip.Value then
-                            prompt.Enabled = true
-                        end
-                    end)
+                    prompt.RequiresLineOfSight = false
+                    if prompt.Name == "ModulePrompt" then
+                        prompt.Enabled = true
+        
+                        prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
+                            if Toggles.PromptClip.Value then
+                                prompt.Enabled = true
+                            end
+                        end)
+                    end
+                else
+                    prompt.Enabled = prompt:GetAttribute("Enabled") or true
+                    prompt.RequiresLineOfSight = prompt:GetAttribute("Clip") or true
                 end
-            else
-                prompt.Enabled = prompt:GetAttribute("Enabled") or true
-                prompt.RequiresLineOfSight = prompt:GetAttribute("Clip") or true
             end
         end
     end
