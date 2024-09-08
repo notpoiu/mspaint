@@ -1263,10 +1263,10 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
     })
 
     ESPGroupBox:AddToggle("HidingSpotESP", {
-        Text = HidingPlaceName[floor.Value] .. "ESP",
+        Text = HidingPlaceName[floor.Value],
         Default = false,
     }):AddColorPicker("HidingSpotEspColor", {
-        Default = Color3.new(1, 1, 1),
+        Default = Color3.new(0, 0.5, 0),
     })
 end
 
