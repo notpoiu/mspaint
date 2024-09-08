@@ -1522,16 +1522,16 @@ task.spawn(function()
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
-                local progress_part = Instance.new("Part", workspace) do
-                    progress_part.Position = Vector3.new(9e9, 9e9, 9e9)
-                    progress_part.Size = Vector3.new(1, 1, 1)
-                    progress_part.Transparency = 1
-                    progress_part.Anchored = true
-                    progress_part.CanCollide = false
-                    progress_part.Name = "_internal_mspaint_acbypassprogress"
+                local progressPart = Instance.new("Part", workspace) do
+                    progressPart.Position = Vector3.new(9e9, 9e9, 9e9)
+                    progressPart.Size = Vector3.new(1, 1, 1)
+                    progressPart.Transparency = 1
+                    progressPart.Anchored = true
+                    progressPart.CanCollide = false
+                    progressPart.Name = "_internal_mspaint_acbypassprogress"
                 end
 
-                Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progress_part)
+                Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progressPart)
 
                 -- Ladder ESP
                 for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
