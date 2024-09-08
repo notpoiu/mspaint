@@ -1,5 +1,5 @@
 if not getgenv().mspaint_loaded then
-    getgenv().mspaint_loaded = true
+  getgenv().mspaint_loaded = true
 else return end
 
 
@@ -23,7 +23,10 @@ local Script = {
         Player = {},
         None = {}
     },
-    Functions = {}
+    Functions = {},
+    Temp = {
+      AnchorFinished = {}
+    }
 }
 
 local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
@@ -1901,9 +1904,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                     if not (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance) then return end
                     if CurrentAnchor ~= CurrentGameState.DesignatedAnchor then return end
-                    
+                    if Script.Temp.AnchorFinished[CurrentAnchor] then return end
+
                     Anchor:FindFirstChildOfClass("RemoteFunction"):InvokeServer(CurrentGameState.AnchorCode)
                     Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
+                    Script.Temp.AnchorFinished[CurrentAnchor] = true
                 end)
             end
         end
