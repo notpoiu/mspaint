@@ -1706,7 +1706,7 @@ end)
 
 Toggles.ItemESP:OnChanged(function(value)
     if value then
-        for _, item in pairs(workspace.Drops:GetChilren()) do
+        for _, item in pairs(workspace.Drops:GetChildren()) do
             if Script.Functions.ItemCondition(item) then
                 Script.Functions.ItemESP(item)
             end
