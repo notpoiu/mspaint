@@ -55,6 +55,7 @@ local PromptTable = {
     Aura = {
         ["ActivateEventPrompt"] = false,
         ["FusesPrompt"] = true,
+        ["HerbPrompt"] = false,
         ["LeverPrompt"] = true,
         ["LootPrompt"] = false,
         ["ModulePrompt"] = true,
