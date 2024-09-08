@@ -1951,11 +1951,15 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                     if not (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance) then return end
                     if CurrentAnchor ~= CurrentGameState.DesignatedAnchor then return end
-                    if Script.Temp.AnchorFinished[CurrentAnchor] then return end
+                    if Anchor:GetAttribute("Activated") then
+                        if not Script.Temp.AnchorFinished[CurrentAnchor] then
+                            Script.Temp.AnchorFinished[CurrentAnchor] = true
+                            Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
+                        end
+                        return
+                    end
 
                     Anchor:FindFirstChildOfClass("RemoteFunction"):InvokeServer(CurrentGameState.AnchorCode)
-                    Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
-                    Script.Temp.AnchorFinished[CurrentAnchor] = true
                 end)
             end
         end
