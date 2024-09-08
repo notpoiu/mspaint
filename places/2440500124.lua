@@ -1137,6 +1137,14 @@ end
 
 local MiscGroupBox = Tabs.Main:AddRightGroupbox("Misc") do
     MiscGroupBox:AddButton({
+        Text = "Revive",
+        Func = function()
+            remotesFolder.Revive:FireServer()
+        end,
+        DoubleClick = true
+    })
+
+    MiscGroupBox:AddButton({
         Text = "Play Again",
         Func = function()
             remotesFolder.PlayAgain:FireServer()
