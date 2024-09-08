@@ -960,8 +960,6 @@ function Script.Functions.Alert(message: string, time_obj: number)
 end
 
 --// Main \\--
- 
-print("reached main")
 
 local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     PlayerGroupBox:AddSlider("SpeedSlider", {
@@ -1503,11 +1501,7 @@ Toggles.InstaInteract:OnChanged(function(value)
 end)
 
 Toggles.PromptClip:OnChanged(function(value)
-    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            print(prompt.Parent.Name, not table.find(PromptTable.Excluded, prompt.Name), table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name))
-        end
-        
+    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
         if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
             if value then
                 if not prompt:GetAttribute("Enabled") then prompt:SetAttribute("Enabled", prompt.Enabled) end
