@@ -18,6 +18,7 @@ local Script = {
         Door = {},
         Entity = {},
         Gold = {},
+        Guiding = {},
         Item = {},
         Objective = {},
         Player = {},
@@ -102,6 +103,7 @@ local latestRoom = gameData:WaitForChild("LatestRoom")
 
 local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
 
+local camera = workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
 
 local playerGui = localPlayer.PlayerGui
@@ -179,6 +181,7 @@ function Script.Functions.ESP(args: ESP)
         IsEntity = args.IsEntity or false,
         Type = args.Type or "None",
 
+        Humanoid = nil,
         RSConnection = nil,
     }
 
@@ -186,7 +189,7 @@ function Script.Functions.ESP(args: ESP)
 
     if ESPManager.IsEntity and ESPManager.Object.PrimaryPart.Transparency == 1 then
         ESPManager.Object:SetAttribute("Transparency", ESPManager.Object.PrimaryPart.Transparency)
-        Instance.new("Humanoid", ESPManager.Object)
+        ESPManager.Humanoid = Instance.new("Humanoid", ESPManager.Object)
         ESPManager.Object.PrimaryPart.Transparency = 0.99
     end
 
@@ -236,8 +239,13 @@ function Script.Functions.ESP(args: ESP)
             ESPManager.RSConnection:Disconnect()
         end
 
-        if ESPManager.IsEntity and ESPManager.Object and ESPManager.Object.PrimaryPart then
-            ESPManager.Object.PrimaryPart.Transparency = ESPManager.Object.PrimaryPart:GetAttribute("Transparency")
+        if ESPManager.IsEntity and ESPManager.Object then
+            if ESPManager.Object.PrimaryPart then
+                ESPManager.Object.PrimaryPart.Transparency = ESPManager.Object.PrimaryPart:GetAttribute("Transparency")
+            end
+            if ESPManager.Humanoid then
+                ESPManager.Humanoid:Destroy()
+            end
         end
 
         if highlight then highlight:Destroy() end
@@ -359,6 +367,47 @@ function Script.Functions.ItemESP(item)
         Text = Script.Functions.GetShortName(item.Name),
         Color = Options.ItemEspColor.Value
     })
+end
+
+
+function Script.Functions.GuidingLightEsp(guidance)
+    local RSConnection
+
+    local part = guidance:Clone()
+    part.Anchored = true
+    part.Size = Vector3.new(2, 2, 2)
+    part:ClearAllChildren()
+    
+    local model = Instance.new("Model")
+    model.Name = "_Guidance"
+    model.PrimaryPart = part
+
+    part.Parent = model
+    model.Parent = workspace
+
+    local guidanceEsp = Script.Functions.ESP({
+        Type = "Guiding",
+        Object = model,
+        Text = "Guidance",
+        Color = Options.GuidingLightEspColor.Value,
+        IsEntity = true
+    })
+
+    RSConnection = RunService.RenderStepped:Connect(function()
+        if not guidance:IsDescendantOf(workspace) then 
+            RSConnection:Disconnect()
+        end
+
+        model:PivotTo(guidance.CFrame)
+    end)
+
+    guidance.AncestryChanged:Connect(function()
+        if not guidance:IsDescendantOf(workspace) then
+            RSConnection:Disconnect()
+            if guidanceEsp then guidanceEsp.Destroy() end
+            model:Destroy()
+        end
+    end)
 end
 
 function Script.Functions.GoldESP(gold)
@@ -520,6 +569,12 @@ end
 
     return tool
 end]]
+
+function Script.Functions.CameraCheck(child)
+    if child:IsA("BasePart") and child.Name == "Guidance" and Toggles.GuidingLightESP.Value then
+        Script.Functions.GuidingLightEsp(child)
+    end
+end
 
 function Script.Functions.ChildCheck(child, includeESP)
     if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) then
@@ -690,12 +745,22 @@ function Script.Functions.ItemCondition(item)
     return item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID")
 end
 
+function Script.Functions.SetupCameraConnection(camera)
+    for _, child in pairs(camera:GetChildren()) do
+        task.spawn(Script.Functions.CameraCheck, child)
+    end
+
+    Script.Connections["CameraChildAdded"] = camera.ChildAdded:Connect(function(child)
+        task.spawn(Script.Functions.CameraCheck, child)
+    end)
+end
+
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
         task.spawn(Script.Functions.ChildCheck, child, false)
     end
 
-    room.DescendantAdded:Connect(function(child)
+    Script.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
         task.delay(0.1, Script.Functions.ChildCheck, child, true)
         
         task.spawn(function()
@@ -926,7 +991,7 @@ function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
     end
 
     if not alive then
-        return (workspace.CurrentCamera.CFrame.Position - position).Magnitude
+        return (camera.CFrame.Position - position).Magnitude
     end
 
     return (rootPart.Position - position).Magnitude
@@ -1281,6 +1346,13 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
         Default = Color3.new(1, 0, 1),
     })
 
+    ESPGroupBox:AddToggle("GuidingLightESP", {
+        Text = "Guiding Light",
+        Default = false,
+    }):AddColorPicker("GuidingLightEspColor", {
+        Default = Color3.new(0, 0.5, 1),
+    })
+
     ESPGroupBox:AddToggle("GoldESP", {
         Text = "Gold",
         Default = false,
@@ -1532,7 +1604,12 @@ task.spawn(function()
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
                 end
 
-                Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progressPart)
+                if Library.IsMobile then
+                    Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. Ladder ESP has been enabled", progressPart)
+                else
+                    Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progressPart)
+                end
+                
 
                 -- Ladder ESP
                 for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
@@ -1805,6 +1882,26 @@ Options.ItemEspColor:OnChanged(function(value)
     end
 end)
 
+Toggles.GuidingLightESP:OnChanged(function(value)
+    if value then
+        for _, guidance in pairs(camera:GetChildren()) do
+            if guidance:IsA("BasePart") and guidance.Name == "Guidance" then
+                Script.Functions.GuidingLightEsp(guidance)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Guiding) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.GuidingLightEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Guiding) do
+        esp.SetColor(value)
+    end
+end)
+
 Toggles.GoldESP:OnChanged(function(value)
     if value then
         for _, gold in pairs(workspace.CurrentRooms:GetDescendants()) do
@@ -1964,6 +2061,15 @@ end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
     task.spawn(Script.Functions.RoomESP, room)
+end))
+
+
+if camera then task.spawn(Script.Functions.SetupCameraConnection, camera) end
+Library:GiveSignal(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    if workspace.CurrentCamera then
+        camera = workspace.CurrentCamera
+        task.spawn(Script.Functions.SetupCameraConnection, camera)
+    end
 end))
 
 for _, player in pairs(Players:GetPlayers()) do
