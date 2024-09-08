@@ -841,7 +841,6 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()
                 local function cleanup()
                     if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
-                    Script.Connections["AnticheatBypassTheMines"]:Disconnect()
     
                     for _, esp in pairs(Script.ESPTable.None) do
                         esp.Destroy()
@@ -851,7 +850,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 if not Toggles.TheMinesAnticheatBypass.Value then return cleanup() end
                 
                 if character:GetAttribute("Climbing") then
-                    task.wait(1)
+                    task.wait(1.5)
                     character:SetAttribute("Climbing", false)
     
                     cleanup()
