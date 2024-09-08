@@ -1,5 +1,5 @@
 if not getgenv().mspaint_loaded then
-  getgenv().mspaint_loaded = true
+    getgenv().mspaint_loaded = true
 else return end
 
 
@@ -27,7 +27,8 @@ local Script = {
     },
     Functions = {},
     Temp = {
-      AnchorFinished = {}
+        AnchorFinished = {},
+        Guidance = {}
     }
 }
 
@@ -372,8 +373,6 @@ end
 
 
 function Script.Functions.GuidingLightEsp(guidance)
-    local RSConnection
-
     local part = guidance:Clone()
     part.Anchored = true
     part.Size = Vector3.new(2, 2, 2)
@@ -386,6 +385,8 @@ function Script.Functions.GuidingLightEsp(guidance)
     part.Parent = model
     model.Parent = workspace
 
+    Script.Temp.Guidance[guidance] = model
+
     local guidanceEsp = Script.Functions.ESP({
         Type = "Guiding",
         Object = model,
@@ -394,17 +395,9 @@ function Script.Functions.GuidingLightEsp(guidance)
         IsEntity = true
     })
 
-    RSConnection = RunService.RenderStepped:Connect(function()
-        if not guidance:IsDescendantOf(workspace) then 
-            RSConnection:Disconnect()
-        end
-
-        model:PivotTo(guidance.CFrame)
-    end)
-
     guidance.AncestryChanged:Connect(function()
         if not guidance:IsDescendantOf(workspace) then
-            RSConnection:Disconnect()
+            if Script.Temp.Guidance[guidance] then Script.Temp.Guidance[guidance] = nil end
             if guidanceEsp then guidanceEsp.Destroy() end
             model:Destroy()
         end
@@ -1251,6 +1244,16 @@ end
 
 local MiscGroupBox = Tabs.Main:AddRightGroupbox("Misc") do
     MiscGroupBox:AddButton({
+        Text = "Die",
+        Func = function()
+            if humanoid then
+                humanoid.Health = 0
+            end
+        end,
+        DoubleClick = true
+    })
+
+    MiscGroupBox:AddButton({
         Text = "Revive",
         Func = function()
             remotesFolder.Revive:FireServer()
@@ -1625,6 +1628,7 @@ task.spawn(function()
                     end
                 end
             else
+                if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
                 remotesFolder.ClimbLadder:FireServer()
             end
         end)
@@ -2230,6 +2234,13 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             remotesFolder.MotorReplication:FireServer(-650)
         end
     end
+
+    task.spawn(function()
+        for guidance, model in pairs(Script.Temp.Guidance) do
+            if not guidance:IsDescendantOf(workspace) then continue end
+            model:PivotTo(guidance.CFrame)
+        end
+    end)
 end))
 
 --// Script Load \\--
