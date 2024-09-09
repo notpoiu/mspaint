@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 local fireTouch = firetouchinterest or firetouchtransmitter
 
 local Script = {
+    Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     ESPTable = {
         Door = {},
@@ -113,6 +114,9 @@ local mainUI = playerGui:WaitForChild("MainUI")
 local mainGame = mainUI:WaitForChild("Initiator"):WaitForChild("Main_Game")
 local mainGameSrc = require(mainGame)
 
+local playerScripts = localPlayer.PlayerScripts
+local controlModule = require(playerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule"))
+
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local alive = localPlayer:GetAttribute("Alive")
 local humanoid
@@ -131,6 +135,7 @@ local lastSpeed = 0
 type ESP = {
     Color: Color3,
     IsEntity: boolean,
+    IsDoubleDoor: boolean,
     Object: Instance,
     Offset: Vector3,
     Text: string,
@@ -181,8 +186,10 @@ function Script.Functions.ESP(args: ESP)
         Color = args.Color or Color3.new(),
         Offset = args.Offset or Vector3.zero,
         IsEntity = args.IsEntity or false,
+        IsDoubleDoor = args.IsDoubleDoor or false,
         Type = args.Type or "None",
 
+        Highlights = {},
         Humanoid = nil,
         RSConnection = nil,
     }
@@ -195,16 +202,38 @@ function Script.Functions.ESP(args: ESP)
         ESPManager.Object.PrimaryPart.Transparency = 0.99
     end
 
-    local highlight = Instance.new("Highlight") do
-        highlight.Adornee = ESPManager.Object
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.FillColor = ESPManager.Color
-        highlight.FillTransparency = Options.ESPFillTransparency.Value
-        highlight.OutlineColor = ESPManager.Color
-        highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
-        highlight.Enabled = Toggles.ESPHighlight.Value
-        highlight.Parent = ESPManager.Object
+    if ESPManager.IsDoubleDoor then
+        for _, door in pairs(ESPManager.Object:GetChilren()) do
+            if not door.Name == "Door" then continue end
+
+            local highlight = Instance.new("Highlight") do
+                highlight.Adornee = door
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.FillColor = ESPManager.Color
+                highlight.FillTransparency = Options.ESPFillTransparency.Value
+                highlight.OutlineColor = ESPManager.Color
+                highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
+                highlight.Enabled = Toggles.ESPHighlight.Value
+                highlight.Parent = door
+            end
+
+            table.insert(ESPManager.Highlights, highlight)
+        end
+    else
+        local highlight = Instance.new("Highlight") do
+            highlight.Adornee = ESPManager.Object
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.FillColor = ESPManager.Color
+            highlight.FillTransparency = Options.ESPFillTransparency.Value
+            highlight.OutlineColor = ESPManager.Color
+            highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
+            highlight.Enabled = Toggles.ESPHighlight.Value
+            highlight.Parent = ESPManager.Object
+        end
+
+        table.insert(ESPManager.Highlights, highlight)
     end
+    
 
     local billboardGui = Instance.new("BillboardGui") do
         billboardGui.Adornee = ESPManager.TextParent or ESPManager.Object
@@ -230,8 +259,10 @@ function Script.Functions.ESP(args: ESP)
     function ESPManager.SetColor(newColor: Color3)
         ESPManager.Color = newColor
 
-        highlight.FillColor = newColor
-        highlight.OutlineColor = newColor
+        for _, highlight in pairs(ESPManager.Highlights) do
+            highlight.FillColor = newColor
+            highlight.OutlineColor = newColor
+        end
 
         textLabel.TextColor3 = newColor
     end
@@ -250,7 +281,9 @@ function Script.Functions.ESP(args: ESP)
             end
         end
 
-        if highlight then highlight:Destroy() end
+        for _, highlight in pairs(ESPManager.Highlights) do
+            highlight:Destroy()
+        end
         if billboardGui then billboardGui:Destroy() end
 
         if Script.ESPTable[ESPManager.Type][tableIndex] then
@@ -264,9 +297,11 @@ function Script.Functions.ESP(args: ESP)
             return
         end
 
-        highlight.Enabled = Toggles.ESPHighlight.Value
-        highlight.FillTransparency = Options.ESPFillTransparency.Value
-        highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
+        for _, highlight in pairs(ESPManager.Highlights) do
+            highlight.Enabled = Toggles.ESPHighlight.Value
+            highlight.FillTransparency = Options.ESPFillTransparency.Value
+            highlight.OutlineTransparency = Options.ESPOutlineTransparency.Value
+        end
         textLabel.TextSize = Options.ESPTextSize.Value
 
         if Toggles.ESPDistance.Value then
@@ -285,6 +320,11 @@ function Script.Functions.DoorESP(room)
     local locked = room:GetAttribute("RequiresKey")
 
     if door and not door:GetAttribute("Opened") then
+        local doorNumber = tonumber(room.Name) + 1
+        if isMines then
+            doorNumber += 100
+        end
+
         local doors = 0
         for _, door in pairs(door:GetChildren()) do
             if door.Name == "Door" then
@@ -292,11 +332,13 @@ function Script.Functions.DoorESP(room)
             end
         end
 
+        local isDoubleDoor = doors > 1
         local doorEsp = Script.Functions.ESP({
             Type = "Door",
-            Object = doors > 1 and door or door:WaitForChild("Door"),
-            Text = locked and string.format("Door %s [Locked]", room.Name + 1) or string.format("Door %s", room.Name + 1),
-            Color = Options.DoorEspColor.Value
+            Object = isDoubleDoor and door or door:WaitForChild("Door"),
+            Text = locked and string.format("Door %s [Locked]", doorNumber) or string.format("Door %s", doorNumber),
+            Color = Options.DoorEspColor.Value,
+            IsDoubleDoor = isDoubleDoor
         })
 
         door:GetAttributeChangedSignal("Opened"):Connect(function()
