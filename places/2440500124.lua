@@ -29,7 +29,8 @@ local Script = {
     Functions = {},
     Temp = {
         AnchorFinished = {},
-        Guidance = {}
+        Guidance = {},
+        FlyBody = nil,
     }
 }
 
@@ -158,7 +159,7 @@ local Window = Library:CreateWindow({
 	AutoShow = true,
 	Resizable = true,
 	ShowCustomCursor = true,
-	TabPadding = 4,
+	TabPadding = 2,
 	MenuFadeTime = 0
 })
 
@@ -930,6 +931,13 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     end
 
     rootPart = character:WaitForChild("HumanoidRootPart")
+    if rootPart then
+        local flyBody = Instance.new("BodyVelocity")
+        flyBody.Velocity = Vector3.zero
+        flyBody.MaxForce = Vector3.one * 9e9
+
+        Script.Temp.FlyBody = flyBody
+    end
 
     collision = character:WaitForChild("Collision")
     if collision then
@@ -1132,6 +1140,25 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     PlayerGroupBox:AddToggle("InstaInteract", {
         Text = "Instant Interact",
         Default = false
+    })
+
+    PlayerGroupBox:AddToggle("Fly", {
+        Text = "Fly",
+        Default = false
+    }):AddKeyPicker("FlyKey", {
+        Mode = "Toggle",
+        Default = "F",
+        Text = "Fly",
+        SyncToggleState = true
+    })
+    
+    PlayerGroupBox:AddSlider("FlySpeed", {
+        Text = "Fly Speed",
+        Default = 15,
+        Min = 10,
+        Max = 22,
+        Rounding = 1,
+        Compact = true,
     })
 end
 
@@ -1741,6 +1768,29 @@ Toggles.InstaInteract:OnChanged(function(value)
     end
 end)
 
+Toggles.Fly:OnChanged(function(value)
+    if not rootPart then Script.Functions.Alert("Root Part not found") return end
+
+    if humanoid then
+        humanoid.PlatformStand = value
+    end
+
+    Script.Temp.FlyBody.Parent = value and rootPart or nil
+
+    if value then
+        Script.Connections["Fly"] = RunService.RenderStepped:Connect(function()
+            local moveVector = controlModule:GetMoveVector()
+            local velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X)) * Options.FlySpeed.Value
+
+            Script.Temp.FlyBody.Velocity = velocity
+        end)
+    else
+        if Script.Connections["Fly"] then
+            Script.Connections["Fly"]:Disconnect()
+        end
+    end
+end)
+
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
         if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
@@ -1819,6 +1869,7 @@ end)
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
         Options.SpeedSlider:SetMax(30)
+        Options.FlySpeed:SetMax(45)
 
         while Toggles.SpeedBypass.Value and collisionClone do
             collisionClone.Massless = not collisionClone.Massless
@@ -1830,6 +1881,8 @@ Toggles.SpeedBypass:OnChanged(function(value)
         else
             Options.SpeedSlider:SetMax(7)
         end
+
+        Options.FlySpeed:SetMax(22)
         
         if collisionClone then collisionClone.Massless = true end
     end
