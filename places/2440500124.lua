@@ -755,6 +755,18 @@ function Script.Functions.ChildCheck(child, includeESP)
         if child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
             child.CanTouch = false
         end
+
+        if Toggles.AntiLag.Value then
+            if not child:GetAttribute("Material") then child:SetAttribute("Material", child.Material) end
+            if not child:GetAttribute("Reflectance") then child:SetAttribute("Reflectance", child.Reflectance) end
+    
+            child.Material = Enum.Material.Plastic
+            child.Reflectance = 0
+        end
+    elseif child:IsA("Decal") and Toggles.AntiLag.Value then
+        if not child:GetAttribute("Transparency") then child:SetAttribute("Transparency", child.Transparency) end
+
+        child.Transparency = 1
     end
 
     if includeESP then
@@ -1487,6 +1499,11 @@ local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
         Text = "Fullbright",
         Default = false,
     })
+
+    AmbientGroupBox:AddToggle("AntiLag", {
+        Text = "Anti-Lag",
+        Default = false,
+    })
 end
 
 local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
@@ -2070,6 +2087,28 @@ Toggles.Fullbright:OnChanged(function(value)
             Lighting.Ambient = Color3.new(0, 0, 0)
         end
     end
+end)
+
+Toggles.AntiLag:OnChanged(function(value)
+    for _, object in pairs(workspace.CurrentRooms:GetDescendants()) do
+        if object:IsA("BasePart") then
+            if not object:GetAttribute("Material") then object:SetAttribute("Material", object.Material) end
+            if not object:GetAttribute("Reflectance") then object:SetAttribute("Reflectance", object.Reflectance) end
+
+            object.Material = value and Enum.Material.Plastic or object:GetAttribute("Material")
+            object.Reflectance = value and 0 or object:GetAttribute("Reflectance")
+        elseif object:IsA("Decal") then
+            if not object:GetAttribute("Transparency") then object:SetAttribute("Transparency", object.Transparency) end
+
+            object.Transparency = value and 1 or object:GetAttribute("Transparency")
+        end
+    end
+
+    workspace.Terrain.WaterReflectance = value and 0 or 1
+    workspace.Terrain.WaterTransparency = value and 0 or 1
+    workspace.Terrain.WaterWaveSize = value and 0 or 0.05
+    workspace.Terrain.WaterWaveSpeed = value and 0 or 8
+    Lighting.GlobalShadows = not value
 end)
 
 Toggles.HidingTransparency:OnChanged(function(value)
