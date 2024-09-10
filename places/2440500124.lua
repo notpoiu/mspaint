@@ -35,9 +35,6 @@ local Script = {
     }
 }
 
-local AttributeName = {
-    ["CanCutVines"] = "Shears",
-}
 local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
 local SideEntityName = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"}
 local ShortNames = {
@@ -136,6 +133,7 @@ local isBackdoor = floor.Value == "Backdoor"
 local isFools = floor.Value == "Fools"
 
 local lastSpeed = 0
+local bypassed = false
 
 type ESP = {
     Color: Color3,
@@ -988,15 +986,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     if isMines then
         if character then
-            Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()
-                local function cleanup()
-                    if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
-    
-                    for _, esp in pairs(Script.ESPTable.None) do
-                        esp.Destroy()
-                    end
-                end
-                
+            Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()                
                 if not Toggles.TheMinesAnticheatBypass.Value then return cleanup() end
                 
                 if character:GetAttribute("Climbing") then
@@ -1004,6 +994,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     character:SetAttribute("Climbing", false)
     
                     cleanup()
+                    bypassed = true
                     Script.Functions.Alert("Bypassed the anticheat successfully, this will only last until the next cutscene!", 7)
                 end
             end)
@@ -1715,15 +1706,14 @@ task.spawn(function()
             })
         end
 
+        
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
                 local progressPart = Instance.new("Part", workspace) do
-                    progressPart.Position = Vector3.new(9e9, 9e9, 9e9)
-                    progressPart.Size = Vector3.new(1, 1, 1)
-                    progressPart.Transparency = 1
                     progressPart.Anchored = true
                     progressPart.CanCollide = false
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
+                    progressPart.Transparency = 1
                 end
 
                 if Library.IsMobile then
@@ -1735,7 +1725,7 @@ task.spawn(function()
 
                 -- Ladder ESP
                 for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
-                    if v:IsA("Model") and v.Name == "Ladder" and v.Parent.Name == "Parts" then
+                    if v:IsA("Model") and v.Name == "Ladder" then
                         Script.Functions.ESP({
                             Type = "None",
                             Object = v,
@@ -1746,7 +1736,15 @@ task.spawn(function()
                 end
             else
                 if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
-                remotesFolder.ClimbLadder:FireServer()
+
+                for _, ladderEsp in pairs(Script.ESPTable.None) do
+                    ladderEsp.Destroy()
+                end
+
+                if bypassed then
+                    remotesFolder.ClimbLadder:FireServer()
+                    bypassed = false
+                end
             end
         end)
         
