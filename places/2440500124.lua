@@ -16,6 +16,7 @@ local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     ESPTable = {
+        Chest = {},
         Door = {},
         Entity = {},
         Gold = {},
@@ -34,6 +35,9 @@ local Script = {
     }
 }
 
+local AttributeName = {
+    ["CanCutVines"] = "Shears",
+}
 local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
 local SideEntityName = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"}
 local ShortNames = {
@@ -414,6 +418,52 @@ function Script.Functions.ItemESP(item)
     })
 end
 
+function Script.Functions.ChestESP(chest)
+    Script.Functions.ESP({
+        Type = "Chest",
+        Object = chest,
+        Text = "Chest",
+        Color = Options.ChestEspColor.Value
+    })
+end
+
+function Script.Functions.PlayerESP(player: Player)
+    if not (player.Character and player.Character.PrimaryPart and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0) then return end
+
+    local playerEsp = Script.Functions.ESP({
+        Type = "Player",
+        Object = player.Character,
+        Text = string.format("%s [%s]", player.DisplayName, player.Character.Humanoid.Health),
+        TextParent = player.Character.PrimaryPart,
+        Color = Options.PlayerEspColor.Value
+    })
+
+    player.Character.Humanoid.HealthChanged:Connect(function(newHealth)
+        if newHealth > 0 then
+            playerEsp.Text = string.format("%s [%s]", player.DisplayName, newHealth)
+        else
+            playerEsp.Destroy()
+        end
+    end)
+end
+
+function Script.Functions.HidingSpotESP(spot)
+    Script.Functions.ESP({
+        Type = "HidingSpot",
+        Object = spot,
+        Text = HidingPlaceName[floor.Value],
+        Color = Options.HidingSpotEspColor.Value
+    })
+end
+
+function Script.Functions.GoldESP(gold)
+    Script.Functions.ESP({
+        Type = "Gold",
+        Object = gold,
+        Text = string.format("Gold [%s]", gold:GetAttribute("GoldValue")),
+        Color = Options.GoldEspColor.Value
+    })
+end
 
 function Script.Functions.GuidingLightEsp(guidance)
     local part = guidance:Clone()
@@ -445,44 +495,6 @@ function Script.Functions.GuidingLightEsp(guidance)
             model:Destroy()
         end
     end)
-end
-
-function Script.Functions.GoldESP(gold)
-    Script.Functions.ESP({
-        Type = "Gold",
-        Object = gold,
-        Text = string.format("Gold [%s]", gold:GetAttribute("GoldValue")),
-        Color = Options.GoldEspColor.Value
-    })
-end
-
-function Script.Functions.PlayerESP(player: Player)
-    if not (player.Character and player.Character.PrimaryPart and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0) then return end
-
-    local playerEsp = Script.Functions.ESP({
-        Type = "Player",
-        Object = player.Character,
-        Text = string.format("%s [%s]", player.DisplayName, player.Character.Humanoid.Health),
-        TextParent = player.Character.PrimaryPart,
-        Color = Options.PlayerEspColor.Value
-    })
-
-    player.Character.Humanoid.HealthChanged:Connect(function(newHealth)
-        if newHealth > 0 then
-            playerEsp.Text = string.format("%s [%s]", player.DisplayName, newHealth)
-        else
-            playerEsp.Destroy()
-        end
-    end)
-end
-
-function Script.Functions.HidingSpotESP(spot)
-    Script.Functions.ESP({
-        Type = "HidingSpot",
-        Object = spot,
-        Text = HidingPlaceName[floor.Value],
-        Color = Options.HidingSpotEspColor.Value
-    })
 end
 
 function Script.Functions.RoomESP(room)
@@ -719,6 +731,10 @@ function Script.Functions.ChildCheck(child, includeESP)
                 Text = "Ladder",
                 Color = Color3.new(0, 0, 1)
             })
+        end
+
+        if child:GetAttribute("Storage") == "ChestBox" and Toggles.ChestESP.Value then
+            Script.Functions.ChestESP(child)
         end
 
         if (child:GetAttribute("LoadModule") == "Wardrobe" or child:GetAttribute("LoadModule") == "Bed") and Toggles.HidingSpotESP.Value then
@@ -1429,6 +1445,13 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
         Default = Color3.new(1, 0, 1),
     })
 
+    ESPGroupBox:AddToggle("ChestESP", {
+        Text = "Chest",
+        Default = false,
+    }):AddColorPicker("ChestEspColor", {
+        Default = Color3.new(1, 1, 0),
+    })
+
     ESPGroupBox:AddToggle("PlayerESP", {
         Text = "Player",
         Default = false,
@@ -1993,6 +2016,26 @@ end)
 
 Options.ItemEspColor:OnChanged(function(value)
     for _, esp in pairs(Script.ESPTable.Item) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.ChestESP:OnChanged(function(value)
+    if value then
+        for _, chest in pairs(workspace.CurrentRooms:GetDescendants()) do
+            if chest:IsA("Model") and chest:GetAttribute("Storage") == "ChestBox" then
+                Script.Functions.ChestESP(chest)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Chest) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.ChestEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Chest) do
         esp.SetColor(value)
     end
 end)
