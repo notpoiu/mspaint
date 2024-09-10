@@ -2391,15 +2391,18 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        local isEnabledMobile = (Toggles.MinecartSpam.Value and Library.IsMobile)
-        local isEnabledPC = (Options.MinecartSpamKey:GetState() and Toggles.MinecartSpam.Value and not Library.IsMobile)
-        if isMines and (isEnabledMobile or isEnabledPC) then
-            local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
-                return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
-            end)
+        if isMines then
+            local isEnabledMobile = (Toggles.MinecartSpam.Value and Library.IsMobile)
+            local isEnabledPC = (Options.MinecartSpamKey:GetState() and Toggles.MinecartSpam.Value and not Library.IsMobile)
 
-            if prompt then
-                fireproximityprompt(prompt)
+            if isEnabledMobile or isEnabledPC then
+                local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
+                    return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
+                end)
+
+                if prompt then
+                    fireproximityprompt(prompt)
+                end
             end
         end
 
