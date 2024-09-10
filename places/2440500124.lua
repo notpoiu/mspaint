@@ -1429,20 +1429,6 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
         Default = Color3.new(1, 0, 1),
     })
 
-    ESPGroupBox:AddToggle("GuidingLightESP", {
-        Text = "Guiding Light",
-        Default = false,
-    }):AddColorPicker("GuidingLightEspColor", {
-        Default = Color3.new(0, 0.5, 1),
-    })
-
-    ESPGroupBox:AddToggle("GoldESP", {
-        Text = "Gold",
-        Default = false,
-    }):AddColorPicker("GoldEspColor", {
-        Default = Color3.new(1, 1, 0),
-    })
-
     ESPGroupBox:AddToggle("PlayerESP", {
         Text = "Player",
         Default = false,
@@ -1455,6 +1441,20 @@ local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
         Default = false,
     }):AddColorPicker("HidingSpotEspColor", {
         Default = Color3.new(0, 0.5, 0),
+    })
+
+    ESPGroupBox:AddToggle("GoldESP", {
+        Text = "Gold",
+        Default = false,
+    }):AddColorPicker("GoldEspColor", {
+        Default = Color3.new(1, 1, 0),
+    })
+
+    ESPGroupBox:AddToggle("GuidingLightESP", {
+        Text = "Guiding Light",
+        Default = false,
+    }):AddColorPicker("GuidingLightEspColor", {
+        Default = Color3.new(0, 0.5, 1),
     })
 end
 
@@ -1997,46 +1997,6 @@ Options.ItemEspColor:OnChanged(function(value)
     end
 end)
 
-Toggles.GuidingLightESP:OnChanged(function(value)
-    if value then
-        for _, guidance in pairs(camera:GetChildren()) do
-            if guidance:IsA("BasePart") and guidance.Name == "Guidance" then
-                Script.Functions.GuidingLightEsp(guidance)
-            end
-        end
-    else
-        for _, esp in pairs(Script.ESPTable.Guiding) do
-            esp.Destroy()
-        end
-    end
-end)
-
-Options.GuidingLightEspColor:OnChanged(function(value)
-    for _, esp in pairs(Script.ESPTable.Guiding) do
-        esp.SetColor(value)
-    end
-end)
-
-Toggles.GoldESP:OnChanged(function(value)
-    if value then
-        for _, gold in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if gold.Name == "GoldPile" then
-                Script.Functions.GoldESP(gold)
-            end
-        end
-    else
-        for _, esp in pairs(Script.ESPTable.Gold) do
-            esp.Destroy()
-        end
-    end
-end)
-
-Options.GoldEspColor:OnChanged(function(value)
-    for _, esp in pairs(Script.ESPTable.Gold) do
-        esp.SetColor(value)
-    end
-end)
-
 Toggles.PlayerESP:OnChanged(function(value)
     if value then
         for _, player in pairs(Players:GetPlayers()) do
@@ -2073,6 +2033,46 @@ end)
 
 Options.HidingSpotEspColor:OnChanged(function(value)
     for _, esp in pairs(Script.ESPTable.HidingSpot) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.GoldESP:OnChanged(function(value)
+    if value then
+        for _, gold in pairs(workspace.CurrentRooms:GetDescendants()) do
+            if gold.Name == "GoldPile" then
+                Script.Functions.GoldESP(gold)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Gold) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.GoldEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Gold) do
+        esp.SetColor(value)
+    end
+end)
+
+Toggles.GuidingLightESP:OnChanged(function(value)
+    if value then
+        for _, guidance in pairs(camera:GetChildren()) do
+            if guidance:IsA("BasePart") and guidance.Name == "Guidance" then
+                Script.Functions.GuidingLightEsp(guidance)
+            end
+        end
+    else
+        for _, esp in pairs(Script.ESPTable.Guiding) do
+            esp.Destroy()
+        end
+    end
+end)
+
+Options.GuidingLightEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.Guiding) do
         esp.SetColor(value)
     end
 end)
