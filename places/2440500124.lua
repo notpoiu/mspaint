@@ -986,14 +986,11 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     if isMines then
         if character then
-            Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()                
-                if not Toggles.TheMinesAnticheatBypass.Value then return cleanup() end
-                
-                if character:GetAttribute("Climbing") then
+            Script.Connections["AnticheatBypassTheMines"] = character:GetAttributeChangedSignal("Climbing"):Connect(function()                                
+                if Toggles.TheMinesAnticheatBypass.Value and character:GetAttribute("Climbing") then
                     task.wait(1)
                     character:SetAttribute("Climbing", false)
     
-                    cleanup()
                     bypassed = true
                     Script.Functions.Alert("Bypassed the anticheat successfully, this will only last until the next cutscene!", 7)
                 end
