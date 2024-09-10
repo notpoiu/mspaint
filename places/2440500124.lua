@@ -934,6 +934,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 character:SetAttribute("CanJump", true)
             end
         end)
+
+        Script.Connections["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
+            if character:GetAttribute("Oxygen") < 100 and Toggles.NotifyOxygen.Value then
+                firesignal(remotesFolder.Caption.OnClientEvent, string.format("Oxygen: %.1f", character:GetAttribute("Oxygen")))
+            end
+        end)
     end
 
     humanoid = character:WaitForChild("Humanoid")
@@ -1540,6 +1546,11 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Text = "Notify Library Code",
             Default = false,
         })
+
+        NotifyTab:AddToggle("NotifyOxygen", {
+            Text = "Notify Oxygen",
+            Default = false,
+        })
     end
 
     local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
@@ -1809,7 +1820,7 @@ Toggles.InstaInteract:OnChanged(function(value)
 end)
 
 Toggles.Fly:OnChanged(function(value)
-    if not rootPart then Script.Functions.Alert("Root Part not found") return end
+    if not rootPart then return end
 
     if humanoid then
         humanoid.PlatformStand = value
@@ -2468,6 +2479,7 @@ Library:OnUnload(function()
     end
 
     if collisionClone then collisionClone:Destroy() end
+    if Script.Temp.FlyBody then Script.Temp.FlyBody:Destroy() end
 
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
