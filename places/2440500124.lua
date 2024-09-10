@@ -60,10 +60,10 @@ local PromptTable = {
         ["FusesPrompt"] = true,
         ["HerbPrompt"] = false,
         ["LeverPrompt"] = true,
-        ["LootPrompt"] = false,
-        ["ModulePrompt"] = true,
+        ["LootPrompt"] = true,
+        ["ModulePrompt"] = false,
         ["SkullPrompt"] = false,
-        ["UnlockPrompt"] = true,
+        ["UnlockPrompt"] = false,
         ["ValvePrompt"] = false,
     },
 
