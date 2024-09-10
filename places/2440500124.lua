@@ -1570,13 +1570,14 @@ local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
         Text = "Translucent " .. HidingPlaceName[floor.Value],
         Default = false
     })
-
+    
     SelfGroupBox:AddSlider("HidingTransparency", {
         Text = "Hiding Transparency",
         Default = 0.5,
         Min = 0,
         Max = 1,
-        Rounding = 1
+        Rounding = 1,
+        Compact = true,
     })
 end
 
