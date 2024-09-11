@@ -551,6 +551,13 @@ function Script.Functions.ObjectiveESPCheck(child)
                 Color = Options.ObjectiveEspColor.Value
             })
         end
+    elseif child.Name == "TimerLever" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Time Lever",
+            Color = Options.ObjectiveEspColor.Value
+        })
     end
 end
 
@@ -2414,7 +2421,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if Toggles.AntiEyes.Value and workspace:FindFirstChild("Eyes") then
+        if Toggles.AntiEyes.Value and (workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("BackdoorLookman")) then
             -- lsplash meanie for removing other args in motorreplication
             remotesFolder.MotorReplication:FireServer(-650)
         end
