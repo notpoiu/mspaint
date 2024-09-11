@@ -8,6 +8,7 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
@@ -2323,6 +2324,12 @@ Library:GiveSignal(Lighting:GetPropertyChangedSignal("Ambient"):Connect(function
 end))
 
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
+    if not Toggles.ShowCustomCursor.Value and Library.Toggled then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIcon = "rbxassetid://2833720882"
+        UserInputService.MouseIconEnabled = true
+    end
+
     if mainGameSrc then
         mainGameSrc.fovtarget = Options.FOV.Value
 
