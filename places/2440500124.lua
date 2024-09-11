@@ -639,31 +639,35 @@ end
 
 function Script.Functions.ChildCheck(child, includeESP)
     if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) then
-        if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
-        if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
-        if not child:GetAttribute("Enabled") then child:SetAttribute("Enabled", child.Enabled) end
-        if not child:GetAttribute("Clip") then child:SetAttribute("Clip", child.RequiresLineOfSight) end
+        task.defer(function()
+            if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
+            if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
+            if not child:GetAttribute("Enabled") then child:SetAttribute("Enabled", child.Enabled) end
+            if not child:GetAttribute("Clip") then child:SetAttribute("Clip", child.RequiresLineOfSight) end
+        end)
+
+        task.defer(function()
+            child.MaxActivationDistance = child:GetAttribute("Distance") * Options.PromptReachMultiplier.Value
+    
+            if Toggles.InstaInteract.Value then
+                child.HoldDuration = 0
+            end
+    
+            if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.Objects, child.Parent.Name)) then
+                child.RequiresLineOfSight = false
+                if child.Name == "ModulePrompt" then
+                    child.Enabled = true
+    
+                    child:GetPropertyChangedSignal("Enabled"):Connect(function()
+                        if Toggles.PromptClip.Value then
+                            child.Enabled = true
+                        end
+                    end)
+                end
+            end
+        end)
 
         table.insert(PromptTable.GamePrompts, child)
-
-        child.MaxActivationDistance = child:GetAttribute("Distance") * Options.PromptReachMultiplier.Value
-
-        if Toggles.InstaInteract.Value then
-            child.HoldDuration = 0
-        end
-
-        if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.Objects, child.Parent.Name)) then
-            child.RequiresLineOfSight = false
-            if child.Name == "ModulePrompt" then
-                child.Enabled = true
-
-                child:GetPropertyChangedSignal("Enabled"):Connect(function()
-                    if Toggles.PromptClip.Value then
-                        child.Enabled = true
-                    end
-                end)
-            end
-        end
     end
 
     if child:IsA("Model") then
@@ -1849,9 +1853,6 @@ end)
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
         if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
-            if not prompt:GetAttribute("Enabled") then prompt:SetAttribute("Enabled", prompt.Enabled) end
-            if not prompt:GetAttribute("Clip") then prompt:SetAttribute("Clip", prompt.RequiresLineOfSight) end
-            
             if value then
                 prompt.RequiresLineOfSight = false
                 if prompt.Name == "ModulePrompt" then
@@ -1864,8 +1865,10 @@ Toggles.PromptClip:OnChanged(function(value)
                     end)
                 end
             else
-                prompt.Enabled = prompt:GetAttribute("Enabled") or true
-                prompt.RequiresLineOfSight = prompt:GetAttribute("Clip") or true
+                if prompt:GetAttribute("Enabled") and prompt:GetAttribute("Clip") then
+                    prompt.Enabled = prompt:GetAttribute("Enabled")
+                    prompt.RequiresLineOfSight = prompt:GetAttribute("Clip")
+                end
             end
         end
     end
