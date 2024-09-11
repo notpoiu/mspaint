@@ -791,7 +791,9 @@ function Script.Functions.ChildCheck(child, includeESP)
     elseif child:IsA("Decal") and Toggles.AntiLag.Value then
         if not child:GetAttribute("Transparency") then child:SetAttribute("Transparency", child.Transparency) end
 
-        child.Transparency = 1
+        if child.Parent.Name ~= "Slot" then
+            child.Transparency = 1
+        end
     end
 
     if includeESP then
@@ -2161,7 +2163,9 @@ Toggles.AntiLag:OnChanged(function(value)
         elseif object:IsA("Decal") then
             if not object:GetAttribute("Transparency") then object:SetAttribute("Transparency", object.Transparency) end
 
-            object.Transparency = value and 1 or object:GetAttribute("Transparency")
+            if object.Parent.Name ~= "Slot" then
+                object.Transparency = value and 1 or object:GetAttribute("Transparency")
+            end
         end
     end
 
