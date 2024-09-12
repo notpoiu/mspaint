@@ -93,7 +93,21 @@ game:GetService("ReplicatedStorage").RemotesFolder.SendRunnerNodes.OnClientEvent
     
     local decoded = module.Decode(buffers, folder, id)
     if decoded then
+        local allNodes = decoded:getArrayOfNodeObjectsToTheEnd()
         print("got:", decoded)
         SetClipboard(decoded)
+        if allNodes then
+            print("got nodes to end:", allNodes)
+            SetClipboard(allNodes)
+
+            for i, node in  pairs(allNodes) do
+                print("looping:", i, node, node.Position)
+                local part = Instance.new("BasePart")
+                part.Anchored = true
+                part.Size = Vector3.one * 2
+                part.Position = node.Position
+                part.Parent = workspace
+            end
+        end 
     end
 end)
