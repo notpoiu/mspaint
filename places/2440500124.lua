@@ -52,12 +52,12 @@ local EntityNotify = {
     ["GloombatSwarm"] = "Gloombats in next room!"
 }
 local HidingPlaceName = {
-    ["Hotel"] = "Closets",
-    ["Backdoor"] = "Closets",
-    ["Fools"] = "Closets",
+    ["Hotel"] = "Closet",
+    ["Backdoor"] = "Closet",
+    ["Fools"] = "Closet",
 
-    ["Rooms"] = "Lockers",
-    ["Mines"] = "Lockers"
+    ["Rooms"] = "Locker",
+    ["Mines"] = "Locker"
 }
 
 local PromptTable = {
@@ -1047,7 +1047,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                         task.spawn(function()
                             local affectedParts = {}
                             for _, part in pairs(obj.Parent:GetChildren()) do
-                                if not part:IsA("BasePart") then continue end
+                                if not part:IsA("BasePart") or part.Name:match("Collision") then continue end
     
                                 part.Transparency = Options.HidingTransparency.Value
                                 table.insert(affectedParts, part)
