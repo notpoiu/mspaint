@@ -2151,13 +2151,13 @@ task.spawn(function()
             local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
             local isEntitySpawned = (entity and entity.PrimaryPart.Position.Y > -10)
             
-            if isEntitySpawned and not character:GetAttribute("Hiding") then
+            if isEntitySpawned and not rootPart.Anchored then
                 local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
                 if Script.Functions.IsPromptInRange(pathfindingGoal.Parent.HidePrompt) then
                     fireproximityprompt(pathfindingGoal.Parent.HidePrompt)
                 end
-            elseif not isEntitySpawned and character:GetAttribute("Hiding") then
+            elseif not isEntitySpawned and rootPart.Anchored then
                 for i = 1, 10 do
                     remotesFolder.CamLock:FireServer()
                 end
