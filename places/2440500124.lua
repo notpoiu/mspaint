@@ -1892,7 +1892,7 @@ task.spawn(function()
                 end
             else
                 for i,v in pairs(internal_temp_mspaint:GetChildren()) do
-                    v.Parent = clientRemote
+                    v.Parent = clientRemote.Haste
                 end
             end
         end)
