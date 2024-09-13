@@ -65,6 +65,7 @@ local PromptTable = {
 
     Aura = {
         ["ActivateEventPrompt"] = false,
+        ["AwesomePrompt"] = true,
         ["FusesPrompt"] = true,
         ["HerbPrompt"] = false,
         ["LeverPrompt"] = true,
@@ -81,6 +82,7 @@ local PromptTable = {
     },
 
     Clip = {
+        "AwesomePrompt",
         "FusesPrompt",
         "HerbPrompt",
         "HidePrompt",
