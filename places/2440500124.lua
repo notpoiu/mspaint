@@ -107,6 +107,8 @@ local gameData = ReplicatedStorage:WaitForChild("GameData")
 local floor = gameData:WaitForChild("Floor")
 local latestRoom = gameData:WaitForChild("LatestRoom")
 
+local floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
+
 local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
 
 local camera = workspace.CurrentCamera
@@ -173,6 +175,45 @@ local Tabs = {
     Floor = Window:AddTab("Floor"),
 	["UI Settings"] = Window:AddTab("UI Settings"),
 }
+
+local _mspaint_custom_captions = Instance.new("ScreenGui") do
+    local Frame = Instance.new("Frame", _mspaint_custom_captions)
+    local TextLabel = Instance.new("TextLabel", Frame)
+    local UITextSizeConstraint = Instance.new("UITextSizeConstraint", TextLabel)
+
+    _mspaint_custom_captions.Parent = ReplicatedStorage
+    _mspaint_custom_captions.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+    Frame.BackgroundColor3 = Library.MainColor
+    Frame.BorderColor3 = Library.AccentColor
+    Frame.BorderSizePixel = 2
+    Frame.Position = UDim2.new(0.5, 0, 0.8, 0)
+    Frame.Size = UDim2.new(0, 200, 0, 75)
+
+    TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.BackgroundTransparency = 1.000
+    TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    TextLabel.BorderSizePixel = 0
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.Font = Enum.Font.Code
+    TextLabel.Text = ""
+    TextLabel.TextColor3 = Library.FontColor
+    TextLabel.TextScaled = true
+    TextLabel.TextSize = 14
+    TextLabel.TextWrapped = true
+
+    UITextSizeConstraint.MaxTextSize = 35
+
+    function Script.Functions.Captions(caption: string)
+        if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
+        TextLabel.Text = caption
+    end
+
+    function Script.Functions.HideCaptions()
+        _mspaint_custom_captions.Parent = ReplicatedStorage
+    end
+end
 
 --// Functions \\--
 
@@ -556,7 +597,7 @@ function Script.Functions.ObjectiveESPCheck(child)
         Script.Functions.ESP({
             Type = "Objective",
             Object = child,
-            Text = "Time Lever",
+            Text = "Time Lever [+" .. child.TakeTimer.TextLabel.Text .. "]",
             Color = Options.ObjectiveEspColor.Value
         })
     end
@@ -764,8 +805,8 @@ function Script.Functions.ChildCheck(child, includeESP)
             child:WaitForChild("Hitbox", 5).CanTouch = false
         end
 
-        if child:GetAttribute("LoadModule") == "DupeRoom" and Toggles.AntiDupe.Value then
-            Script.Functions.DisableDupe(child, true)
+        if (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
+            Script.Functions.DisableDupe(child, true, child:GetAttribute("LoadModule") == "SpaceSideroom")
         end
 
         if child.Name == "GoldPile" and Toggles.GoldESP.Value then
@@ -1086,15 +1127,24 @@ function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
     return (rootPart.Position - position).Magnitude
 end
 
-function Script.Functions.DisableDupe(dupeRoom, value)
-    local doorFake = dupeRoom:WaitForChild("DoorFake", 5)
-
-    if doorFake then
-        doorFake:WaitForChild("Hidden", 5).CanTouch = not value
-
-        local lock = doorFake:WaitForChild("LockPart", 5)
-        if lock and lock:FindFirstChild("UnlockPrompt") then
-            lock.UnlockPrompt.Enabled = not value
+function Script.Functions.DisableDupe(dupeRoom, value, isSpaceRoom)
+    if isSpaceRoom then
+        local collision = dupeRoom:WaitForChild("Collision", 5)
+        
+        if collision then
+            collision.CanCollide = value
+            collision.CanTouch = not value
+        end
+    else
+        local doorFake = dupeRoom:WaitForChild("DoorFake", 5)
+        
+        if doorFake then
+            doorFake:WaitForChild("Hidden", 5).CanTouch = not value
+    
+            local lock = doorFake:WaitForChild("LockPart", 5)
+            if lock and lock:FindFirstChild("UnlockPrompt") then
+                lock.UnlockPrompt.Enabled = not value
+            end
         end
     end
 end
@@ -1395,7 +1445,7 @@ local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
     })
 
     AntiEntityGroupBox:AddToggle("AntiDupe", {
-        Text = "Anti-Dupe",
+        Text = "Anti-" .. (isBackdoor and "Vacuum" or "Dupe"),
         Default = false
     })
 
@@ -1813,6 +1863,57 @@ task.spawn(function()
                 end
             end))
         end
+    elseif isBackdoor then
+        local Backdoors_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
+            Backdoors_AntiEntityGroupBox:AddToggle("AntiHasteJumpscare", {
+                Text = "Anti Haste Jumpscare",
+                Default = false
+            })
+        end
+
+        local Backdoors_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visual") do
+            Backdoors_VisualGroupBox:AddToggle("HasteClock", {
+                Text = "Haste Clock",
+                Default = true
+            })
+        end
+
+        Toggles.AntiHasteJumpscare:OnChanged(function(value)
+            local clientRemote = ReplicatedStorage.FloorReplicated.ClientRemote
+            local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
+            
+            if not internal_temp_mspaint then internal_temp_mspaint = Instance.new("Folder", clientRemote); internal_temp_mspaint.Name = "_mspaint" end
+
+            if value then
+                for i,v in pairs(clientRemote.Haste:GetChildren()) do
+                    if v:IsA("RemoteEvent") then continue end
+
+                    v.Parent = internal_temp_mspaint
+                end
+            else
+                for i,v in pairs(internal_temp_mspaint:GetChildren()) do
+                    v.Parent = clientRemote
+                end
+            end
+        end)
+
+        Toggles.HasteClock:OnChanged(function(value)
+            if not value then
+                Script.Functions.HideCaptions()
+            end
+        end)
+
+        function Script.Functions.TimerFormat(seconds: number)
+            local minutes = math.floor(seconds / 60)
+            local remainingSeconds = seconds % 60
+            return string.format("%02d:%02d", minutes, remainingSeconds)
+        end
+
+        Library:GiveSignal(floorReplicated.DigitalTimer:GetPropertyChangedSignal("Value"):Connect(function()
+            if Toggles.HasteClock.Value and floorReplicated.ScaryStartsNow.Value then
+                Script.Functions.Captions(Script.Functions.TimerFormat(floorReplicated.DigitalTimer.Value))
+            end
+        end))
     end
 end)
 
@@ -1908,8 +2009,8 @@ end)
 Toggles.AntiDupe:OnChanged(function(value)
     for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
         for _, dupeRoom in pairs(room:GetChildren()) do
-            if dupeRoom:GetAttribute("LoadModule") == "DupeRoom" then
-                task.spawn(function() Script.Functions.DisableDupe(dupeRoom, value) end)
+            if dupeRoom:GetAttribute("LoadModule") == "DupeRoom" or dupeRoom:GetAttribute("LoadModule") == "SpaceSideroom" then
+                task.spawn(function() Script.Functions.DisableDupe(dupeRoom, value, dupeRoom:GetAttribute("LoadModule") == "SpaceSideroom") end)
             end
         end
     end
@@ -2225,6 +2326,30 @@ local mtHook; mtHook = hookmetamethod(game, "__namecall", function(self, ...)
     return mtHook(self, ...)
 end)
 
+if isBackdoor then
+    local clientRemote = floorReplicated.ClientRemote
+    local haste_incoming_progress = nil
+
+    Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
+        if not value and Toggles.NotifyEntity.Value then
+            haste_incoming_progress = Instance.new("Part", workspace) do
+                haste_incoming_progress.Anchored = true
+                haste_incoming_progress.CanCollide = false
+                haste_incoming_progress.Name = "_internal_mspaint_haste"
+                haste_incoming_progress.Transparency = 1
+            end
+
+            Script.Functions.Alert("Haste is incoming, please find a lever ASAP!", haste_incoming_progress)
+            repeat task.wait() until not haste_incoming_progress or not Toggles.NotifyEntity.Value or not character:GetAttribute("Alive")
+            if haste_incoming_progress then haste_incoming_progress:Destroy() end
+        end
+        
+        if value and haste_incoming_progress then
+            haste_incoming_progress:Destroy()
+        end
+    end))
+end
+
 Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     task.delay(0.1, function()
         if table.find(EntityName, child.Name) then
@@ -2483,6 +2608,23 @@ Library:OnUnload(function()
 
     if mainGameSrc then
         mainGameSrc.fovtarget = 70
+    end
+
+    if isBackdoor then
+        local clientRemote = floorReplicated.ClientRemote
+        local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
+
+        if internal_temp_mspaint and #internal_temp_mspaint:GetChildren() ~= 0 then
+            for i,v in pairs(internal_temp_mspaint:GetChildren()) do
+                v.Parent = clientRemote.Haste
+            end
+        end
+
+        internal_temp_mspaint:Destroy()
+    end
+
+    if _mspaint_custom_captions then
+        _mspaint_custom_captions:Destroy()
     end
 
     if collision then
