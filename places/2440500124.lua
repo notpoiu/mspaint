@@ -280,6 +280,12 @@ function Script.Functions.ESP(args: ESP)
         ESPManager.Object.PrimaryPart.Transparency = 0.99
     end
 
+    local tracer = Drawing.new("Line") do
+        tracer.Color = ESPManager.Color
+        tracer.Thickness = 1
+        tracer.Visible = false
+    end
+
     if ESPManager.IsDoubleDoor then
         for _, door in pairs(ESPManager.Object:GetChildren()) do
             if not door.Name == "Door" then continue end
@@ -337,12 +343,14 @@ function Script.Functions.ESP(args: ESP)
     function ESPManager.SetColor(newColor: Color3)
         ESPManager.Color = newColor
 
+        if tracer then tracer.Color = newColor end
+
         for _, highlight in pairs(ESPManager.Highlights) do
             highlight.FillColor = newColor
             highlight.OutlineColor = newColor
         end
 
-        textLabel.TextColor3 = newColor
+        if textLabel then textLabel.TextColor3 = newColor end
     end
 
     function ESPManager.Destroy()
@@ -359,6 +367,7 @@ function Script.Functions.ESP(args: ESP)
             end
         end
 
+        if tracer then tracer:Destroy() end
         for _, highlight in pairs(ESPManager.Highlights) do
             highlight:Destroy()
         end
@@ -386,6 +395,20 @@ function Script.Functions.ESP(args: ESP)
             textLabel.Text = string.format("%s\n[%s]", ESPManager.Text, math.floor(Script.Functions.DistanceFromCharacter(ESPManager.Object)))
         else
             textLabel.Text = ESPManager.Text
+        end
+
+        if Toggles.ESPTracer.Value then
+            local position, visible = camera:WorldToViewportPoint(ESPManager.Object:GetPivot().Position)
+
+            if visible then
+                tracer.From = Vector2.new(camera.ViewportSize.X / 2, Script.Functions.GetTracerStartY(Options.ESPTracerStart.Value))
+                tracer.To = Vector2.new(position.X, position.Y)
+                tracer.Visible = true
+            else
+                tracer.Visible = false
+            end
+        else
+            tracer.Visible = false
         end
     end)
 
@@ -674,6 +697,16 @@ function Script.Functions.GetNearestPromptWithCondition(condition)
     end
 
     return nearestPrompt
+end
+
+function Script.Functions.GetTracerStartY(position: string)
+    if position == "Bottom" then
+        return camera.ViewportSize.Y
+    elseif position == "Center" then
+        return camera.ViewportSize.Y / 2
+    else
+        return 0
+    end
 end
 
 --[[function Script.Functions.FindTool(name: string)
@@ -1553,105 +1586,123 @@ end
 
 --// Visuals \\--
 
-local ESPGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP") do
-    ESPGroupBox:AddToggle("DoorESP", {
-        Text = "Door",
-        Default = false,
-    }):AddColorPicker("DoorEspColor", {
-        Default = Color3.new(0, 1, 1),
-    })
 
-    ESPGroupBox:AddToggle("ObjectiveESP", {
-        Text = "Objective",
-        Default = false,
-    }):AddColorPicker("ObjectiveEspColor", {
-        Default = Color3.new(0, 1, 0),
-    })
 
-    ESPGroupBox:AddToggle("EntityESP", {
-        Text = "Entity",
-        Default = false,
-    }):AddColorPicker("EntityEspColor", {
-        Default = Color3.new(1, 0, 0),
-    })
+local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
+    local ESPTab = ESPTabBox:AddTab("ESP") do
+        ESPTab:AddToggle("DoorESP", {
+            Text = "Door",
+            Default = false,
+        }):AddColorPicker("DoorEspColor", {
+            Default = Color3.new(0, 1, 1),
+        })
+    
+        ESPTab:AddToggle("ObjectiveESP", {
+            Text = "Objective",
+            Default = false,
+        }):AddColorPicker("ObjectiveEspColor", {
+            Default = Color3.new(0, 1, 0),
+        })
+    
+        ESPTab:AddToggle("EntityESP", {
+            Text = "Entity",
+            Default = false,
+        }):AddColorPicker("EntityEspColor", {
+            Default = Color3.new(1, 0, 0),
+        })
+    
+        ESPTab:AddToggle("ItemESP", {
+            Text = "Item",
+            Default = false,
+        }):AddColorPicker("ItemEspColor", {
+            Default = Color3.new(1, 0, 1),
+        })
+    
+        ESPTab:AddToggle("ChestESP", {
+            Text = "Chest",
+            Default = false,
+        }):AddColorPicker("ChestEspColor", {
+            Default = Color3.new(1, 1, 0),
+        })
+    
+        ESPTab:AddToggle("PlayerESP", {
+            Text = "Player",
+            Default = false,
+        }):AddColorPicker("PlayerEspColor", {
+            Default = Color3.new(1, 1, 1),
+        })
+    
+        ESPTab:AddToggle("HidingSpotESP", {
+            Text = HidingPlaceName[floor.Value],
+            Default = false,
+        }):AddColorPicker("HidingSpotEspColor", {
+            Default = Color3.new(0, 0.5, 0),
+        })
+    
+        ESPTab:AddToggle("GoldESP", {
+            Text = "Gold",
+            Default = false,
+        }):AddColorPicker("GoldEspColor", {
+            Default = Color3.new(1, 1, 0),
+        })
+    
+        ESPTab:AddToggle("GuidingLightESP", {
+            Text = "Guiding Light",
+            Default = false,
+        }):AddColorPicker("GuidingLightEspColor", {
+            Default = Color3.new(0, 0.5, 1),
+        })
+    end
 
-    ESPGroupBox:AddToggle("ItemESP", {
-        Text = "Item",
-        Default = false,
-    }):AddColorPicker("ItemEspColor", {
-        Default = Color3.new(1, 0, 1),
-    })
+    local ESPSettingsTab = ESPTabBox:AddTab("Settings") do
+        ESPSettingsTab:AddToggle("ESPTracer", {
+            Text = "Enable Tracer",
+            Default = true,
+        })
+    
+        ESPSettingsTab:AddToggle("ESPHighlight", {
+            Text = "Enable Highlight",
+            Default = true,
+        })
+    
+        ESPSettingsTab:AddToggle("ESPDistance", {
+            Text = "Show Distance",
+            Default = true,
+        })
+    
+        ESPSettingsTab:AddSlider("ESPFillTransparency", {
+            Text = "Fill Transparency",
+            Default = 0.75,
+            Min = 0,
+            Max = 1,
+            Rounding = 2
+        })
+    
+        ESPSettingsTab:AddSlider("ESPOutlineTransparency", {
+            Text = "Outline Transparency",
+            Default = 0,
+            Min = 0,
+            Max = 1,
+            Rounding = 2
+        })
+    
+        ESPSettingsTab:AddSlider("ESPTextSize", {
+            Text = "Text Size",
+            Default = 22,
+            Min = 16,
+            Max = 26,
+            Rounding = 0
+        })
 
-    ESPGroupBox:AddToggle("ChestESP", {
-        Text = "Chest",
-        Default = false,
-    }):AddColorPicker("ChestEspColor", {
-        Default = Color3.new(1, 1, 0),
-    })
+        ESPSettingsTab:AddDropdown("ESPTracerStart", {
+            AllowNull = false,
+            Values = {"Bottom", "Center", "Top"},
+            Default = "Bottom",
+            Multi = false,
 
-    ESPGroupBox:AddToggle("PlayerESP", {
-        Text = "Player",
-        Default = false,
-    }):AddColorPicker("PlayerEspColor", {
-        Default = Color3.new(1, 1, 1),
-    })
-
-    ESPGroupBox:AddToggle("HidingSpotESP", {
-        Text = HidingPlaceName[floor.Value],
-        Default = false,
-    }):AddColorPicker("HidingSpotEspColor", {
-        Default = Color3.new(0, 0.5, 0),
-    })
-
-    ESPGroupBox:AddToggle("GoldESP", {
-        Text = "Gold",
-        Default = false,
-    }):AddColorPicker("GoldEspColor", {
-        Default = Color3.new(1, 1, 0),
-    })
-
-    ESPGroupBox:AddToggle("GuidingLightESP", {
-        Text = "Guiding Light",
-        Default = false,
-    }):AddColorPicker("GuidingLightEspColor", {
-        Default = Color3.new(0, 0.5, 1),
-    })
-end
-
-local ESPSettingsGroupBox = Tabs.Visuals:AddLeftGroupbox("ESP Settings") do
-    ESPSettingsGroupBox:AddToggle("ESPHighlight", {
-        Text = "Enable Highlight",
-        Default = true,
-    })
-
-    ESPSettingsGroupBox:AddToggle("ESPDistance", {
-        Text = "Show Distance",
-        Default = true,
-    })
-
-    ESPSettingsGroupBox:AddSlider("ESPFillTransparency", {
-        Text = "Fill Transparency",
-        Default = 0.75,
-        Min = 0,
-        Max = 1,
-        Rounding = 2
-    })
-
-    ESPSettingsGroupBox:AddSlider("ESPOutlineTransparency", {
-        Text = "Outline Transparency",
-        Default = 0,
-        Min = 0,
-        Max = 1,
-        Rounding = 2
-    })
-
-    ESPSettingsGroupBox:AddSlider("ESPTextSize", {
-        Text = "Text Size",
-        Default = 22,
-        Min = 16,
-        Max = 26,
-        Rounding = 0
-    })
+            Text = "Tracer Start Position"
+        })
+    end
 end
 
 local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
