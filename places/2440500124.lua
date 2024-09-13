@@ -1226,11 +1226,13 @@ function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
         position = position:GetPivot().Position
     end
 
-    if not alive then
+    if rootPart then
+        return (rootPart.Position - position).Magnitude
+    elseif camera then
         return (camera.CFrame.Position - position).Magnitude
     end
 
-    return (rootPart.Position - position).Magnitude
+    return 9e9
 end
 
 function Script.Functions.DisableDupe(dupeRoom, value, isSpaceRoom)
