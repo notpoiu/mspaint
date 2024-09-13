@@ -35,6 +35,19 @@ local compatibility_mode = false do
         game:GetService("Lighting")
         assert(method == "GetService", "Did not get the correct method (GetService)")
     end)
+
+    test("firesignal", function()
+        local event = Instance.new("BindableEvent")
+        
+        local fired = false
+        event.Event:Connect(function(value) fired = value end)
+
+        firesignal(event.Event, true)
+        task.wait(.05)
+        event:Destroy()
+        
+        assert(fired == true, "Failed to fire a BindableEvent")
+    end)
 end
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/" .. (compatibility_mode and "solara" or "main") .. "/places/" .. game.GameId .. ".lua"))()

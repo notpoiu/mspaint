@@ -13,6 +13,11 @@ local PathfindingService = game:GetService("PathfindingService")
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
+local isnetowner = isnetworkowner or function(part: BasePart)
+    if not part then return false end
+
+    return part.ReceiveAge == 0
+end
 
 local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
@@ -108,9 +113,8 @@ local gameData = ReplicatedStorage:WaitForChild("GameData")
 local floor = gameData:WaitForChild("Floor")
 local latestRoom = gameData:WaitForChild("LatestRoom")
 
-local floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
-
-local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
+local floorReplicated
+local remotesFolder
 
 local camera = workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
@@ -126,7 +130,7 @@ local controlModule = require(playerScripts:WaitForChild("PlayerModule"):WaitFor
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local alive = localPlayer:GetAttribute("Alive")
 local humanoid: Humanoid
-local rootPart
+local rootPart: BasePart
 local collision
 local collisionClone
 
@@ -138,6 +142,13 @@ local isFools = floor.Value == "Fools"
 
 local lastSpeed = 0
 local bypassed = false
+
+if not isFools then
+    floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
+    remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
+else
+    remotesFolder = ReplicatedStorage:WaitForChild("EntityInfo")
+end
 
 type ESP = {
     Color: Color3,
@@ -835,9 +846,28 @@ function Script.Functions.ChildCheck(child, includeESP)
             Script.Functions.GoldESP(child)
         end
 
-        if isHotel and (child.Name == "ChandelierObstruction" or child.Name == "Seek_Arm") and Toggles.AntiSeekObstructions.Value then
+        if (isHotel or isFools) and (child.Name == "ChandelierObstruction" or child.Name == "Seek_Arm") and Toggles.AntiSeekObstructions.Value then
             for i,v in pairs(child:GetDescendants()) do
                 if v:IsA("BasePart") then v.CanTouch = false end
+            end
+        end
+
+        if isFools then
+            if Toggles.FigureGodmodeFools.Value and child.Name == "FigureRagdoll" then
+                for i, v in pairs(child:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        if not v:GetAttribute("Clip") then v:SetAttribute("Clip", v.CanCollide) end
+
+                        v.CanTouch = false
+
+                        -- woudn't want figure to just dip into the ground
+                        task.spawn(function()
+                            repeat task.wait() until (latestRoom.Value == 50 or latestRoom.Value == 100)
+                            task.wait(5)
+                            v.CanCollide = false
+                        end)
+                    end
+                end
             end
         end
     elseif child:IsA("BasePart") then        
@@ -1037,6 +1067,18 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 collisionClone:Destroy()
             end
         end)
+
+        if isFools then
+            local HoldingAnimation = Instance.new("Animation") do
+                HoldingAnimation.AnimationId = "rbxassetid://10479585177"
+                Script.Temp.ItemHoldTrack = humanoid:LoadAnimation(HoldingAnimation)
+            end
+
+            local ThrowAnimation = Instance.new("Animation") do
+                ThrowAnimation.AnimationId = "rbxassetid://10482563149"
+                Script.Temp.ItemThrowTrack = humanoid:LoadAnimation(ThrowAnimation)
+            end
+        end
     end
 
     rootPart = character:WaitForChild("HumanoidRootPart")
@@ -1046,6 +1088,13 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         flyBody.MaxForce = Vector3.one * 9e9
 
         Script.Temp.FlyBody = flyBody
+
+        if Toggles.NoAccel.Value then
+            Script.Temp.NoAccelValue = rootPart.CustomPhysicalProperties.Density
+            
+            local existingProperties = rootPart.CustomPhysicalProperties
+            rootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
+        end
     end
 
     collision = character:WaitForChild("Collision")
@@ -1241,13 +1290,20 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
         Rounding = 1
     })
 
-    PlayerGroupBox:AddToggle("Noclip", {
-        Text = "Noclip",
+    PlayerGroupBox:AddToggle("NoAccel", {
+        Text = "No Acceleration",
         Default = false
     })
 
     PlayerGroupBox:AddToggle("InstaInteract", {
         Text = "Instant Interact",
+        Default = false
+    })
+
+    PlayerGroupBox:AddDivider()
+
+    PlayerGroupBox:AddToggle("Noclip", {
+        Text = "Noclip",
         Default = false
     })
 
@@ -2163,6 +2219,192 @@ task.spawn(function()
                 moveToCleanup()
             end
         end)
+    elseif isFools then
+        local Fools_TrollingGroupBox = Tabs.Floor:AddLeftGroupbox("Trolling") do
+            Fools_TrollingGroupBox:AddToggle("GrabBananaJeffToggle",{
+                Text = "Grab Banana / Jeff",
+                Default = false
+            }):AddKeyPicker("GrabBananaJeff", {
+                Default = "H",
+                Mode = "Hold",
+                Text = "Grab Banana / Jeff",
+            })
+        
+            Fools_TrollingGroupBox:AddLabel("Throw"):AddKeyPicker("ThrowBananaJeff", {
+                Default = "G",
+                Mode = "Hold",
+                Text = "Throw"
+            })
+
+            Fools_TrollingGroupBox:AddSlider("ThrowStrength", {
+                Text = "Throw Strength",
+                Default = 1,
+                Min = 1,
+                Max = 10,
+                Rounding = 1,
+                Compact = true
+            })
+
+            function Script.Functions.ThrowBananaJeff()
+                local target = Script.Temp.HoldingItem
+
+                Script.Temp.ItemHoldTrack:Stop()
+                Script.Temp.ItemThrowTrack:Play()
+
+                task.wait(0.35)
+
+                if target:FindFirstChildWhichIsA("BodyGyro") then
+                    target:FindFirstChildWhichIsA("BodyGyro"):Destroy()
+                end
+
+                local velocity = localPlayer:GetMouse().Hit.LookVector * 0.5 * 200 * Options.ThrowStrength.Value
+                local spawnPos = camera.CFrame:ToWorldSpace(CFrame.new(0,0,-3) * CFrame.lookAt(Vector3.new(0, 0, 0), camera.CFrame.LookVector))
+                
+                target.CFrame = spawnPos
+                target.Velocity = velocity
+
+                if target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
+                    for _,i in ipairs(target:FindFirstAncestorWhichIsA("Model"):GetDescendants()) do
+                        if i:IsA("BasePart") then
+                            i.CanTouch = not Toggles.AntiJeffClient.Value
+                            i.CanCollide = i:GetAttribute("Clip") or true
+                        end
+                    end
+                else
+                    target.CanTouch = not Toggles.AntiBananaPeel.Value
+                    target.CanCollide = target:GetAttribute("Clip") or true
+                end
+
+                Script.Temp.HoldingItem = nil
+            end
+        end
+
+        local Fools_AntiEntityGroupBox = Tabs.Floor:AddRightGroupbox("Anti-Entity") do
+            Fools_AntiEntityGroupBox:AddToggle("AntiSeekObstructions", {
+                Text = "Anti-Seek Obstructions",
+                Default = false
+            })
+
+            Fools_AntiEntityGroupBox:AddToggle("AntiBananaPeel", {
+                Text = "Anti-Banana",
+                Default = false
+            })
+
+            Fools_AntiEntityGroupBox:AddToggle("AntiJeffClient", {
+                Text = "Anti-Jeff",
+                Default = false
+            })
+        end
+
+        local Fools_BypassGroupBox = Tabs.Floor:AddRightGroupbox("Bypass") do
+            Fools_BypassGroupBox:AddToggle("InfRevives", {
+                Text = "Infinite Revives",
+                Default = false
+            })
+
+            Fools_BypassGroupBox:AddToggle("AntiJeffServer", {
+                Text = "Anti-Jeff (FE)",
+                Default = false
+            })
+
+            Fools_BypassGroupBox:AddToggle("GodmodeNoclipBypassFools", {
+                Text = "Godmode Noclip Bypass",
+                Default = false
+            })
+
+            Fools_BypassGroupBox:AddToggle("FigureGodmodeFools", {
+                Text = "Figure Godmode",
+                Default = false
+            })
+        end
+
+        Toggles.AntiSeekObstructions:OnChanged(function(value)
+            for i, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+                if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
+                    for _, obj in pairs(v:GetDescendants()) do
+                        if v:IsA("BasePart") then v.CanTouch = not value end
+                    end
+                end
+            end
+        end)
+        
+        Toggles.AntiBananaPeel:OnChanged(function(value)
+            for _, peel in pairs(workspace:GetChildren()) do
+                if peel.Name == "BananaPeel" then
+                    peel.CanTouch = not value
+                end
+            end
+        end)
+
+        Toggles.AntiJeffClient:OnChanged(function(value)
+            for _, jeff in pairs(workspace:GetChildren()) do
+                if jeff:IsA("Model") and jeff.Name == "JeffTheKiller" then
+                    for i, v in pairs(jeff:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            v.CanTouch = not value
+                        end
+                    end
+                end
+            end
+        end)
+
+        Toggles.AntiJeffServer:OnChanged(function(value)
+            if value then
+                for _, jeff in pairs(workspace:GetChildren()) do
+                    if jeff:IsA("Model") and jeff.Name == "JeffTheKiller" then
+                        task.spawn(function()
+                            repeat task.wait() until isnetowner(jeff.PrimaryPart)
+                            jeff:FindFirstChildOfClass("Humanoid").Health = 0
+                        end)
+                    end
+                end
+            end
+        end)
+
+        Toggles.InfRevives:OnChanged(function(value)
+            if value and not localPlayer:GetAttribute("Alive") then
+                remotesFolder.Revive:FireServer()
+            end
+        end)
+
+        Toggles.GodmodeNoclipBypassFools:OnChanged(function(value)
+            if value and humanoid and collision then
+                humanoid.HipHeight = 3.01
+                task.wait()
+                collision.Position = collision.Position - Vector3.new(0, 8, 0)
+                task.wait()
+                humanoid.HipHeight = 3
+                
+                -- don't want to put collision up when you load the script 
+                -- im sorry deivid
+                task.spawn(function()
+                    repeat task.wait() until not Toggles.GodmodeNoclipBypassFools.Value
+                    humanoid.HipHeight = 3.01
+                    task.wait()
+                    collision.Position = collision.Position + Vector3.new(0, 8, 0)
+                    task.wait()
+                    humanoid.HipHeight = 3
+                end)
+            end
+        end)
+
+        Toggles.FigureGodmodeFools:OnChanged(function(value)
+            if value and not Toggles.GodmodeNoclipBypassFools.Value then Toggles.GodmodeNoclipBypassFools:SetValue(true); Script.Functions.Alert("Godmode/Noclip Bypass is required to use figure godmode") end
+            if latestRoom.Value ~= 50 or latestRoom.Value ~= 100 then return end
+
+            for _, figure in pairs(workspace.CurrentRooms:GetDescendants()) do
+                if figure:IsA("Model") and figure.Name == "FigureRagdoll" then
+                    for i, v in pairs(figure:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            if not v:GetAttribute("Clip") then v:SetAttribute("Clip", v.CanCollide) end
+
+                            v.CanTouch = not value
+                            v.CanCollide = not value
+                        end
+                    end
+                end
+            end
+        end)
     end
 end)
 
@@ -2177,6 +2419,20 @@ Toggles.InstaInteract:OnChanged(function(value)
                 prompt.HoldDuration = prompt:GetAttribute("Hold") or 0
             end
         end
+    end
+end)
+
+Toggles.NoAccel:OnChanged(function(value)
+    if not rootPart then return end
+
+    if value then
+        Script.Temp.NoAccelValue = rootPart.CustomPhysicalProperties.Density
+        
+        local existingProperties = rootPart.CustomPhysicalProperties
+        rootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
+    else
+        local existingProperties = rootPart.CustomPhysicalProperties
+        rootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
     end
 end)
 
@@ -2610,6 +2866,10 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 if child:IsDescendantOf(workspace) then
                     local entityName = Script.Functions.GetShortName(child.Name)
 
+                    if isFools and child.Name == "RushMoving" then
+                        entityName = child.PrimaryPart.Name:gsub("New", "")
+                    end
+
                     if Toggles.EntityESP.Value then
                         Script.Functions.EntityESP(child)  
                     end
@@ -2622,6 +2882,28 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
         elseif EntityNotify[child.Name] and Toggles.NotifyEntity.Value then
             Script.Functions.Alert(EntityNotify[child.Name])
         end
+
+        if isFools then
+            if Toggles.AntiBananaPeel.Value and child.Name == "BananaPeel" then
+                child.CanTouch = false
+            end
+
+            if Toggles.AntiJeffClient.Value and child.Name == "JeffTheKiller" then
+                for i, v in pairs(child:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanTouch = false
+                    end
+                end
+            end
+
+            if Toggles.AntiJeffServer.Value and child.Name == "JeffTheKiller" then
+                task.spawn(function()
+                    repeat task.wait() until isnetowner(child.PrimaryPart)
+                    child:FindFirstChildOfClass("Humanoid").Health = 0
+                end)
+            end
+        end
+
     end)
 end))
 
@@ -2664,6 +2946,12 @@ end))
 
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(function()
     alive = localPlayer:GetAttribute("Alive")
+
+    if not alive and isFools and Toggles.InfRevives.Value then
+        task.delay(1.25, function()
+            remotesFolder.Revive:FireServer()
+        end)
+    end
 end))
 
 Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
@@ -2705,6 +2993,24 @@ Library:GiveSignal(Lighting:GetPropertyChangedSignal("Ambient"):Connect(function
     end
 end))
 
+Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.UserInputType == Enum.UserInputType.Touch then
+        if Script.Temp.TouchTarget then
+            return Script.Functions.ThrowBananaJeff()
+        end
+
+        local touchPos = input.Position
+        local ray = workspace.CurrentCamera:ViewportPointToRay(touchPos.X, touchPos.Y)
+        local result = workspace:Raycast(ray.Origin, ray.Direction * 500, RaycastParams.new())
+            
+        if result then
+            Script.Temp.TouchTarget = result.Instance
+        end
+    end
+end))
+
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
     if not Toggles.ShowCustomCursor.Value and Library.Toggled then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
@@ -2721,10 +3027,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
+        local speedBoostAssignObj = isFools and humanoid or character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
             character:SetAttribute("SpeedBoostBehind", 50)
         else
-            character:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
+            speedBoostAssignObj:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
         end
 
         if rootPart then
@@ -2772,50 +3079,115 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if isMines and Toggles.AutoAnchorSolver.Value and latestRoom.Value == 50 and mainUI.MainFrame:FindFirstChild("AnchorHintFrame") then
-            local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
-                return prompt.Name == "ActivateEventPrompt" and prompt.Parent:IsA("Model") and prompt.Parent.Name == "MinesAnchor" and not prompt.Parent:GetAttribute("Activated")
-            end)
-
-            local CurrentGameState = {
-                DesignatedAnchor = mainUI.MainFrame.AnchorHintFrame.AnchorCode.Text,
-                AnchorCode = mainUI.MainFrame.AnchorHintFrame.Code.Text
-            }
-
-            for _, prompt in pairs(prompts) do
-                task.spawn(function()
-                    local Anchor = prompt.Parent
-                    local CurrentAnchor = Anchor.Sign.TextLabel.Text
-
-                    if not (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance) then return end
-                    if CurrentAnchor ~= CurrentGameState.DesignatedAnchor then return end
-
-                    local result = Anchor:FindFirstChildOfClass("RemoteFunction"):InvokeServer(CurrentGameState.AnchorCode)
-                    if result then
-                        Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
-                    end
-                end)
-            end
-        end
-
         if isMines then
+            if Toggles.AutoAnchorSolver.Value and latestRoom.Value == 50 and mainUI.MainFrame:FindFirstChild("AnchorHintFrame") then
+                local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
+                    return prompt.Name == "ActivateEventPrompt" and prompt.Parent:IsA("Model") and prompt.Parent.Name == "MinesAnchor" and not prompt.Parent:GetAttribute("Activated")
+                end)
+
+                local CurrentGameState = {
+                    DesignatedAnchor = mainUI.MainFrame.AnchorHintFrame.AnchorCode.Text,
+                    AnchorCode = mainUI.MainFrame.AnchorHintFrame.Code.Text
+                }
+
+                for _, prompt in pairs(prompts) do
+                    task.spawn(function()
+                        local Anchor = prompt.Parent
+                        local CurrentAnchor = Anchor.Sign.TextLabel.Text
+
+                        if not (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance) then return end
+                        if CurrentAnchor ~= CurrentGameState.DesignatedAnchor then return end
+
+                        local result = Anchor:FindFirstChildOfClass("RemoteFunction"):InvokeServer(CurrentGameState.AnchorCode)
+                        if result then
+                            Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
+                        end
+                    end)
+                end
+            end
+            
             local isEnabledMobile = (Toggles.MinecartSpam.Value and Library.IsMobile)
             local isEnabledPC = (Options.MinecartSpamKey:GetState() and Toggles.MinecartSpam.Value and not Library.IsMobile)
-
+    
             if isEnabledMobile or isEnabledPC then
                 local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
                     return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
                 end)
-
+    
                 if prompt then
                     fireproximityprompt(prompt)
                 end
             end
         end
 
+        if isFools then
+            local HoldingItem = Script.Temp.HoldingItem
+            if HoldingItem and not isnetowner(HoldingItem) then
+                Script.Functions.Alert("You are no longer holding the item due to network owner change!", 5)
+                Script.Temp.HoldingItem = nil
+            end
+    
+            if HoldingItem and Toggles.GrabBananaJeffToggle.Value then
+                if HoldingItem:FindFirstChildOfClass("BodyGyro") then
+                    HoldingItem.CanTouch = false
+                    HoldingItem.CFrame = character.RightHand.CFrame * CFrame.Angles(math.rad(-90), 0, 0)
+                end
+            end
+            
+            local isGrabbing = Library.IsMobile and Toggles.GrabBananaJeffToggle.Value or (Options.GrabBananaJeff:GetState() and Toggles.GrabBananaJeffToggle.Value)
+            local isThrowing = Options.ThrowBananaJeff:GetState()
+            
+            if isThrowing and isnetowner(HoldingItem) then
+                Script.Functions.ThrowBananaJeff()
+            end
+            
+            local target = Library.IsMobile and Script.Temp.TouchTarget or localPlayer:GetMouse().Target
+            
+            if not target then return end
+            if isGrabbing and isnetowner(target) then
+                if target.Name == "BananaPeel" then
+                    Script.Temp.ItemHoldTrack:Play()
+
+                    if not target:FindFirstChildOfClass("BodyGyro") then
+                        Instance.new("BodyGyro", target)
+                    end
+
+                    if not target:GetAttribute("Clip") then target:SetAttribute("Clip", target.CanCollide) end
+
+                    target.CanTouch = false
+                    target.CanCollide = false
+
+                    Script.Temp.HoldingItem = target
+                elseif target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
+                    Script.Temp.ItemHoldTrack:Play()
+
+                    local jeff = target:FindFirstAncestorWhichIsA("Model")
+
+                    for _, i in ipairs(jeff:GetDescendants()) do
+                        if i:IsA("BasePart") then
+                            if not i:GetAttribute("Clip") then i:SetAttribute("Clip", target.CanCollide) end
+
+                            i.CanTouch = false
+                            i.CanCollide = false
+                        end
+                    end
+
+                    if not jeff.PrimaryPart:FindFirstChildOfClass("BodyGyro") then
+                        Instance.new("BodyGyro", jeff.PrimaryPart)
+                    end
+
+                    Script.Temp.HoldingItem = jeff.PrimaryPart
+                end
+            end
+        end
+
         if Toggles.AntiEyes.Value and (workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("BackdoorLookman")) then
-            -- lsplash meanie for removing other args in motorreplication
-            remotesFolder.MotorReplication:FireServer(-650)
+            if not isFools then
+                -- lsplash meanie for removing other args in motorreplication
+                remotesFolder.MotorReplication:FireServer(-650)
+            else
+                remotesFolder.MotorReplication:FireServer(0, -90, 0, false)
+            end
         end
     end
 
@@ -2838,7 +3210,8 @@ Library:OnUnload(function()
     if mtHook then hookmetamethod(game, "__namecall", mtHook) end
 
     if character then
-        character:SetAttribute("SpeedBoostBehind", 0)
+        local speedBoostAssignObj = isFools and humanoid or character
+        speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
     end
 
     if alive then
@@ -2865,6 +3238,11 @@ Library:OnUnload(function()
 
     if mainGameSrc then
         mainGameSrc.fovtarget = 70
+    end
+
+    if rootPart then
+        local existingProperties = rootPart.CustomPhysicalProperties
+        rootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
     end
 
     if isBackdoor then
