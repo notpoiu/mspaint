@@ -1586,8 +1586,6 @@ end
 
 --// Visuals \\--
 
-
-
 local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     local ESPTab = ESPTabBox:AddTab("ESP") do
         ESPTab:AddToggle("DoorESP", {
