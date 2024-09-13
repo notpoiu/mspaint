@@ -2307,8 +2307,10 @@ task.spawn(function()
                 Default = false
             })
 
+            Fools_BypassGroupBox:AddDivider()
+
             Fools_BypassGroupBox:AddToggle("GodmodeNoclipBypassFools", {
-                Text = "Godmode Noclip Bypass",
+                Text = "Godmode",
                 Default = false
             })
 
