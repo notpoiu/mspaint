@@ -1588,6 +1588,11 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
         Mode = Library.IsMobile and "Toggle" or "Hold",
         SyncToggleState = Library.IsMobile
     })
+
+    TrollingGroupBox:AddToggle("UpsideDown", {
+        Text = "Upside Down",
+        Default = false
+    })
 end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
@@ -2560,6 +2565,13 @@ Toggles.AntiSnare:OnChanged(function(value)
             end
         end
     end
+end)
+
+Toggles.UpsideDown:OnChanged(function(value)
+    if not collision then return end
+    
+    local rotation = collision.Rotation
+    collision.Rotation = value and Vector3.new(rotation.X, rotation.Y, 90) or Vector3.new(rotation.X, rotation.Y, -90)
 end)
 
 Toggles.SpeedBypass:OnChanged(function(value)
