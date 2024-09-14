@@ -3094,23 +3094,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
-        if Toggles.SpamOtherTools.Value then
-            if Library.IsMobile or (not Library.IsMobile and Options.SpamOtherTools:GetState()) then
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player == localPlayer then continue end
-                    
-                    for _, tool in pairs(player.Backpack:GetChildren()) do
-                        tool:FindFirstChildWhichIsA("RemoteEvent"):FireServer()
-                    end
-                    
-                    local toolRemote = player.Character:FindFirstChild("Remote", true)
-                    if toolRemote then
-                        toolRemote:FireServer()
-                    end
-                end
-            end
-        end
-
         local speedBoostAssignObj = isFools and humanoid or character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
             character:SetAttribute("SpeedBoostBehind", 50)
@@ -3146,9 +3129,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        local isEnabledMobile = (Toggles.AutoInteract.Value and Library.IsMobile)
-        local isEnabledPC = (Options.AutoInteractKey:GetState() and Toggles.AutoInteract.Value and not Library.IsMobile)
-        if isEnabledMobile or isEnabledPC then
+        if Toggles.AutoInteract.Value and (Library.IsMobile or Options.AutoInteractKey:GetState()) then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
@@ -3160,6 +3141,21 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                         fireproximityprompt(prompt)
                     end
                 end)
+            end
+        end
+
+        if Toggles.SpamOtherTools.Value and  (Library.IsMobile or Options.SpamOtherTools:GetState()) then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player == localPlayer then continue end
+                
+                for _, tool in pairs(player.Backpack:GetChildren()) do
+                    tool:FindFirstChildOfClass("RemoteEvent"):FireServer()
+                end
+                
+                local toolRemote = player.Character:FindFirstChild("Remote", true)
+                if toolRemote then
+                    toolRemote:FireServer()
+                end
             end
         end
 
