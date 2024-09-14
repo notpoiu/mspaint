@@ -1041,7 +1041,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         Script.Connections["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
             if not character:GetAttribute("Hiding") then return end
     
-            if Toggles.HidingTransparency.Value then
+            if Toggles.TranslucentHidingSpot.Value then
                 for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
                     if not obj:IsA("ObjectValue") and obj.Name ~= "HiddenPlayer" then continue end
     
@@ -1060,7 +1060,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                                     task.wait()
                                     part.Transparency = Options.HidingTransparency.Value
                                 end
-                            until not character:GetAttribute("Hiding") or not Toggles.HidingTransparency.Value
+                            until not character:GetAttribute("Hiding") or not Toggles.TranslucentHidingSpot.Value
                             
                             for _, part in pairs(affectedParts) do
                                 part.Transparency = 0
@@ -1768,7 +1768,7 @@ local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
         Default = false,
     })
 
-    SelfGroupBox:AddToggle("HidingTransparency", {
+    SelfGroupBox:AddToggle("TranslucentHidingSpot", {
         Text = "Translucent " .. HidingPlaceName[floor.Value],
         Default = false
     })
@@ -2812,6 +2812,7 @@ Toggles.AntiLag:OnChanged(function(value)
 end)
 
 Toggles.HidingTransparency:OnChanged(function(value)
+Toggles.TranslucentHidingSpot:OnChanged(function(value)
     if value and character:GetAttribute("Hiding") then
         for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
             if not obj:IsA("ObjectValue") and obj.Name ~= "HiddenPlayer" then continue end
@@ -2831,7 +2832,7 @@ Toggles.HidingTransparency:OnChanged(function(value)
                             task.wait()
                             part.Transparency = Options.HidingTransparency.Value
                         end
-                    until not character:GetAttribute("Hiding") or not Toggles.HidingTransparency.Value
+                    until not character:GetAttribute("Hiding") or not Toggles.TranslucentHidingSpot.Value
                     
                     for _, v in pairs(affectedParts) do
                         v.Transparency = 0
