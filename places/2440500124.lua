@@ -1578,6 +1578,18 @@ local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
     })
 end
 
+local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
+    TrollingGroupBox:AddToggle("SpamOtherTools", {
+        Text = "Spam Other Tools",
+        Default = false
+    }):AddKeyPicker("SpamOtherTools", {
+        Default = "V",
+        Text = "Spam Other Tools",
+        Mode = Library.IsMobile and "Toggle" or "Hold",
+        SyncToggleState = Library.IsMobile
+    })
+end
+
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
@@ -3082,6 +3094,20 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
+        if Toggles.SpamOtherTools.Value then
+            if Library.IsMobile or (not Library.IsMobile and Options.SpamOtherTools:GetState()) then
+                for i, player in pairs(Players:GetPlayers()) do
+                    if player == localPlayer then continue end
+                    
+                    for i, tool in pairs(player.Backpack:GetChildren()) do
+                        tool:FindFirstChildWhichIsA("RemoteEvent"):FireServer()
+                    end
+                    
+                    player.Character:FindFirstChildWhichIsA("Tool"):FindFirstChildWhichIsA("RemoteEvent"):FireServer()
+                end
+            end
+        end
+
         local speedBoostAssignObj = isFools and humanoid or character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
             character:SetAttribute("SpeedBoostBehind", 50)
