@@ -239,91 +239,7 @@ end
 --// Functions \\--
 
 getgenv()._internal_unload_mspaint = function()
-    -- disconnect hook
-    if mtHook then hookmetamethod(game, "__namecall", mtHook) end
-
-    if character then
-        local speedBoostAssignObj = isFools and humanoid or character
-        speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
-    end
-
-    if alive then
-        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
-    else
-        Lighting.Ambient = Color3.new(0, 0, 0)
-    end
-
-    if entityModules then
-        local module = entityModules:FindFirstChild("_Shade")
-
-        if module then
-            module.Name = "Shade"
-        end
-    end
-
-    if mainGame then
-        local module = mainGame:FindFirstChild("_Screech", true)
-
-        if module then
-            module.Name = "Screech"
-        end
-    end
-
-    if mainGameSrc then
-        mainGameSrc.fovtarget = 70
-    end
-
-    if rootPart then
-        local existingProperties = rootPart.CustomPhysicalProperties
-        rootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
-    end
-
-    if isBackdoor then
-        local clientRemote = floorReplicated.ClientRemote
-        local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
-
-        if internal_temp_mspaint and #internal_temp_mspaint:GetChildren() ~= 0 then
-            for i,v in pairs(internal_temp_mspaint:GetChildren()) do
-                v.Parent = clientRemote.Haste
-            end
-        end
-
-        internal_temp_mspaint:Destroy()
-    end
-
-    if isRooms then
-        if workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
-            workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
-        end
-    end
-
-    if _mspaint_custom_captions then
-        _mspaint_custom_captions:Destroy()
-    end
-
-    if collision then
-        collision.CanCollide = not mainGameSrc.crouching
-        if collision:FindFirstChild("CollisionCrouch") then
-            collision.CollisionCrouch.CanCollide = mainGameSrc.crouching
-        end
-    end
-
-    if collisionClone then collisionClone:Destroy() end
-    if Script.Temp.FlyBody then Script.Temp.FlyBody:Destroy() end
-
-    for _, espType in pairs(Script.ESPTable) do
-        for _, esp in pairs(espType) do
-            esp.Destroy()
-        end
-    end
-
-    for _, connection in pairs(Script.Connections) do
-        connection:Disconnect()
-    end
-
-	print("Unloaded!")
-	Library.Unloaded = true
-    getgenv().mspaint_loaded = false
+    Library:Unload()
 end
 
 function Script.Functions.IsPromptInRange(prompt: ProximityPrompt)
@@ -3436,7 +3352,91 @@ task.spawn(Script.Functions.SetupCharacterConnection, character)
 --// Library Load \\--
 
 Library:OnUnload(function()
-    getgenv()._internal_unload_mspaint()
+    -- disconnect hook
+    if mtHook then hookmetamethod(game, "__namecall", mtHook) end
+
+    if character then
+        local speedBoostAssignObj = isFools and humanoid or character
+        speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
+    end
+
+    if alive then
+        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+    else
+        Lighting.Ambient = Color3.new(0, 0, 0)
+    end
+
+    if entityModules then
+        local module = entityModules:FindFirstChild("_Shade")
+
+        if module then
+            module.Name = "Shade"
+        end
+    end
+
+    if mainGame then
+        local module = mainGame:FindFirstChild("_Screech", true)
+
+        if module then
+            module.Name = "Screech"
+        end
+    end
+
+    if mainGameSrc then
+        mainGameSrc.fovtarget = 70
+    end
+
+    if rootPart then
+        local existingProperties = rootPart.CustomPhysicalProperties
+        rootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
+    end
+
+    if isBackdoor then
+        local clientRemote = floorReplicated.ClientRemote
+        local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
+
+        if internal_temp_mspaint and #internal_temp_mspaint:GetChildren() ~= 0 then
+            for i,v in pairs(internal_temp_mspaint:GetChildren()) do
+                v.Parent = clientRemote.Haste
+            end
+        end
+
+        internal_temp_mspaint:Destroy()
+    end
+
+    if isRooms then
+        if workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
+            workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
+        end
+    end
+
+    if _mspaint_custom_captions then
+        _mspaint_custom_captions:Destroy()
+    end
+
+    if collision then
+        collision.CanCollide = not mainGameSrc.crouching
+        if collision:FindFirstChild("CollisionCrouch") then
+            collision.CollisionCrouch.CanCollide = mainGameSrc.crouching
+        end
+    end
+
+    if collisionClone then collisionClone:Destroy() end
+    if Script.Temp.FlyBody then Script.Temp.FlyBody:Destroy() end
+
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Destroy()
+        end
+    end
+
+    for _, connection in pairs(Script.Connections) do
+        connection:Disconnect()
+    end
+
+	print("Unloaded!")
+	Library.Unloaded = true
+    getgenv().mspaint_loaded = false
 end)
 
 local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu")
