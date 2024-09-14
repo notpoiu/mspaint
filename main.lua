@@ -42,8 +42,10 @@ local compatibility_mode = false do
         local fired = false
         event.Event:Connect(function(value) fired = value end)
 
-        firesignal(event.Event, true)
-        task.wait(.05)
+        if firesignal then
+            firesignal(event.Event, true)
+            task.wait(.05)
+        end
         
         if not fired then
             for _, connection in pairs(getconnections(event.Event)) do
