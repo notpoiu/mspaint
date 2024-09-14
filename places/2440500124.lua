@@ -2162,7 +2162,7 @@ task.spawn(function()
         Toggles.AutoRooms:OnChanged(function(value)
             local function log(message: string, time_arg: number | Instance | nil)
                 if Toggles.AutoRoomsDebug.Value then
-                    Script.Functions.Alert(message, time_arg)
+                    Library:Notify(message, time_arg or 5)
                 end
             end
 
@@ -2177,7 +2177,12 @@ task.spawn(function()
 
             if value then
                 Toggles.AntiA90:SetValue(true)
-                Toggles.Noclip:SetValue(true)
+
+                if Library.IsMobile then
+                    localPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.Scriptable
+                else
+                    localPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
+                end
 
                 local function doAutoRooms()
                     local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
@@ -2188,12 +2193,12 @@ task.spawn(function()
                         AgentCanJump = false,
                         AgentCanClimb = false,
                         WaypointSpacing = 2,
-                        AgentRadius = 1.5
+                        AgentRadius = 2.5
                     })
 
                     log("Computing Path to " .. pathfindingGoal.Parent.Name .. "...") 
 
-                    path:ComputeAsync(rootPart.Position, pathfindingGoal.Position)
+                    path:ComputeAsync(rootPart.Position - Vector3.new(0, 2, 0), pathfindingGoal.Position)
                     local waypoints = path:GetWaypoints()
 
                     if path.Status == Enum.PathStatus.Success then
@@ -2223,12 +2228,12 @@ task.spawn(function()
                                 if not moveToFinished or not Toggles.AutoRooms.Value then
                                     humanoid:MoveTo(waypoint.Position)
                                     
-                                    task.delay(2.5, function()
+                                    task.delay(1.5, function()
                                         if not Toggles.AutoRooms.Value then return moveToCleanup() end
                                         if Library.Unloaded then return moveToCleanup() end
                                         if moveToFinished then return end
 
-                                        repeat task.wait() until not character:GetAttribute("Hiding")
+                                        repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
 
                                         Script.Functions.Alert("Seems like you are stuck, trying to recalculate path...", 5)
                                         doAutoRooms()
@@ -2238,7 +2243,7 @@ task.spawn(function()
                             end
 
                             moveToWaypoint()
-                            repeat task.wait() until moveToFinished or not Toggles.AutoRooms.Value or recalculate
+                            repeat task.wait() until moveToFinished or not Toggles.AutoRooms.Value or recalculate or Library.Unloaded
 
                             if recalculate then
                                 break
@@ -2261,11 +2266,21 @@ task.spawn(function()
                 end
 
                 -- Movement
-                while Toggles.AutoRooms.Value do
+                while Toggles.AutoRooms.Value and not Library.Unloaded do
+                    if latestRoom.Value == 1000 then
+                        Script.Functions.Alert("You have reached A-1000")
+                        break
+                    end
+
                     doAutoRooms()
                 end
             else
                 _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                if Library.IsMobile then
+                    localPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.UserChoice
+                else
+                    localPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.UserChoice
+                end
                 moveToCleanup()
             end
         end)
