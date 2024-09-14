@@ -519,10 +519,12 @@ function Script.Functions.ItemESP(item)
 end
 
 function Script.Functions.ChestESP(chest)
+    local locked = chest:GetAttribute("Locked")
+
     Script.Functions.ESP({
         Type = "Chest",
         Object = chest,
-        Text = "Chest",
+        Text = locked and "Chest [Locked]" or "Chest",
         Color = Options.ChestEspColor.Value
     })
 end
