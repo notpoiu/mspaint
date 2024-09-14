@@ -3103,7 +3103,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                         tool:FindFirstChildWhichIsA("RemoteEvent"):FireServer()
                     end
                     
-                    player.Character:FindFirstChildWhichIsA("Tool"):FindFirstChildWhichIsA("RemoteEvent"):FireServer()
+                    local toolRemote = player.Character:FindFirstChild("Remote", true)
+                    if toolRemote then
+                        toolRemote:FireServer()
+                    end
                 end
             end
         end
