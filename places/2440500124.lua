@@ -3096,10 +3096,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     if character then
         if Toggles.SpamOtherTools.Value then
             if Library.IsMobile or (not Library.IsMobile and Options.SpamOtherTools:GetState()) then
-                for i, player in pairs(Players:GetPlayers()) do
+                for _, player in pairs(Players:GetPlayers()) do
                     if player == localPlayer then continue end
                     
-                    for i, tool in pairs(player.Backpack:GetChildren()) do
+                    for _, tool in pairs(player.Backpack:GetChildren()) do
                         tool:FindFirstChildWhichIsA("RemoteEvent"):FireServer()
                     end
                     
