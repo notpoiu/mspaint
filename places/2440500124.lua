@@ -876,7 +876,6 @@ function Script.Functions.ChildCheck(child, includeESP)
         if child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
             child:WaitForChild("Hitbox", 5).CanTouch = false
         end
-
         if (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
             Script.Functions.DisableDupe(child, true, child:GetAttribute("LoadModule") == "SpaceSideroom")
         end
@@ -1711,7 +1710,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     end
 end
 
-local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
+local AmbientGroupBox = Tabs.Visuals:AddLeftGroupbox("Ambient") do
     AmbientGroupBox:AddToggle("Fullbright", {
         Text = "Fullbright",
         Default = false,
@@ -1765,6 +1764,11 @@ local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
     
     SelfGroupBox:AddToggle("NoCamShake", {
         Text = "No Camera Shake",
+        Default = false,
+    })
+
+    SelfGroupBox:AddToggle("NoCutscenes", {
+        Text = "No Cutscenes",
         Default = false,
     })
 
@@ -2811,7 +2815,17 @@ Toggles.AntiLag:OnChanged(function(value)
     Lighting.GlobalShadows = not value
 end)
 
-Toggles.HidingTransparency:OnChanged(function(value)
+Toggles.NoCutscenes:OnChanged(function(value)
+    if not mainGame then return end
+
+    local cutscenes = mainGame:FindFirstChild("Cutscenes", true)
+    if cutscenes then
+        for _, cutscene in pairs(cutscenes:GetChildren()) do
+            cutscene.Name = value and "_" .. cutscene.Name or cutscene.Name:gsub("_", "")
+        end
+    end
+end)
+
 Toggles.TranslucentHidingSpot:OnChanged(function(value)
     if value and character:GetAttribute("Hiding") then
         for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
