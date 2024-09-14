@@ -1026,8 +1026,9 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
                 local output, count = string.gsub(code, "_", "x")
+                local padlock = workspace:FindFirstChild("Padlock", true)
 
-                if Toggles.AutoLibrarySolver.Value and tonumber(code) then
+                if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
                     remotesFolder.PL:FireServer(code)
                 end
 
@@ -1187,8 +1188,9 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
                 local output, count = string.gsub(code, "_", "x")
+                local padlock = workspace:FindFirstChild("Padlock", true)
 
-                if Toggles.AutoLibrarySolver.Value and tonumber(code) then
+                if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
                     remotesFolder.PL:FireServer(code)
                 end
 
@@ -1409,6 +1411,15 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
             Default = false
         })
 
+        AutomationGroupBox:AddSlider("AutoLibraryDistance", {
+            Text = "Unlock Distance",
+            Default = 20,
+            Min = 1,
+            Max = 100,
+            Rounding = 0,
+            Compact = true
+        })
+
         AutomationGroupBox:AddToggle("AutoBreakerSolver", {
             Text = "Auto Breaker Box",
             Default = false
@@ -1422,14 +1433,10 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
                     if tool and tool.Name:match("LibraryHintPaper") then
                         local code = Script.Functions.GetPadlockCode(tool)
-                        local output, count = string.gsub(code, "_", "x")
+                        local padlock = workspace:FindFirstChild("Padlock", true)
 
-                        if tonumber(code) then
-                            remotesFolder.PL:FireServer()
-                        end
-
-                        if count < 5 and Toggles.NotifyPadlock.Value then
-                            Script.Functions.Alert(string.format("Library Code: %s", output))
+                        if tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
+                            remotesFolder.PL:FireServer(code)
                         end
                     end
                 end
