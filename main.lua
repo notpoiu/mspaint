@@ -44,9 +44,17 @@ local compatibility_mode = false do
 
         firesignal(event.Event, true)
         task.wait(.05)
-        event:Destroy()
         
-        assert(fired == true, "Failed to fire a BindableEvent")
+        if not fired then
+            for _, connection in pairs(getconnections(event.Event)) do
+                connection:Fire(true)
+            end
+
+            task.wait(.05)
+        end
+
+        event:Destroy()
+        assert(fired, "Failed to fire a BindableEvent")
     end)
 end
 

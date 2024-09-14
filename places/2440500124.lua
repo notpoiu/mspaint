@@ -18,6 +18,11 @@ local isnetowner = isnetworkowner or function(part: BasePart)
 
     return part.ReceiveAge == 0
 end
+local firesignal = firesignal or function(signal: RBXScriptSignal, ...)
+    for _, connection in pairs(getconnections(signal)) do
+        connection:Fire(...)
+    end
+end
 
 local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
