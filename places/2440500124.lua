@@ -2640,7 +2640,7 @@ Toggles.SpeedBypass:OnChanged(function(value)
 
         while Toggles.SpeedBypass.Value and collisionClone do
             collisionClone.Massless = not collisionClone.Massless
-            task.wait(0.2)
+            task.wait(0.21)
         end
     else
         if isMines and Toggles.EnableJump.Value then
