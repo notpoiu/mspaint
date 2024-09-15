@@ -1604,7 +1604,7 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
         Text = "Spam Other Tools",
         Default = false
     }):AddKeyPicker("SpamOtherTools", {
-        Default = "V",
+        Default = "X",
         Text = "Spam Other Tools",
         Mode = Library.IsMobile and "Toggle" or "Hold",
         SyncToggleState = Library.IsMobile
@@ -1792,6 +1792,16 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
 end
 
 local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
+    SelfGroupBox:AddToggle("ThirdPerson", {
+        Text = "Third Person",
+        Default = false
+    }):AddKeyPicker("ThirdPersonKey", {
+        Default = "V",
+        Text = "Third Person",
+        Mode = "Toggle",
+        SyncToggleState = Library.IsMobile
+    })
+    
     SelfGroupBox:AddSlider("FOV", {
         Text = "Field of View",
         Default = 70,
@@ -3172,6 +3182,17 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
         UserInputService.MouseIcon = "rbxassetid://2833720882"
         UserInputService.MouseIconEnabled = true
+    end
+
+    local is_thirdperson_enabled = Library.IsMobile and Toggles.ThirdPerson.Value or (Toggles.ThirdPerson.Value and Options.ThirdPersonKey:GetState())
+    if is_thirdperson_enabled then
+        camera.CFrame = camera.CFrame * CFrame.new(1.5, -0.5, 6.5)
+
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.LocalTransparencyModifier = 0
+            end
+        end
     end
 
     if mainGameSrc then
