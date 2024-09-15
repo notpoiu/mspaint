@@ -64,6 +64,12 @@ local HidingPlaceName = {
     ["Rooms"] = "Locker",
     ["Mines"] = "Locker"
 }
+local SlotsName = {
+    "Oval",
+    "Square",
+    "Tall",
+    "Wide"
+}
 
 local PromptTable = {
     GamePrompts = {},
@@ -934,7 +940,7 @@ function Script.Functions.ChildCheck(child, includeESP)
     elseif child:IsA("Decal") and Toggles.AntiLag.Value then
         if not child:GetAttribute("Transparency") then child:SetAttribute("Transparency", child.Transparency) end
 
-        if child.Parent.Name ~= "Slot" then
+        if not table.find(SlotsName, child.Name) then
             child.Transparency = 1
         end
     end
@@ -2879,7 +2885,7 @@ Toggles.AntiLag:OnChanged(function(value)
         elseif object:IsA("Decal") then
             if not object:GetAttribute("Transparency") then object:SetAttribute("Transparency", object.Transparency) end
 
-            if object.Parent.Name ~= "Slot" then
+            if not table.find(SlotsName, object.Name) then
                 object.Transparency = value and 1 or object:GetAttribute("Transparency")
             end
         end
