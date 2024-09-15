@@ -249,7 +249,7 @@ getgenv()._internal_unload_mspaint = function()
 end
 
 function Script.Functions.IsPromptInRange(prompt: ProximityPrompt)
-    return Script.Functions.DistanceFromCharacter(prompt:FindFirstAncestorWhichIsA("BasePart") or prompt:FindFirstAncestorWhichIsA("Model") or prompt.Parent) < (prompt.MaxActivationDistance * Options.PromptReachMultiplier.Value)
+    return Script.Functions.DistanceFromCharacter(prompt:FindFirstAncestorWhichIsA("BasePart") or prompt:FindFirstAncestorWhichIsA("Model") or prompt.Parent) <= prompt.MaxActivationDistance
 end
 
 function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
@@ -1328,8 +1328,8 @@ function Script.Functions.EnableBreaker(breaker, value)
     breaker.Sound:Play()
 end
 
-function Script.Functions.Alert(message: string, time_obj: number)
-    Library:Notify(message, time_obj or 5)
+function Script.Functions.Alert(message: string, duration: number)
+    Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
         local sound = Instance.new("Sound", workspace) do
@@ -1339,6 +1339,11 @@ function Script.Functions.Alert(message: string, time_obj: number)
             sound:Destroy()
         end
     end
+end
+
+function Script.Functions.Log(message: string, duration: number | Instance, condition: boolean | nil)
+    if condition == false then return end
+    Library:Notify(message, duration or 5)
 end
 
 --// Main \\--
@@ -2109,6 +2114,8 @@ task.spawn(function()
                 Default = false
             })
 
+            Rooms_AutomationGroupBox:AddLabel("Recommended Settings:\nSpeed Boost < 30 and Noclip disabled", true)
+
             Rooms_AutomationGroupBox:AddDivider()
 
             Rooms_AutomationGroupBox:AddToggle("AutoRoomsDebug", { 
@@ -2155,14 +2162,8 @@ task.spawn(function()
         end
 
         Toggles.ShowAutoRoomsPathNodes:OnChanged(function(value)
-            if value then
-                for i, node in pairs(_internal_mspaint_pathfinding_nodes:GetChildren()) do
-                    node.Transparency = 0.5
-                end
-            else
-                for i, node in pairs(_internal_mspaint_pathfinding_nodes:GetChildren()) do
-                    node.Transparency = 1
-                end
+            for _, node in pairs(_internal_mspaint_pathfinding_nodes:GetChildren()) do
+                node.Transparency = value and 0.5 or 1
             end
         end)
 
@@ -2186,49 +2187,36 @@ task.spawn(function()
         end))
 
         Toggles.AutoRooms:OnChanged(function(value)
-            local function log(message: string, time_arg: number | Instance | nil)
-                if Toggles.AutoRoomsDebug.Value then
-                    Library:Notify(message, time_arg or 5)
-                end
-            end
-
             local function moveToCleanup()
                 if humanoid then
                     humanoid:Move(rootPart.Position)
                     humanoid.WalkToPart = nil
                     humanoid.WalkToPoint = rootPart.Position
-                    humanoid.TargetPoint = rootPart.Position
                 end
             end
 
             if value then
                 Toggles.AntiA90:SetValue(true)
 
-                if Library.IsMobile then
-                    localPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.Scriptable
-                else
-                    localPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.Scriptable
-                end
-
                 local function doAutoRooms()
                     local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
-                    log("Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...")
+                    Script.Functions.Log("Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...", 5, Toggles.AutoRooms.Value)
 
                     local path = PathfindingService:CreatePath({
                         AgentCanJump = false,
                         AgentCanClimb = false,
                         WaypointSpacing = 2,
-                        AgentRadius = 2.5
+                        AgentRadius = 1
                     })
 
-                    log("Computing Path to " .. pathfindingGoal.Parent.Name .. "...") 
+                    Script.Functions.Log("Computing Path to " .. pathfindingGoal.Parent.Name .. "...", 5, Toggles.AutoRooms.Value) 
 
-                    path:ComputeAsync(rootPart.Position - Vector3.new(0, 2, 0), pathfindingGoal.Position)
+                    path:ComputeAsync(rootPart.Position - Vector3.new(0, 2.5, 0), pathfindingGoal.Position)
                     local waypoints = path:GetWaypoints()
 
                     if path.Status == Enum.PathStatus.Success then
-                        log("Computed path successfully with " .. #waypoints .. " waypoints!")
+                        Script.Functions.Log("Computed path successfully with " .. #waypoints .. " waypoints!", 5, Toggles.AutoRooms.Value)
                         
                         _internal_mspaint_pathfinding_nodes:ClearAllChildren()
 
@@ -2248,34 +2236,25 @@ task.spawn(function()
                         for i, waypoint in pairs(waypoints) do
                             local moveToFinished = false
                             local recalculate = false
-                            local conn = humanoid.MoveToFinished:Connect(function() moveToFinished = true end)
+                            local waypointConnection = humanoid.MoveToFinished:Connect(function() moveToFinished = true end)
 
-                            local function moveToWaypoint()
-                                if not moveToFinished or not Toggles.AutoRooms.Value then
-                                    humanoid:MoveTo(waypoint.Position)
-                                    
-                                    task.delay(1.5, function()
-                                        if not Toggles.AutoRooms.Value then return moveToCleanup() end
-                                        if Library.Unloaded then return moveToCleanup() end
-                                        if moveToFinished then return end
+                            if not moveToFinished or not Toggles.AutoRooms.Value then
+                                humanoid:MoveTo(waypoint.Position)
+                                
+                                task.delay(1.5, function()
+                                    if moveToFinished then return end
+                                    if (not Toggles.AutoRooms.Value or Library.Unloaded) then return moveToCleanup() end
 
-                                        repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
+                                    repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
 
-                                        Script.Functions.Alert("Seems like you are stuck, trying to recalculate path...", 5)
-                                        doAutoRooms()
-                                        recalculate = true
-                                    end)
-                                end
+                                    Script.Functions.Alert("Seems like you are stuck, trying to recalculate path...", 5)
+                                    recalculate = true
+                                end)
                             end
 
-                            moveToWaypoint()
                             repeat task.wait() until moveToFinished or not Toggles.AutoRooms.Value or recalculate or Library.Unloaded
 
-                            if recalculate then
-                                break
-                            end
-                            
-                            conn:Disconnect()
+                            waypointConnection:Disconnect()
 
                             if not Toggles.AutoRooms.Value then
                                 _internal_mspaint_pathfinding_nodes:ClearAllChildren()
@@ -2285,9 +2264,11 @@ task.spawn(function()
                                     _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i):Destroy()
                                 end
                             end
+
+                            if recalculate then break end
                         end
                     else
-                        log("Pathfinding failed with status " .. tostring(path.Status))
+                        Script.Functions.Log("Pathfinding failed with status " .. tostring(path.Status), 5, Toggles.AutoRooms.Value)
                     end
                 end
 
@@ -2300,13 +2281,9 @@ task.spawn(function()
 
                     doAutoRooms()
                 end
-            else
+                
+                -- Unload Auto Rooms
                 _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                if Library.IsMobile then
-                    localPlayer.DevTouchMovementMode = Enum.DevTouchMovementMode.UserChoice
-                else
-                    localPlayer.DevComputerMovementMode = Enum.DevComputerMovementMode.UserChoice
-                end
                 moveToCleanup()
             end
         end)
