@@ -44,7 +44,7 @@ local compatibility_mode = false do
 
         if firesignal then
             firesignal(event.Event, true)
-            task.wait(.05)
+            task.wait()
         end
         
         if not fired then
@@ -52,7 +52,7 @@ local compatibility_mode = false do
                 connection:Fire(true)
             end
 
-            task.wait(.05)
+            task.wait()
         end
 
         event:Destroy()
