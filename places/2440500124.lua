@@ -1342,7 +1342,7 @@ function Script.Functions.Alert(message: string, duration: number)
 end
 
 function Script.Functions.Log(message: string, duration: number | Instance, condition: boolean | nil)
-    if condition == false then return end
+    if condition ~= nil and not condition then return end
     Library:Notify(message, duration or 5)
 end
 
