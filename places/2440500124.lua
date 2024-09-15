@@ -3193,13 +3193,9 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     local is_thirdperson_enabled = Library.IsMobile and Toggles.ThirdPerson.Value or (Toggles.ThirdPerson.Value and Options.ThirdPersonKey:GetState())
     if is_thirdperson_enabled then
         camera.CFrame = camera.CFrame * CFrame.new(1.5, -0.5, 6.5)
-
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.LocalTransparencyModifier = 0
-            end
-        end
     end
+
+    character:SetAttribute("ShowInFirstPerson", is_thirdperson_enabled)
 
     if mainGameSrc then
         mainGameSrc.fovtarget = Options.FOV.Value
