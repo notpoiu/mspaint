@@ -1628,10 +1628,30 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
 end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
+    BypassGroupBox:AddDropdown("SpeedBypassMethod", {
+        AllowNull = false,
+        Values = {"Massless", "Size", "Size2"},
+        Default = "Massless",
+        Multi = false,
+
+        Text = "Speed Bypass Method"
+    })
+    
+    BypassGroupBox:AddSlider("SpeedBypassDelay", {
+        Text = "Bypass Delay",
+        Default = 0.21,
+        Min = 0.2,
+        Max = 0.22,
+        Rounding = 2,
+        Compact = true
+    })
+
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
         Default = false
     })
+
+    BypassGroupBox:AddDivider()
     
     BypassGroupBox:AddToggle("DeleteSeek", {
         Text = "Delete Seek (FE)",
@@ -2610,15 +2630,51 @@ Toggles.UpsideDown:OnChanged(function(value)
     collision.Rotation = value and Vector3.new(rotation.X, rotation.Y, 90) or Vector3.new(rotation.X, rotation.Y, -90)
 end)
 
+function Script.Functions.SpeedBypass()
+    local SpeedBypassMethod = Options.SpeedBypassMethod.Value
+
+    local function cleanup()
+        -- reset if changed speed bypass method
+        if collisionClone then
+            print("Cleaning up...")
+            if SpeedBypassMethod == "Massless" then
+                collisionClone.Massless = true
+            elseif SpeedBypassMethod == "Size" then
+                collisionClone.Size = Vector3.new(3, 4.5, 3)
+            end
+            
+            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod then
+                print("Trying again to bypass speed")
+                Script.Functions.SpeedBypass()
+            end
+        end
+    end
+
+    if SpeedBypassMethod == "Massless" then
+        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded do
+            collisionClone.Massless = not collisionClone.Massless
+            task.wait(Options.SpeedBypassDelay.Value)
+        end
+
+        cleanup()
+    elseif SpeedBypassMethod == "Size" then
+        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded do
+            collisionClone.Size = Vector3.new(3, 4.5, 3)
+            task.wait(Options.SpeedBypassDelay.Value)
+            collisionClone.Size = Vector3.new(1.5, 2.25, 1.5)
+            task.wait(Options.SpeedBypassDelay.Value)
+        end
+
+        cleanup()
+    end
+end
+
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
         Options.SpeedSlider:SetMax(45)
         Options.FlySpeed:SetMax(75)
-
-        while Toggles.SpeedBypass.Value and collisionClone do
-            collisionClone.Massless = not collisionClone.Massless
-            task.wait(0.21)
-        end
+        
+        Script.Functions.SpeedBypass()
     else
         if isMines and Toggles.EnableJump.Value then
             Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
@@ -2627,8 +2683,6 @@ Toggles.SpeedBypass:OnChanged(function(value)
         end
 
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
-        
-        if collisionClone then collisionClone.Massless = true end
     end
 end)
 

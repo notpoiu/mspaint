@@ -7,38 +7,40 @@ local compatibility_mode = false do
     -- Function replacement
     if not fireproximityprompt or executor_name == "Solara" then
         function newinstance(itype, iparent, iproperties)
-          if not itype or typeof(itype) ~= 'string' then return; end
-          if typeof(iparent) ~= 'Instance' then iparent = nil; end
-          local i = Instance.new(itype, iparent)
-          if iproperties and typeof(iproperties) == 'table' then for property, value in pairs(iproperties) do
-              pcall(function()
-                  i[property] = value
-              end)
-          end; end
-          return i
+            if not itype or typeof(itype) ~= 'string' then return; end
+            if typeof(iparent) ~= 'Instance' then iparent = nil; end
+
+            local i = Instance.new(itype, iparent)
+            if iproperties and typeof(iproperties) == 'table' then
+                for property, value in pairs(iproperties) do
+                    pcall(function() i[property] = value end)
+                end
+            end
+
+            return i
         end
         
         function posprompt(prompt, enabled)
-          local camcf, part = workspace.CurrentCamera.CFrame, nil
-          if prompt.Parent.Name == '_pxpart' then part = prompt.Parent; end
-          if prompt.Parent:FindFirstChild('_pxpart') then part = prompt.Parent:FindFirstChild('_pxpart'); end
-          if not part then
-              part = newinstance('Part', prompt.Parent, {Name = '_pxpart', Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, Size = Vector3.new(0.5, 0.5, 0.5), Shape = 'Ball', Anchored = true})
-          end
-          part.CFrame = camcf + (camcf.lookVector * 1.4)
-          if enabled == true then prompt.Parent = part; end
-          if enabled == false and prompt.Parent.Name == '_pxpart' then prompt.Parent = prompt.Parent.Parent; end
+            local camcf, part = workspace.CurrentCamera.CFrame, nil
+            if prompt.Parent.Name == '_pxpart' then part = prompt.Parent; end
+            if prompt.Parent:FindFirstChild('_pxpart') then part = prompt.Parent:FindFirstChild('_pxpart'); end
+            if not part then
+                part = newinstance('Part', prompt.Parent, {Name = '_pxpart', Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, Size = Vector3.new(0.5, 0.5, 0.5), Shape = 'Ball', Anchored = true})
+            end
+            part.CFrame = camcf + (camcf.lookVector * 1.4)
+            if enabled == true then prompt.Parent = part; end
+            if enabled == false and prompt.Parent.Name == '_pxpart' then prompt.Parent = prompt.Parent.Parent; end
         end
         
         function _fireproxp(obj)
-          local oldenabled, oldrlos = obj.Enabled, obj.RequiresLineOfSight
-          obj.Enabled = true; obj.RequiresLineOfSight = false
-          local PromptTime = obj.HoldDuration
-          obj.HoldDuration = 0; posprompt(obj, true)
-          wait()
-          obj:InputHoldBegin()
-          obj:InputHoldEnd()
-          posprompt(obj, false); obj.HoldDuration = PromptTime; obj.Enabled = oldenabled; obj.RequiresLineOfSight = oldrlos
+            local oldenabled, oldrlos = obj.Enabled, obj.RequiresLineOfSight
+            obj.Enabled = true; obj.RequiresLineOfSight = false
+            local PromptTime = obj.HoldDuration
+            obj.HoldDuration = 0; posprompt(obj, true)
+            task.wait()
+            obj:InputHoldBegin()
+            obj:InputHoldEnd()
+            posprompt(obj, false); obj.HoldDuration = PromptTime; obj.Enabled = oldenabled; obj.RequiresLineOfSight = oldrlos
         end
         
         fireproximityprompt = _fireproxp
