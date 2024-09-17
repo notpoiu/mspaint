@@ -3230,12 +3230,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         UserInputService.MouseIconEnabled = true
     end
 
-    local is_thirdperson_enabled = Library.IsMobile and Toggles.ThirdPerson.Value or (Toggles.ThirdPerson.Value and Options.ThirdPersonKey:GetState())
-    if is_thirdperson_enabled then
+    local isThirdPersonEnabled = Library.IsMobile and Toggles.ThirdPerson.Value or (Toggles.ThirdPerson.Value and Options.ThirdPersonKey:GetState())
+    if isThirdPersonEnabled then
         camera.CFrame = camera.CFrame * CFrame.new(1.5, -0.5, 6.5)
     end
-
-    character:SetAttribute("ShowInFirstPerson", is_thirdperson_enabled)
 
     if mainGameSrc then
         mainGameSrc.fovtarget = Options.FOV.Value
@@ -3246,6 +3244,9 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
+        character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
+        if character:FindFirstChild("Head") then character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 1 or 0 end
+
         local speedBoostAssignObj = isFools and humanoid or character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
             character:SetAttribute("SpeedBoostBehind", 50)
