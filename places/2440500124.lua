@@ -1641,7 +1641,7 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddDropdown("SpeedBypassMethod", {
         AllowNull = false,
-        Values = {"Massless", "Size"},
+        Values = {"Massless", --[["Size"]]},
         Default = "Massless",
         Multi = false,
 
