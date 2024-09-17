@@ -1105,6 +1105,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     humanoid = character:WaitForChild("Humanoid")
     if humanoid then
+        Script.Connections["Move"] = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+            if Toggles.FastClosetExit.Value and humanoid.MoveDirection.Magnitude > 0 and character:GetAttribute("Hiding") then
+                remotesFolder.CamLock:FireServer()
+            end
+        end)
+
         Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
             if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 then
                 if humanoid.JumpHeight > 0 then
@@ -1364,6 +1370,11 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddToggle("InstaInteract", {
         Text = "Instant Interact",
+        Default = false
+    })
+
+    PlayerGroupBox:AddToggle("FastClosetExit", {
+        Text = "Fast Closet Exit",
         Default = false
     })
 
