@@ -1630,7 +1630,7 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddDropdown("SpeedBypassMethod", {
         AllowNull = false,
-        Values = {"Massless", "Size", "Size2"},
+        Values = {"Massless", "Size"},
         Default = "Massless",
         Multi = false,
 
@@ -2636,15 +2636,13 @@ function Script.Functions.SpeedBypass()
     local function cleanup()
         -- reset if changed speed bypass method
         if collisionClone then
-            print("Cleaning up...")
             if SpeedBypassMethod == "Massless" then
                 collisionClone.Massless = true
             elseif SpeedBypassMethod == "Size" then
-                collisionClone.Size = Vector3.new(3, 4.5, 3)
+                collisionClone.Size = Vector3.new(3, 5.5, 3)
             end
             
             if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod then
-                print("Trying again to bypass speed")
                 Script.Functions.SpeedBypass()
             end
         end
@@ -2659,9 +2657,9 @@ function Script.Functions.SpeedBypass()
         cleanup()
     elseif SpeedBypassMethod == "Size" then
         while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded do
-            collisionClone.Size = Vector3.new(3, 4.5, 3)
+            collisionClone.Size = Vector3.new(3, 5.5, 3)
             task.wait(Options.SpeedBypassDelay.Value)
-            collisionClone.Size = Vector3.new(1.5, 2.25, 1.5)
+            collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
             task.wait(Options.SpeedBypassDelay.Value)
         end
 
