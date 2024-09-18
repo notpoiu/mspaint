@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
@@ -151,6 +152,7 @@ local collision
 local collisionClone
 
 local mtHook
+local _fixDistanceFromCharacter
 
 local isMines = floor.Value == "Mines"
 local isRooms = floor.Value == "Rooms"
@@ -162,6 +164,9 @@ local currentRoom = localPlayer:GetAttribute("CurrentRoom") or 0
 local nextRoom = currentRoom + 1
 
 local speedBypassing = false
+local fakeReviveDebounce = false
+local fakeReviveEnabled = false
+local fakeReviveConnections = {}
 local lastSpeed = 0
 local bypassed = false
 
@@ -1088,7 +1093,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end)
 
         Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
-            if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 then
+            if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not fakeReviveEnabled then
                 if humanoid.JumpHeight > 0 then
                     lastSpeed = Options.SpeedSlider.Value
                     Options.SpeedSlider:SetMax(3)
@@ -1232,9 +1237,15 @@ function Script.Functions.GetShortName(entityName: string)
     return entityName
 end
 
-function Script.Functions.DistanceFromCharacter(position: Instance | Vector3)
+function Script.Functions.DistanceFromCharacter(position: Instance | Vector3, getPositionFromCamera: boolean | nil)
     if typeof(position) == "Instance" then
         position = position:GetPivot().Position
+    end
+
+    if getPositionFromCamera and (camera or workspace.CurrentCamera) then
+        local cameraPosition = camera and camera.CFrame.Position or workspace.CurrentCamera.CFrame.Position
+
+        return (cameraPosition - position).Magnitude
     end
 
     if rootPart then
@@ -1314,7 +1325,7 @@ function Script.Functions.EnableBreaker(breaker, value)
     breaker.Sound:Play()
 end
 
-function Script.Functions.Alert(message: string, duration: number)
+function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
@@ -1644,6 +1655,11 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
 
     BypassGroupBox:AddDivider()
     
+    BypassGroupBox:AddToggle("FakeRevive", {
+        Text = "Fake Revive",
+        Default = false
+    })
+
     BypassGroupBox:AddToggle("DeleteSeek", {
         Text = "Delete Seek (FE)",
         Default = false
@@ -2010,7 +2026,7 @@ task.spawn(function()
                     ladderEsp.Destroy()
                 end
 
-                if bypassed then
+                if bypassed and not fakeReviveEnabled then
                     remotesFolder.ClimbLadder:FireServer()
                     bypassed = false
                     
@@ -2025,7 +2041,7 @@ task.spawn(function()
                 character:SetAttribute("CanJump", value)
             end
 
-            if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 then
+            if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 and not fakeReviveEnabled then
                 Options.SpeedSlider:SetMax(7)
             end
         end)
@@ -2638,21 +2654,21 @@ function Script.Functions.SpeedBypass()
                 collisionClone.Size = Vector3.new(3, 5.5, 3)
             end
             
-            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod then
+            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod and not fakeReviveEnabled then
                 Script.Functions.SpeedBypass()
             end
         end
     end
 
     if SpeedBypassMethod == "Massless" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded do
+        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
             collisionClone.Massless = not collisionClone.Massless
             task.wait(Options.SpeedBypassDelay.Value)
         end
 
         cleanup()
     elseif SpeedBypassMethod == "Size" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded do
+        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
             collisionClone.Size = Vector3.new(3, 5.5, 3)
             task.wait(Options.SpeedBypassDelay.Value)
             collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
@@ -2670,6 +2686,8 @@ Toggles.SpeedBypass:OnChanged(function(value)
         
         Script.Functions.SpeedBypass()
     else
+        if fakeReviveEnabled then return end
+
         if isMines and Toggles.EnableJump.Value then
             Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
         else
@@ -2677,6 +2695,549 @@ Toggles.SpeedBypass:OnChanged(function(value)
         end
 
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
+    end
+end)
+
+Toggles.FakeRevive:OnChanged(function(value)
+    if value and alive and character and not fakeReviveEnabled then
+        if latestRoom and latestRoom.Value == 0 then
+            Script.Functions.Alert("You have to open the next door to use fake revive")
+            repeat task.wait() until latestRoom.Value > 0
+        end
+
+        Script.Functions.Alert("Please find a way to die or wait for around 20 seconds\nfor fake revive to work.", 20)
+        
+        local oxygenModule = mainGame:FindFirstChild("Oxygen")
+        local healthModule = mainGame:FindFirstChild("Health")
+        local cameraModule = mainGame:FindFirstChild("Camera")
+        local inventoryModule = mainGame:FindFirstChild("Inventory")
+
+        if oxygenModule and healthModule then
+            task.delay(0.5, function()
+                if not Toggles.FakeRevive.Value then return end
+
+                oxygenModule.Enabled = false
+                healthModule.Enabled = false
+                inventoryModule.Enabled = false
+            end)
+        end
+
+        repeat task.wait(.25)
+            remotesFolder.Underwater:FireServer(true)
+        until not alive or not Toggles.FakeRevive.Value
+
+        if alive and not Toggles.FakeRevive.Value then
+            remotesFolder.Underwater:FireServer(false)
+            Script.Functions.Alert("Fake revive has been disabled, was unable to kill player.")
+            oxygenModule.Enabled = true
+            healthModule.Enabled = true
+            return
+        end
+
+        Toggles.SpeedBypass:SetValue(false)
+        Options.SpeedSlider:SetMax(45)
+        Options.FlySpeed:SetMax(75)
+
+        fakeReviveEnabled = true
+        workspace.Gravity = 0
+
+        if cameraModule then
+            cameraModule.Enabled = false
+        end
+
+        task.wait(0.1)
+		for _, hotbarItem in pairs(mainUI.MainFrame.Hotbar:GetChildren()) do
+			if not hotbarItem:IsA("TextButton") then continue end
+			hotbarItem.Visible = false
+		end
+
+        local tool = Instance.new("Tool") do
+			tool.RequiresHandle = false
+			tool.Name = "AttachTool"
+			tool.Parent = character
+
+			humanoid.Name = "old_Humanoid"
+			local newHumanoid = humanoid:Clone()
+			newHumanoid.Parent = character
+			newHumanoid.Name = "Humanoid"
+
+			task.wait()
+
+			humanoid:Destroy()
+			camera.CameraSubject = character
+			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+
+			local determined_cframe = rootPart.CFrame * CFrame.new(0, 0, 0) * CFrame.new(math.random(-100, 100)/200,math.random(-100, 100)/200,math.random(-100, 100)/200)
+			rootPart.CFrame = determined_cframe
+			
+			local atempts = 0
+			repeat task.wait()
+				atempts = atempts + 1
+				rootPart.CFrame = determined_cframe
+			until (tool.Parent ~= character or not rootPart or not rootPart.Parent or atempts > 250) and atempts > 2
+			tool:Destroy()
+		end
+
+        -- setup character
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "UpperTorso" and part.Name ~= "Collision" and part.Parent.Name ~= "Collision" then 
+				--v.CanCollide = false
+				part.Massless = true
+				part.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1)
+			end
+		end
+
+        for _, weld in pairs(character:GetChildren()) do
+            if weld:IsA("Weld") then
+                weld:Destroy()
+            end
+        end
+
+        camera:Destroy()
+        task.wait(.1)
+        workspace.CurrentCamera.CameraSubject = character:FindFirstChildWhichIsA('Humanoid')
+		workspace.CurrentCamera.CameraType = "Custom"
+	    localPlayer.CameraMinZoomDistance = 0.5
+		localPlayer.CameraMaxZoomDistance = 400
+		localPlayer.CameraMode = "Classic"
+		character.Head.Anchored = false
+		camera = workspace.CurrentCamera
+
+        -- setup fake char
+		local humanoidDescription = Players:GetHumanoidDescriptionFromUserId(localPlayer.UserId)
+		humanoidDescription.HeightScale = 1.2
+
+		local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
+			previewCharacter.Parent = workspace
+			previewCharacter.Name = "PreviewCharacter"
+
+			previewCharacter.HumanoidRootPart.Anchored = true
+			character.UpperTorso.CanCollide = false
+		end
+
+        fakeReviveConnections["HidingFix"] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if UserInputService:GetFocusedTextBox() then return end
+            if gameProcessed then return end
+
+			if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
+				if character:GetAttribute("Hiding") then
+					for i = 1, 50 do
+						task.wait()
+						remotesFolder.CamLock:FireServer()
+					end
+				end
+			end
+		end)
+
+        Library:GiveSignal(fakeReviveConnections["HidingFix"])
+
+        -- animation setup
+		task.spawn(function()
+			local anims = character:WaitForChild("Animations", 10) or previewCharacter:WaitForChild("Animations", 10);
+			local crouch, oldCrouchSpeed = previewCharacter.Humanoid:LoadAnimation(anims.Crouch), 0;
+			local walk, idle = previewCharacter.Humanoid:LoadAnimation(anims.Forward), previewCharacter.Humanoid:LoadAnimation(anims.Idle);
+			local interact = previewCharacter.Humanoid:LoadAnimation(anims.Interact);
+			oldCrouchSpeed = crouch.Speed;
+
+			local function playWalkingAnim(key)
+				repeat
+					if idle.isPlaying then idle:Stop() end
+
+					if character:GetAttribute("Crouching") then
+						if not crouch.isPlaying then crouch:Play() crouch:AdjustSpeed(oldCrouchSpeed) end
+						if walk.isPlaying then walk:Stop() end
+					else
+						if crouch.isPlaying then crouch:Stop() end
+						if not walk.isPlaying then walk:Play() end
+					end
+
+					task.wait(.5)
+				until not UserInputService:IsKeyDown(key) and not UserInputService:GetFocusedTextBox()
+			end
+
+            fakeReviveConnections["AnimationHandler"] = UserInputService.InputBegan:Connect(function(input)
+                if UserInputService:GetFocusedTextBox() then return end
+				if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
+					playWalkingAnim(input.KeyCode)
+				end
+			end)
+
+			Library:GiveSignal(fakeReviveConnections["AnimationHandler"])
+
+            fakeReviveConnections["AnimationHandler2"] = UserInputService.InputEnded:Connect(function(input)
+                if UserInputService:GetFocusedTextBox() then return end
+
+				if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
+					task.wait(.1)
+					if walk.isPlaying then walk:Stop() end
+					if character:GetAttribute("Crouching") then 
+						if not crouch.isPlaying then crouch:Play() end
+						crouch:AdjustSpeed(0)
+					else 
+						if crouch.isPlaying then crouch:Stop() end 
+					end
+					if not idle.isPlaying then idle:Play() end
+				end
+			end)
+
+			Library:GiveSignal(fakeReviveConnections["AnimationHandler2"])
+
+			-- Tool Handler (kinda broken) --
+			if character:WaitForChild("RightHand", math.huge) then
+				local rightGrip = Instance.new("Weld", character.RightHand)
+				rightGrip.C0 = CFrame.new(0, -0.15, -1.5, 1, 0, -0, 0, 0, 1, 0, -1, 0)
+				rightGrip.Part0 = character.RightHand
+		
+				local toolsAnim = {}
+				local currentTool = nil
+				local doorInteractables = { "Key", "Lockpick" }
+
+                fakeReviveConnections["ToolAnimHandler"] = character.ChildAdded:Connect(function(tool)
+					if tool:IsA("Tool") then
+						for _, anim in pairs(toolsAnim) do
+							anim:Stop()
+						end
+		
+						table.clear(toolsAnim)
+		
+						local anims = tool:WaitForChild("Animations")
+						currentTool = tool
+		
+						for i, v in pairs(anims:GetChildren()) do
+							if v:IsA("Animation") then
+								toolsAnim[v.Name] = previewCharacter.Humanoid:LoadAnimation(v)
+							end
+						end
+		
+						if toolsAnim.idle then toolsAnim.idle:Play(0.4, 1, 1) end
+						if toolsAnim.equip then toolsAnim.equip:Play(0.05, 1, 1) end
+		
+						local toolHandle = tool:WaitForChild("Handle", 3)
+						if toolHandle and character:FindFirstChild("RightHand") then
+							rightGrip.Parent = character.RightHand
+							rightGrip.C1 = tool.Grip
+							rightGrip.Part1 = toolHandle        
+						end
+		
+						local animation_state = false
+						tool.Activated:Connect(function()
+							if table.find(doorInteractables, tool.Name) then return end
+		
+							local anim = toolsAnim.use or (tool:GetAttribute("LightSource") and toolsAnim.open)
+		
+							if anim then
+								require(tool.ToolModule).fire() do
+                                    local toolRemote = tool:FindFirstChild("Remote")
+                                    if toolRemote then
+                                        toolRemote:FireServer()
+                                    end
+                                end
+
+								if tool:GetAttribute("LightSource") then
+									if animation_state then
+										anim:Stop()
+									else
+										anim:Play()
+									end
+									
+									animation_state = not animation_state
+									return
+								end
+		
+								anim:Play()
+							end
+						end)
+					end
+				end)
+
+				Library:GiveSignal(fakeReviveConnections["ToolAnimHandler"])
+		
+				-- Prompts handler
+                local holding, holdStart, startDurability = false, 0, 0
+                fakeReviveConnections["ToolAnimHandler2"] = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+					if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
+						holding = true; holdStart = tick(); startDurability = currentTool:GetAttribute("Durability")
+                        
+						toolsAnim.use:Play()
+					end
+				end)
+
+				Library:GiveSignal(fakeReviveConnections["ToolAnimHandler2"])
+
+                fakeReviveConnections["ToolAnimInteractHandler"] = ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt)
+					if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
+						if holdStart == 0 then return end
+		
+						if startDurability and currentTool:GetAttribute("Durability") < startDurability then
+							toolsAnim.use:Stop()
+							toolsAnim.usebreak:Play()
+		
+							return
+						end
+						
+						if holding and tick() - holdStart > prompt.HoldDuration then
+							holding = false; holdStart = 0
+		
+							toolsAnim.use:Stop()
+							toolsAnim.usefinish:Play()
+							
+							return
+						end
+		
+						holding = false; holdStart = 0
+		
+						toolsAnim.use:Stop()
+					end
+				end)
+
+				Library:GiveSignal(fakeReviveConnections["ToolAnimInteractHandler"])
+                
+                fakeReviveConnections["ToolAnimUnequipHandler"] = character.ChildRemoved:Connect(function(v)
+					if v:IsA("Tool") then
+						rightGrip.Part1 = nil
+						rightGrip.C1 = CFrame.new()
+						rightGrip.Parent = nil
+		
+						for _, anim in pairs(toolsAnim) do
+							anim:Stop()
+						end
+		
+						currentTool = nil
+					end
+				end)
+
+				Library:GiveSignal(fakeReviveConnections["ToolAnimUnequipHandler"])
+			end
+		end)
+
+		-- movement code
+		local function generateCharacterCFrame(obj)
+			local obj_pos = obj.Position
+			return CFrame.new(obj_pos, obj_pos - (Vector3.new(camera.CFrame.Position.X, obj_pos.Y, camera.CFrame.Position.Z) - obj_pos).unit)
+		end
+
+		local function usePreviewCharacter(doStepped)
+			-- fuck you roblox for using head instead of primarypart or char:GetPivot() 
+            -- mstudio45 2023 ^^
+			_fixDistanceFromCharacter = hookmetamethod(localPlayer, "__namecall", function(self, ...)
+				local method = getnamecallmethod();
+				local args = {...}
+			
+				if method == "DistanceFromCharacter" then
+					if typeof(args[1]) == "Vector3" then
+                        return Script.Functions.DistanceFromCharacter(args[1])
+					end
+					
+					return 9999;
+				end
+			
+				return _fixDistanceFromCharacter(self, ...)
+			end)
+
+			if doStepped ~= false then
+				Library:Notify("You are not longer visible to others because you have lost Network Ownership of your character.", 5);
+
+				for _,v in pairs(previewCharacter:GetDescendants()) do
+					if v:IsA("BasePart") then 
+						v.CanCollide = false
+					end
+				end
+
+                for _, connection in pairs(fakeReviveConnections) do
+                    connection:Disconnect()
+                end
+                
+                table.clear(fakeReviveConnections)
+			end
+
+			if previewCharacter:FindFirstChild("Humanoid") then previewCharacter.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+            
+            Toggles.Fly:SetValue(true)
+
+			Library:GiveSignal(RunService.RenderStepped:Connect(function()
+				if doStepped ~= false then previewCharacter:PivotTo(generateCharacterCFrame(character:GetPivot())) end
+				if rootPart then 
+					rootPart.Transparency = (doStepped ~= false) and 1 or 0
+					rootPart.CanCollide = false
+				end
+			end))
+		end
+
+        fakeReviveConnections["mainStepped"] = RunService.RenderStepped:Connect(function()
+            -- deivid gonna get mad at this line :content:
+            if character:FindFirstChild("Humanoid") then character.Humanoid.WalkSpeed = 15 + Options.SpeedSlider.Value end
+            
+            if rootPart and rootPart.Position.Y < -150 then
+                rootPart.Position = workspace.SpawnLocation.Position
+            end
+
+			if character:FindFirstChild("UpperTorso") then
+				character.UpperTorso.CanCollide = false 
+			else
+				if character:FindFirstChild("HumanoidRootPart") then 
+					local totalParts = 0
+					for _, v in pairs(character:GetChildren()) do if v:IsA("BasePart") then totalParts = totalParts + 1 end end
+					if totalParts <= 2 then
+						task.spawn(usePreviewCharacter)
+						fakeReviveConnections["mainStepped"]:Disconnect()
+
+                        for _, connection in pairs(fakeReviveConnections) do
+                            connection:Disconnect()
+                        end
+                        
+                        table.clear(fakeReviveConnections)
+						return
+					end
+				end
+			end
+
+			if not character:FindFirstChild("HumanoidRootPart") then
+				Library:Notify("You have completely lost Network Ownership of your character which resulted of breaking Fake Death.", 5);
+				task.spawn(usePreviewCharacter, false)
+				fakeReviveConnections["mainStepped"]:Disconnect()
+
+                for _, connection in pairs(fakeReviveConnections) do
+                    connection:Disconnect()
+                end
+                
+                table.clear(fakeReviveConnections)
+				return
+			end
+			
+			previewCharacter:PivotTo(generateCharacterCFrame(rootPart.CFrame * CFrame.new(0,1000,0)))
+
+			local charPartCFrames = {}
+			for _, part in ipairs(previewCharacter:GetDescendants()) do
+				if part:IsA("BasePart") then
+					charPartCFrames[part.Name..part.ClassName] = part.CFrame
+				end
+			end
+
+			for _, part in ipairs(character:GetDescendants()) do
+				if part:IsA("BasePart") then
+					if part.Name == "RagdollCollision" then
+						part.CFrame = (charPartCFrames[part.Parent.Name .. part.Parent.ClassName] - Vector3.new(0,1000,0))
+						part.CanCollide = true
+					else
+						if charPartCFrames[part.Name..part.ClassName] then
+							part.CFrame = (charPartCFrames[part.Name..part.ClassName] - Vector3.new(0,1000,0))
+						end
+					end
+					
+					if part.Name ~= "HumanoidRootPart" then
+						if part.Parent == character or part.Parent:IsA("Accessory") then
+							part.LocalTransparencyModifier = 0
+						end
+
+						part.AssemblyAngularVelocity = Vector3.zero
+						part.AssemblyLinearVelocity = Vector3.zero
+					end
+				end
+			end
+		end)
+
+        Library:GiveSignal(fakeReviveConnections["mainStepped"])
+
+		task.wait(0.1)
+		local function fixUI()
+			local setComponentVisibility = {
+				mainUI.HodlerRevive,
+				mainUI.Statistics,
+				
+				mainUI.DeathPanelDead,
+				mainUI.DeathPanel,
+
+				mainUI.MainFrame.Healthbar,
+
+				["visible_real"] = mainUI.MainFrame.PromptFrame.CenterImage,
+				["deivid_ballers_fake"] = mainUI.MainFrame.PromptFrame.Holder,
+
+                mainUI.MainFrame.Hotbar,
+                mainUI.MainFrame.InventoryCap,
+                mainUI.MainFrame.InventoryLeftArrow,
+                mainUI.MainFrame.InventoryRightArrow,
+			}
+
+			for i,v in pairs(setComponentVisibility) do
+				local target_visibility = (typeof(i) == "string" and true or false)
+
+				v:GetPropertyChangedSignal("Visible"):Connect(function()
+					v.Visible = target_visibility
+				end)
+
+				v.Visible = target_visibility
+			end
+
+			game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
+		end
+
+		task.spawn(fixUI)
+
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+		UserInputService.MouseIcon = "rbxassetid://2833720882"
+
+		task.wait()
+		character.HumanoidRootPart.Anchored = false
+
+		require(mainGame).dead = false
+        
+        ProximityPromptService.Enabled = true
+        fakeReviveConnections["ProximityPromptEnabler"] = ProximityPromptService:GetPropertyChangedSignal("Enabled"):Connect(function()
+            ProximityPromptService.Enabled = true
+        end)
+
+        Library:GiveSignal(fakeReviveConnections["ProximityPromptEnabler"])
+
+		workspace.Gravity = 90
+
+        -- ESP Fix :smartindividual:
+        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            task.spawn(function()
+                local roomDetectPart = room:WaitForChild(room.Name, math.huge)
+                if roomDetectPart then
+                    roomDetectPart.Size = Vector3.new(roomDetectPart.Size.X, roomDetectPart.Size.Y * 250, roomDetectPart.Size.Z)
+
+                    local touchEvent = roomDetectPart.Touched:Connect(function(hit)
+                        if hit.Parent == localPlayer.Character and not fakeReviveDebounce then
+                            fakeReviveDebounce = true
+                            localPlayer:SetAttribute("CurrentRoom", tonumber(room.Name))
+                            
+                            task.wait(0.075)
+                            fakeReviveDebounce = false
+                        end
+                    end)
+                    
+                    table.insert(fakeReviveConnections, touchEvent)
+                    Library:GiveSignal(touchEvent)
+                end
+            end)
+        end
+
+        fakeReviveConnections["CurrentRoomFix"] = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+            local roomDetectPart = room:WaitForChild(room.Name, math.huge)
+
+            if roomDetectPart then
+                roomDetectPart.Size = Vector3.new(roomDetectPart.Size.X, roomDetectPart.Size.Y * 100, roomDetectPart.Size.Z)
+
+                local touchEvent = roomDetectPart.Touched:Connect(function(hit)
+                    if hit.Parent == localPlayer.Character and not fakeReviveDebounce then
+                        fakeReviveDebounce = true
+                        localPlayer:SetAttribute("CurrentRoom", tonumber(room.Name))
+
+                        task.wait(0.075)
+                        fakeReviveDebounce = false
+                    end
+                end)
+                
+                table.insert(fakeReviveConnections, touchEvent)
+                Library:GiveSignal(touchEvent)
+            end
+        end)
+
+        Library:GiveSignal(fakeReviveConnections["CurrentRoomFix"])
+
+		Script.Functions.Alert("Fake Death is now iniialized, have fun!", 5)
     end
 end)
 
@@ -3119,6 +3680,28 @@ end))
 
 Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
     task.delay(1, Script.Functions.SetupCharacterConnection, newCharacter)
+    if fakeReviveEnabled then
+        fakeReviveEnabled = false
+
+        for _, connection in pairs(fakeReviveConnections) do
+            connection:Disconnect()
+        end
+        
+        table.clear(fakeReviveConnections)
+
+        if Toggles.FakeRevive.Value then
+            Script.Functions.Alert("You have revived, fake revive has stopped working, enable it again to start fake revive")
+            Toggles.FakeRevive:SetValue(false)
+        end
+
+        if isMines and Toggles.EnableJump.Value then
+            Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
+        else
+            Options.SpeedSlider:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 7)
+        end
+
+        Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
+    end
 end))
 
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(function()
@@ -3261,6 +3844,7 @@ end))
 
 Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
+    if UserInputService:GetFocusedTextBox() then return end
 
     if isFools and Library.IsMobile and input.UserInputType == Enum.UserInputType.Touch and Toggles.GrabBananaJeffToggle.Value then
         if Script.Temp.HoldingItem then
@@ -3531,6 +4115,15 @@ task.spawn(Script.Functions.SetupCharacterConnection, character)
 Library:OnUnload(function()
     -- disconnect hook
     if mtHook then hookmetamethod(game, "__namecall", mtHook) end
+    if _fixDistanceFromCharacter then hookmetamethod(localPlayer, "__namecall", _fixDistanceFromCharacter) end
+
+    if fakeReviveEnabled then
+        for _, connection in pairs(fakeReviveConnections) do
+            if connection.Connected then connection:Disconnect() end
+        end
+
+        table.clear(fakeReviveConnections)
+    end
 
     if character then
         local speedBoostAssignObj = isFools and humanoid or character
@@ -3635,6 +4228,9 @@ MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
 CreditsGroup:AddLabel("deividcomsono - script dev")
 CreditsGroup:AddLabel("upio - script dev")
+CreditsGroup:AddDivider()
+CreditsGroup:AddLabel("Script Contributors:")
+CreditsGroup:AddLabel("mstudio45 - fake revive & firepp")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
