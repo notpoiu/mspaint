@@ -1885,7 +1885,14 @@ task.spawn(function()
             })
         end
 
+
+
         local Hotel_ModifiersGroupBox = Tabs.Floor:AddRightGroupbox("Modifiers") do
+            Hotel_ModifiersGroupBox:AddToggle("AntiA90", {
+                Text = "Anti-A90",
+                Default = false
+            })
+
             Hotel_ModifiersGroupBox:AddToggle("NoJammin", {
                 Text = "No Jammin",
                 Default = false
@@ -1899,6 +1906,15 @@ task.spawn(function()
                         if v:IsA("BasePart") then v.CanTouch = not value end
                     end
                 end
+            end
+        end)
+
+        Toggles.AntiA90:OnChanged(function(value)
+            if not mainGame then return end
+            local module = mainGame:FindFirstChild("A90", true) or mainGame:FindFirstChild("_A90", true)
+        
+            if module then
+                module.Name = value and "_A90" or "A90"
             end
         end)
 
