@@ -111,8 +111,7 @@ local PromptTable = {
         "UnlockPrompt",
         "ValvePrompt"
     },
-
-    Objects = {
+    ClipObjects = {
         "LeverForGate",
         "LiveBreakerPolePickup",
         "LiveHintBook",
@@ -772,7 +771,7 @@ function Script.Functions.ChildCheck(child)
                 child.HoldDuration = 0
             end
     
-            if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.Objects, child.Parent.Name)) then
+            if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.ClipObjects, child.Parent.Name)) then
                 child.RequiresLineOfSight = false
                 if child.Name == "ModulePrompt" then
                     child.Enabled = true
@@ -2540,7 +2539,7 @@ end)
 
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.Objects, prompt.Parent.Name)) then
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
             if value then
                 prompt.RequiresLineOfSight = false
                 if prompt.Name == "ModulePrompt" then
@@ -2628,6 +2627,7 @@ function Script.Functions.SpeedBypass()
     local function cleanup()
         -- reset if changed speed bypass method
         speedBypassing = false
+
         if collisionClone then
             if SpeedBypassMethod == "Massless" then
                 collisionClone.Massless = true
