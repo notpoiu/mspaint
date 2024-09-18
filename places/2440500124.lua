@@ -163,6 +163,7 @@ local isFools = floor.Value == "Fools"
 local currentRoom = localPlayer:GetAttribute("CurrentRoom") or 0
 local nextRoom = currentRoom + 1
 
+local speedBypassing = false
 local lastSpeed = 0
 local bypassed = false
 
@@ -2619,10 +2620,14 @@ Toggles.UpsideDown:OnChanged(function(value)
 end)
 
 function Script.Functions.SpeedBypass()
+    if speedBypassing then return end
+    speedBypassing = true
+
     local SpeedBypassMethod = Options.SpeedBypassMethod.Value
 
     local function cleanup()
         -- reset if changed speed bypass method
+        speedBypassing = false
         if collisionClone then
             if SpeedBypassMethod == "Massless" then
                 collisionClone.Massless = true
