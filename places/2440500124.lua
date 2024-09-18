@@ -1137,6 +1137,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     collision = character:WaitForChild("Collision")
     if collision then
+        if Toggles.UpsideDown.Value then
+            collision.Rotation = Vector3.new(collision.Rotation.X, collision.Rotation.Y, -90)
+        end
+
         collisionClone = collision:Clone()
         collisionClone.CanCollide = false
         collisionClone.Massless = true
@@ -2614,7 +2618,7 @@ Toggles.UpsideDown:OnChanged(function(value)
     if not collision then return end
     
     local rotation = collision.Rotation
-    collision.Rotation = value and Vector3.new(rotation.X, rotation.Y, 90) or Vector3.new(rotation.X, rotation.Y, -90)
+    collision.Rotation = value and Vector3.new(rotation.X, rotation.Y, -90) or Vector3.new(rotation.X, rotation.Y, 90)
 end)
 
 function Script.Functions.SpeedBypass()
