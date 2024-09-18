@@ -3555,8 +3555,6 @@ SaveManager:SetLibrary(Library)
 
 SaveManager:IgnoreThemeSettings()
 
-SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-
 ThemeManager:SetFolder("mspaint")
 SaveManager:SetFolder("mspaint/doors")
 
