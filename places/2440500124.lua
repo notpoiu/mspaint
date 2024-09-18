@@ -42,8 +42,8 @@ local Script = {
     Functions = {},
     Temp = {
         AnchorFinished = {},
-        Guidance = {},
         FlyBody = nil,
+        Guidance = {},
     }
 }
 
@@ -154,6 +154,9 @@ local isRooms = floor.Value == "Rooms"
 local isHotel = floor.Value == "Hotel"
 local isBackdoor = floor.Value == "Backdoor"
 local isFools = floor.Value == "Fools"
+
+local currentRoom = localPlayer:GetAttribute("CurrentRoom") or 0
+local nextRoom = currentRoom + 1
 
 local lastSpeed = 0
 local bypassed = false
@@ -397,7 +400,7 @@ function Script.Functions.ESP(args: ESP)
         end
     end
 
-    ESPManager.RSConnection = RunService.RenderStepped:Connect(function()
+    ESPManager.RSConnection = RunService.Stepped:Connect(function()
         if not ESPManager.Object or not ESPManager.Object:IsDescendantOf(workspace) then
             ESPManager.Destroy()
             return
@@ -436,10 +439,9 @@ function Script.Functions.ESP(args: ESP)
 end
 
 function Script.Functions.DoorESP(room)
-    local door = room:WaitForChild("Door")
-    local locked = room:GetAttribute("RequiresKey")
+    local door = room:WaitForChild("Door", 5)
 
-    if door and not door:GetAttribute("Opened") then
+    if door then
         local doorNumber = tonumber(room.Name) + 1
         if isMines then
             doorNumber += 100
@@ -452,64 +454,114 @@ function Script.Functions.DoorESP(room)
             end
         end
 
+        
         local isDoubleDoor = doors > 1
+
+        local opened = door:GetAttribute("Opened")
+        local locked = room:GetAttribute("RequiresKey")
+
+        local doorState = opened and " [Opened]" or (locked and " [Locked]" or "")
         local doorEsp = Script.Functions.ESP({
             Type = "Door",
             Object = isDoubleDoor and door or door:WaitForChild("Door"),
-            Text = locked and string.format("Door %s [Locked]", doorNumber) or string.format("Door %s", doorNumber),
+            Text = string.format("Door %s %s", doorNumber, doorState),
             Color = Options.DoorEspColor.Value,
             IsDoubleDoor = isDoubleDoor
         })
 
         door:GetAttributeChangedSignal("Opened"):Connect(function()
-            doorEsp.Destroy()
+            doorEsp.Text = string.format("Door %s [Opened]", doorNumber)
         end)
     end
 end 
 
-function Script.Functions.ObjectiveESP(room)
-    if room:GetAttribute("RequiresKey") then
-        local key = room:FindFirstChild("KeyObtain", true)
+function Script.Functions.ObjectiveESP(child)
+    -- Backdoor
+    if child.Name == "TimerLever" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = string.format("Timer Lever [+%s]", child.TakeTimer.TextLabel.Text),
+            Color = Options.ObjectiveEspColor.Value
+        })
+    -- Backdoor + Hotel
+    elseif child.Name == "KeyObtain" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Key",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    -- Hotel
+    elseif child.Name == "EletricalKeyObtain" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Eletrical Key",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "LeverForGate" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Gate Lever",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "LiveHintBook" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Book",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "LiveBreakerPolePickup" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Breaker",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    -- Mines
+    elseif child.Name == "MinesGenerator" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Generator",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "MinesGateButton" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Gate Power Button",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "FuseObtain" then
+        Script.Functions.ESP({
+            Type = "Objective",
+            Object = child,
+            Text = "Fuse",
+            Color = Options.ObjectiveEspColor.Value
+        })
+    elseif child.Name == "MinesAnchor" then
+        local sign = child:WaitForChild("Sign", 5)
 
-        if key then
+        if sign and sign:FindFirstChild("TextLabel") then
             Script.Functions.ESP({
                 Type = "Objective",
-                Object = key,
-                Text = string.format("Key %s", room.Name + 1),
+                Object = child,
+                Text = string.format("Anchor %s", sign.TextLabel.Text),
                 Color = Options.ObjectiveEspColor.Value
             })
         end
-    elseif room:GetAttribute("RequiresGenerator") then
-        local generator = room:FindFirstChild("MinesGenerator", true)
-        local gateButton = room:FindFirstChild("MinesGateButton", true)
+    elseif child.Name == "WaterPump" then
+        local wheel = child:WaitForChild("Wheel", 5)
 
-        if generator then
+        if wheel then
             Script.Functions.ESP({
                 Type = "Objective",
-                Object = generator,
-                Text = "Generator",
-                Color = Options.ObjectiveEspColor.Value
-            })
-        end
-
-        if gateButton then
-            Script.Functions.ESP({
-                Type = "Objective",
-                Object = gateButton,
-                Text = "Gate Power Button",
-                Color = Options.ObjectiveEspColor.Value
-            })
-        end
-    end
-    
-    if room:FindFirstChild("Gate") ~= nil then
-        local lever = room:FindFirstChild("LeverForGate", true)
-
-        if lever then
-            Script.Functions.ESP({
-                Type = "Objective",
-                Object = lever,
-                Text = "Gate Lever",
+                Object = wheel,
+                Text = "Water Pump",
                 Color = Options.ObjectiveEspColor.Value
             })
         end
@@ -587,99 +639,29 @@ end
 function Script.Functions.GuidingLightEsp(guidance)
     local part = guidance:Clone()
     part.Anchored = true
-    part.Size = Vector3.new(2, 2, 2)
+    part.Size = Vector3.new(3, 3, 3)
+    part.Transparency = 0.5
+    part.Name = "_Guidance"
+
     part:ClearAllChildren()
-    
-    local model = Instance.new("Model")
-    model.Name = "_Guidance"
-    model.PrimaryPart = part
+    part.Parent = workspace
 
-    part.Parent = model
-    model.Parent = workspace
-
-    Script.Temp.Guidance[guidance] = model
+    Script.Temp.Guidance[guidance] = part
 
     local guidanceEsp = Script.Functions.ESP({
         Type = "Guiding",
-        Object = model,
+        Object = part,
         Text = "Guidance",
-        Color = Options.GuidingLightEspColor.Value,
-        IsEntity = true
+        Color = Options.GuidingLightEspColor.Value
     })
 
     guidance.AncestryChanged:Connect(function()
         if not guidance:IsDescendantOf(workspace) then
             if Script.Temp.Guidance[guidance] then Script.Temp.Guidance[guidance] = nil end
             if guidanceEsp then guidanceEsp.Destroy() end
-            model:Destroy()
+            part:Destroy()
         end
     end)
-end
-
-function Script.Functions.RoomESP(room)
-    local waitLoad = room:GetAttribute("RequiresGenerator") == true or room.Name == "50"
-
-    if Toggles.DoorESP.Value then
-        Script.Functions.DoorESP(room)
-    end
-    
-    if Toggles.ObjectiveESP.Value then
-        task.delay(waitLoad and 3 or 1, Script.Functions.ObjectiveESP, room)
-    end
-end
-
-function Script.Functions.ObjectiveESPCheck(child)
-    if child.Name == "LiveHintBook" then
-        Script.Functions.ESP({
-            Type = "Objective",
-            Object = child,
-            Text = "Book",
-            Color = Options.ObjectiveEspColor.Value
-        })
-    elseif child.Name == "LiveBreakerPolePickup" then
-        Script.Functions.ESP({
-            Type = "Objective",
-            Object = child,
-            Text = "Breaker",
-            Color = Options.ObjectiveEspColor.Value
-        })
-    elseif child.Name == "FuseObtain" then
-        Script.Functions.ESP({
-            Type = "Objective",
-            Object = child,
-            Text = "Fuse",
-            Color = Options.ObjectiveEspColor.Value
-        })
-    elseif child.Name == "MinesAnchor" then
-        local sign = child:WaitForChild("Sign", 5)
-
-        if sign and sign:FindFirstChild("TextLabel") then
-            Script.Functions.ESP({
-                Type = "Objective",
-                Object = child,
-                Text = string.format("Anchor %s", sign.TextLabel.Text),
-                Color = Options.ObjectiveEspColor.Value
-            })
-        end
-    elseif child.Name == "WaterPump" then
-        local wheel = child:WaitForChild("Wheel", 5)
-
-        if wheel then
-            Script.Functions.ESP({
-                Type = "Objective",
-                Object = wheel,
-                Text = "Water Pump",
-                Color = Options.ObjectiveEspColor.Value
-            })
-        end
-    elseif child.Name == "TimerLever" then
-        Script.Functions.ESP({
-            Type = "Objective",
-            Object = child,
-            Text = "Time Lever [+" .. child.TakeTimer.TextLabel.Text .. "]",
-            Color = Options.ObjectiveEspColor.Value
-        })
-    end
 end
 
 function Script.Functions.GetAllPromptsWithCondition(condition)
@@ -768,7 +750,7 @@ function Script.Functions.CameraCheck(child)
     end
 end
 
-function Script.Functions.ChildCheck(child, includeESP)
+function Script.Functions.ChildCheck(child)
     if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) then
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
@@ -873,20 +855,6 @@ function Script.Functions.ChildCheck(child, includeESP)
             })
         end
 
-        if child:GetAttribute("Storage") == "ChestBox" and Toggles.ChestESP.Value then
-            Script.Functions.ChestESP(child)
-        end
-
-        if (child:GetAttribute("LoadModule") == "Wardrobe" or child:GetAttribute("LoadModule") == "Bed" or child.Name == "Rooms_Locker") and Toggles.HidingSpotESP.Value then
-            Script.Functions.HidingSpotESP(child)
-        end
-
-        if Script.Functions.ItemCondition(child) then
-            if Toggles.ItemESP.Value then
-                Script.Functions.ItemESP(child)
-            end
-        end
-
         if child.Name == "Snare" and Toggles.AntiSnare.Value then
             child:WaitForChild("Hitbox", 5).CanTouch = false
         end
@@ -895,10 +863,6 @@ function Script.Functions.ChildCheck(child, includeESP)
         end
         if (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
             Script.Functions.DisableDupe(child, true, child:GetAttribute("LoadModule") == "SpaceSideroom")
-        end
-
-        if child.Name == "GoldPile" and Toggles.GoldESP.Value then
-            Script.Functions.GoldESP(child)
         end
 
         if (isHotel or isFools) and (child.Name == "ChandelierObstruction" or child.Name == "Seek_Arm") and Toggles.AntiSeekObstructions.Value then
@@ -945,12 +909,6 @@ function Script.Functions.ChildCheck(child, includeESP)
         end
     end
 
-    if includeESP then
-        if Toggles.ObjectiveESP.Value then
-            task.spawn(Script.Functions.ObjectiveESPCheck, child)
-        end
-    end
-
     if Toggles.EntityESP.Value then
         if table.find(SideEntityName, child.Name) then
             if not child.PrimaryPart then
@@ -959,7 +917,7 @@ function Script.Functions.ChildCheck(child, includeESP)
                 repeat
                     waiting += task.wait()
                 until child.PrimaryPart or waiting > 3
-                task.wait(0.1)
+                task.wait(0.2)
             end
 
             Script.Functions.ESP({
@@ -987,13 +945,27 @@ function Script.Functions.SetupCameraConnection(camera)
     end)
 end
 
+function Script.Functions.SetupCurrentRoomConnection(room)
+    if Script.Connections["CurrentRoom"] then
+        Script.Connections["CurrentRoom"]:Disconnect()
+    end
+
+    Script.Connections["CurrentRoom"] = room.DescendantAdded:Connect(function(child)
+        if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
+            Script.Functions.ItemESP(child)
+        elseif Toggles.GoldESP.Value and child.Name == "GoldPile" then
+            Script.Functions.GoldESP(child)
+        end
+    end)
+end
+
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
-        task.spawn(Script.Functions.ChildCheck, child, false)
+        task.spawn(Script.Functions.ChildCheck, child)
     end
 
     Script.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
-        task.delay(0.1, Script.Functions.ChildCheck, child, true)
+        task.delay(0.1, Script.Functions.ChildCheck, child)
         
         task.spawn(function()
             if child.Name == "TriggerEventCollision" and Toggles.DeleteSeek.Value and character then
@@ -2697,8 +2669,12 @@ end)
 
 Toggles.DoorESP:OnChanged(function(value)
     if value then
-        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
-            Script.Functions.DoorESP(room)
+        if workspace.CurrentRooms[currentRoom]:FindFirstChild("Door") then
+            Script.Functions.DoorESP(workspace.CurrentRooms[currentRoom])
+        end
+
+        if workspace.CurrentRooms[nextRoom]:FindFirstChild("Door") then
+            Script.Functions.DoorESP(workspace.CurrentRooms[nextRoom])
         end
     else
         for _, esp in pairs(Script.ESPTable.Door) do
@@ -2715,11 +2691,10 @@ end)
 
 Toggles.ObjectiveESP:OnChanged(function(value)
     if value then
-        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
-            task.spawn(Script.Functions.ObjectiveESP, room)
-            
-            for _, child in pairs(room:GetDescendants()) do
-                task.spawn(Script.Functions.ObjectiveESPCheck, child)
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, asset in pairs(currentRoomModel:GetDescendants()) do
+                task.spawn(Script.Functions.ObjectiveESP, asset)
             end
         end
     else
@@ -2769,9 +2744,12 @@ Toggles.ItemESP:OnChanged(function(value)
             end
         end
 
-        for _, item in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if Script.Functions.ItemCondition(item) then
-                Script.Functions.ItemESP(item)
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, item in pairs(currentRoomModel:GetDescendants()) do
+                if Script.Functions.ItemCondition(item) then
+                    Script.Functions.ItemESP(item)
+                end
             end
         end
     else
@@ -2789,9 +2767,12 @@ end)
 
 Toggles.ChestESP:OnChanged(function(value)
     if value then
-        for _, chest in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if chest:IsA("Model") and chest:GetAttribute("Storage") == "ChestBox" then
-                Script.Functions.ChestESP(chest)
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, chest in pairs(currentRoomModel:GetDescendants()) do
+                if chest:GetAttribute("Storage") == "ChestBox" then
+                    Script.Functions.ChestESP(chest)
+                end
             end
         end
     else
@@ -2829,11 +2810,14 @@ end)
 
 Toggles.HidingSpotESP:OnChanged(function(value)
     if value then
-        for _, wardrobe in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if wardrobe:IsA("Model") and wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" then
-                Script.Functions.HidingSpotESP(wardrobe)
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, wardrobe in pairs(currentRoomModel:GetDescendants()) do
+                if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" then
+                    Script.Functions.HidingSpotESP(wardrobe)
+                end
             end
-        end
+        end 
     else
         for _, esp in pairs(Script.ESPTable.HidingSpot) do
             esp.Destroy()
@@ -2849,9 +2833,12 @@ end)
 
 Toggles.GoldESP:OnChanged(function(value)
     if value then
-        for _, gold in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if gold.Name == "GoldPile" then
-                Script.Functions.GoldESP(gold)
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, gold in pairs(currentRoomModel:GetDescendants()) do
+                if gold.Name == "GoldPile" then
+                    Script.Functions.GoldESP(gold)
+                end
             end
         end
     else
@@ -3085,7 +3072,6 @@ for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
 end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
-    task.spawn(Script.Functions.RoomESP, room)
 end))
 
 
@@ -3117,6 +3103,83 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(functi
         task.delay(1.25, function()
             remotesFolder.Revive:FireServer()
         end)
+    end
+end))
+
+if workspace.CurrentRooms:FindFirstChild(currentRoom) then
+    task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
+end
+Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
+    currentRoom = localPlayer:GetAttribute("CurrentRoom")
+    nextRoom = currentRoom + 1
+
+    local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+    local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
+
+    if Toggles.DoorESP.Value then
+        for _, doorEsp in pairs(Script.ESPTable.Door) do
+            doorEsp.Destroy()
+        end
+
+        if currentRoomModel then
+            task.spawn(Script.Functions.DoorESP, currentRoomModel)
+        end
+
+        if nextRoomModel then
+            task.spawn(Script.Functions.DoorESP, nextRoomModel)
+        end
+    end
+
+    if Toggles.ObjectiveESP.Value then
+        for _, objectiveEsp in pairs(Script.ESPTable.Objective) do
+            objectiveEsp.Destroy()
+        end
+    end
+    if Toggles.ItemESP.Value then
+        for _, itemEsp in pairs(Script.ESPTable.Item) do
+            itemEsp.Destroy()
+        end
+    end
+    if Toggles.ChestESP.Value then
+        for _, chestEsp in pairs(Script.ESPTable.Chest) do
+            chestEsp.Destroy()
+        end
+    end
+    if Toggles.HidingSpotESP.Value then
+        for _, hidingSpotEsp in pairs(Script.ESPTable.HidingSpot) do
+            hidingSpotEsp.Destroy()
+        end
+    end
+    if Toggles.GoldESP.Value then
+        for _, goldEsp in pairs(Script.ESPTable.Gold) do
+            goldEsp.Destroy()
+        end
+    end
+
+    if currentRoomModel then
+        for _, asset in pairs(currentRoomModel:GetDescendants()) do
+            if Toggles.ObjectiveESP.Value then
+                task.spawn(Script.Functions.ObjectiveESP, asset)
+            end
+    
+            if Toggles.ItemESP.Value and Script.Functions.ItemCondition(asset) then
+                task.spawn(Script.Functions.ItemESP, asset)
+            end
+
+            if Toggles.ChestESP.Value and asset:GetAttribute("Storage") == "ChestBox" then
+                task.spawn(Script.Functions.ChestESP, asset)
+            end
+
+            if Toggles.HidingSpotESP.Value and (asset:GetAttribute("LoadModule") == "Wardrobe" or asset:GetAttribute("LoadModule") == "Bed" or asset.Name == "Rooms_Locker") then
+                Script.Functions.HidingSpotESP(asset)
+            end
+
+            if Toggles.GoldESP.Value and asset.Name == "GoldPile" then
+                Script.Functions.GoldESP(asset)
+            end
+        end
+    
+        Script.Functions.SetupCurrentRoomConnection(currentRoomModel)
     end
 end))
 
@@ -3427,9 +3490,9 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     task.spawn(function()
-        for guidance, model in pairs(Script.Temp.Guidance) do
+        for guidance, part in pairs(Script.Temp.Guidance) do
             if not guidance:IsDescendantOf(workspace) then continue end
-            model:PivotTo(guidance.CFrame)
+            part.CFrame = guidance.CFrame
         end
     end)
 end))
