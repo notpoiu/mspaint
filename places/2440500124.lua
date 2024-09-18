@@ -13,6 +13,12 @@ local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
+--// Loading Wait \\--
+if not game.IsLoaded then game.Loaded:Wait() end
+if Players.LocalPlayer.PlayerGui:FindFirstChild("LoadingUI") and Players.LocalPlayer.PlayerGui.LoadingUI.Enabled then
+    repeat task.wait() until not game.Players.LocalPlayer.PlayerGui.LoadingUI.Enabled
+end
+
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
 local isnetowner = isnetworkowner or function(part: BasePart)
