@@ -1371,6 +1371,11 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     PlayerGroupBox:AddToggle("Noclip", {
         Text = "Noclip",
         Default = false
+    }):AddKeyPicker("NoclipKey", {
+        Mode = "Toggle",
+        Default = "N",
+        Text = "Noclip",
+        SyncToggleState = true
     })
 
     PlayerGroupBox:AddToggle("Fly", {
