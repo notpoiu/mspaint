@@ -4119,7 +4119,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         if Toggles.AntiEyes.Value and (workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("BackdoorLookman")) then
             if not isFools then
                 -- lsplash meanie for removing other args in motorreplication
-                remotesFolder.MotorReplication:FireServer(-650)
+                remotesFolder.MotorReplication:FireServer(-649)
             else
                 remotesFolder.MotorReplication:FireServer(0, -90, 0, false)
             end
