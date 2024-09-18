@@ -8,6 +8,7 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -129,6 +130,8 @@ local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChi
 local gameData = ReplicatedStorage:WaitForChild("GameData")
 local floor = gameData:WaitForChild("Floor")
 local latestRoom = gameData:WaitForChild("LatestRoom")
+
+local liveModifiers = ReplicatedStorage:WaitForChild("LiveModifiers")
 
 local floorReplicated
 local remotesFolder
@@ -1877,14 +1880,21 @@ end
 task.spawn(function()
     if isHotel then
         local Hotel_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
-
             Hotel_AntiEntityGroupBox:AddToggle("AntiSeekObstructions", {
                 Text = "Anti-Seek Obstructions",
                 Default = false
             })
+        end
+
+        local Hotel_ModifiersGroupBox = Tabs.Floor:AddRightGroupbox("Modifiers") do
+            Hotel_ModifiersGroupBox:AddToggle("NoJammin", {
+                Text = "No Jammin",
+                Default = false
+            })
+        end
 
             Toggles.AntiSeekObstructions:OnChanged(function(value)
-                for i, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+            for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
                     if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
                         for _, obj in pairs(v:GetDescendants()) do
                             if v:IsA("BasePart") then v.CanTouch = not value end
@@ -1892,7 +1902,18 @@ task.spawn(function()
                     end
                 end
             end)
-        end
+
+        Toggles.NoJammin:OnChanged(function(value)
+            if not liveModifiers:FindFirstChild("Jammin") then return end
+
+            if mainGame then
+                local jamSound = mainGame:FindFirstChild("Jam", true)
+                if jamSound then jamSound.Playing = not value end
+            end
+
+            local jamminEffect = SoundService:FindFirstChild("Jamming", true)
+            if jamminEffect then jamminEffect.Enabled = not value end
+        end)
     elseif isMines then
         local Mines_MovementGroupBox = Tabs.Floor:AddLeftGroupbox("Movement") do
             Mines_MovementGroupBox:AddToggle("EnableJump", {
@@ -3801,8 +3822,15 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
 
                 if mainGame then
                     mainGameSrc = require(mainGame)
-                    if not mainGame:WaitForChild("RemoteListener", 5) then return end
+                    
+                    if mainGame:WaitForChild("Health", 5) then
+                        if isHotel and Toggles.NoJammin.Value and liveModifiers:FindFirstChild("Jammin") then
+                            local jamSound = mainGame:FindFirstChild("Jam", true)
+                            if jamSound then jamSound.Playing = false end
+                        end
+                    end
 
+                    if mainGame:WaitForChild("RemoteListener", 5) then
                     if Toggles.AntiScreech.Value then
                         local module = mainGame:FindFirstChild("Screech", true)
 
@@ -3810,12 +3838,12 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
                             module.Name = "_Screech"
                         end
                     end
-
                     if isRooms and Toggles.AntiA90.Value then
                         local module = mainGame:FindFirstChild("A90", true)
 
                         if module then
                             module.Name = "_A90"
+                            end
                         end
                     end
                 end
