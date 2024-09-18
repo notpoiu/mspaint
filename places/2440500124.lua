@@ -2,7 +2,6 @@ if not getgenv().mspaint_loaded then
     getgenv().mspaint_loaded = true
 else return end
 
-
 --// Services \\--
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
@@ -39,6 +38,7 @@ local Script = {
         Chest = {},
         Door = {},
         Entity = {},
+        SideEntity = {},
         Gold = {},
         Guiding = {},
         Item = {},
@@ -55,7 +55,7 @@ local Script = {
     }
 }
 
-local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "Screech", "Halt", "JeffTheKiller", "A60", "A120"}
+local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"}
 local SideEntityName = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"}
 local ShortNames = {
     ["BackdoorRush"] = "Blitz",
@@ -315,7 +315,6 @@ function Script.Functions.ESP(args: ESP)
     local tableIndex = #Script.ESPTable[ESPManager.Type] + 1
 
     if ESPManager.IsEntity and ESPManager.Object.PrimaryPart.Transparency == 1 then
-        ESPManager.Object:SetAttribute("Transparency", ESPManager.Object.PrimaryPart.Transparency)
         ESPManager.Humanoid = Instance.new("Humanoid", ESPManager.Object)
         ESPManager.Object.PrimaryPart.Transparency = 0.99
     end
@@ -399,11 +398,11 @@ function Script.Functions.ESP(args: ESP)
         end
 
         if ESPManager.IsEntity and ESPManager.Object then
-            if ESPManager.Object.PrimaryPart then
-                ESPManager.Object.PrimaryPart.Transparency = ESPManager.Object.PrimaryPart:GetAttribute("Transparency")
-            end
             if ESPManager.Humanoid then
                 ESPManager.Humanoid:Destroy()
+            end
+            if ESPManager.Object.PrimaryPart then
+                ESPManager.Object.PrimaryPart.Transparency = 1
             end
         end
 
@@ -593,6 +592,16 @@ function Script.Functions.EntityESP(entity)
         Text = Script.Functions.GetShortName(entity.Name),
         Color = Options.EntityEspColor.Value,
         IsEntity = entity.Name ~= "JeffTheKiller",
+    })
+end
+
+function Script.Functions.SideEntityESP(entity)
+    Script.Functions.ESP({
+        Type = "SideEntity",
+        Object = entity,
+        Text = Script.Functions.GetShortName(entity.Name),
+        TextParent = entity.PrimaryPart,
+        Color = Options.EntityEspColor.Value,
     })
 end
 
@@ -924,27 +933,6 @@ function Script.Functions.ChildCheck(child)
 
         if not table.find(SlotsName, child.Name) then
             child.Transparency = 1
-        end
-    end
-
-    if Toggles.EntityESP.Value then
-        if table.find(SideEntityName, child.Name) then
-            if not child.PrimaryPart then
-                local waiting = 0
-
-                repeat
-                    waiting += task.wait()
-                until child.PrimaryPart or waiting > 3
-                task.wait(0.2)
-            end
-
-            Script.Functions.ESP({
-                Type = "Entity",
-                Object = child,
-                Text = Script.Functions.GetShortName(child.Name),
-                TextParent = child.PrimaryPart,
-                Color = Options.EntityEspColor.Value
-            })
         end
     end
 end
@@ -1899,15 +1887,15 @@ task.spawn(function()
             })
         end
 
-            Toggles.AntiSeekObstructions:OnChanged(function(value)
+        Toggles.AntiSeekObstructions:OnChanged(function(value)
             for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
-                    if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
-                        for _, obj in pairs(v:GetDescendants()) do
-                            if v:IsA("BasePart") then v.CanTouch = not value end
-                        end
+                if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
+                    for _, obj in pairs(v:GetDescendants()) do
+                        if v:IsA("BasePart") then v.CanTouch = not value end
                     end
                 end
-            end)
+            end
+        end)
 
         Toggles.NoJammin:OnChanged(function(value)
             if not liveModifiers:FindFirstChild("Jammin") then return end
@@ -3313,19 +3301,19 @@ end)
 
 Toggles.EntityESP:OnChanged(function(value)
     if value then
-        for _, entity in pairs(workspace.CurrentRooms:GetDescendants()) do
-            if table.find(SideEntityName, entity.Name) then
-                Script.Functions.ESP({
-                    Type = "Entity",
-                    Object = entity,
-                    Text = Script.Functions.GetShortName(entity.Name),
-                    TextParent = entity.PrimaryPart,
-                    Color = Options.EntityEspColor.Value
-                })
+        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        if currentRoomModel then
+            for _, entity in pairs(currentRoomModel:GetDescendants()) do
+                if table.find(SideEntityName, entity.Name) then
+                    Script.Functions.SideEntityESP(entity)
+                end
             end
         end
     else
         for _, esp in pairs(Script.ESPTable.Entity) do
+            esp.Destroy()
+        end
+        for _, esp in pairs(Script.ESPTable.SideEntity) do
             esp.Destroy()
         end
     end
@@ -3764,10 +3752,14 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
             task.spawn(Script.Functions.DoorESP, nextRoomModel)
         end
     end
-
     if Toggles.ObjectiveESP.Value then
         for _, objectiveEsp in pairs(Script.ESPTable.Objective) do
             objectiveEsp.Destroy()
+        end
+    end
+    if Toggles.EntityESP.Value then
+        for _, sideEntityESP in pairs(Script.ESPTable.SideEntity) do
+            sideEntityESP.Destroy()
         end
     end
     if Toggles.ItemESP.Value then
@@ -3795,6 +3787,10 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
         for _, asset in pairs(currentRoomModel:GetDescendants()) do
             if Toggles.ObjectiveESP.Value then
                 task.spawn(Script.Functions.ObjectiveESP, asset)
+            end
+
+            if Toggles.EntityESP.Value and table.find(SideEntityName, asset.Name) then    
+                task.spawn(Script.Functions.SideEntityESP, asset)
             end
     
             if Toggles.ItemESP.Value and Script.Functions.ItemCondition(asset) then
@@ -3828,7 +3824,7 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
 
                 if mainGame then
                     mainGameSrc = require(mainGame)
-                    
+
                     if mainGame:WaitForChild("Health", 5) then
                         if isHotel and Toggles.NoJammin.Value and liveModifiers:FindFirstChild("Jammin") then
                             local jamSound = mainGame:FindFirstChild("Jam", true)
@@ -3837,18 +3833,18 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
                     end
 
                     if mainGame:WaitForChild("RemoteListener", 5) then
-                    if Toggles.AntiScreech.Value then
-                        local module = mainGame:FindFirstChild("Screech", true)
-
-                        if module then
-                            module.Name = "_Screech"
+                        if Toggles.AntiScreech.Value then
+                            local module = mainGame:FindFirstChild("Screech", true)
+    
+                            if module then
+                                module.Name = "_Screech"
+                            end
                         end
-                    end
-                    if isRooms and Toggles.AntiA90.Value then
-                        local module = mainGame:FindFirstChild("A90", true)
-
-                        if module then
-                            module.Name = "_A90"
+                        if isRooms and Toggles.AntiA90.Value then
+                            local module = mainGame:FindFirstChild("A90", true)
+    
+                            if module then
+                                module.Name = "_A90"
                             end
                         end
                     end
