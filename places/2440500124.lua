@@ -64,6 +64,11 @@ local HidingPlaceName = {
     ["Rooms"] = "Locker",
     ["Mines"] = "Locker"
 }
+local CutsceneExclude = {
+    "FigureHotelChase",
+    "Elevator1",
+    "MinesFinale"
+}
 local SlotsName = {
     "Oval",
     "Square",
@@ -2926,12 +2931,24 @@ Toggles.AntiLag:OnChanged(function(value)
 end)
 
 Toggles.NoCutscenes:OnChanged(function(value)
-    if not mainGame then return end
-
+    if mainGame then
     local cutscenes = mainGame:FindFirstChild("Cutscenes", true)
     if cutscenes then
         for _, cutscene in pairs(cutscenes:GetChildren()) do
-            cutscene.Name = value and "_" .. cutscene.Name or cutscene.Name:gsub("_", "")
+                if table.find(CutsceneExclude, cutscene.Name) then continue end
+    
+                local defaultName = cutscene.Name:gsub("_", "")
+                cutscene.Name = value and "_" .. defaultName or defaultName
+            end
+        end
+    end
+
+    if floorReplicated then
+        for _, cutscene in pairs(floorReplicated:GetChildren()) do
+            if not cutscene:IsA("ModuleScript") or table.find(CutsceneExclude, cutscene.Name) then continue end
+
+            local defaultName = cutscene.Name:gsub("_", "")
+            cutscene.Name = value and "_" .. defaultName or defaultName
         end
     end
 end)
