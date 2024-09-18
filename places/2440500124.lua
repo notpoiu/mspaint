@@ -91,7 +91,6 @@ local PromptTable = {
         ["UnlockPrompt"] = true,
         ["ValvePrompt"] = false,
     },
-
     AuraObjects = {
         "Lock",
         "Button"
@@ -498,11 +497,11 @@ function Script.Functions.ObjectiveESP(child)
             Color = Options.ObjectiveEspColor.Value
         })
     -- Hotel
-    elseif child.Name == "EletricalKeyObtain" then
+    elseif child.Name == "ElectricalKeyObtain" then
         Script.Functions.ESP({
             Type = "Objective",
             Object = child,
-            Text = "Eletrical Key",
+            Text = "Electrical Key",
             Color = Options.ObjectiveEspColor.Value
         })
     elseif child.Name == "LeverForGate" then
@@ -2937,9 +2936,9 @@ end)
 
 Toggles.NoCutscenes:OnChanged(function(value)
     if mainGame then
-    local cutscenes = mainGame:FindFirstChild("Cutscenes", true)
-    if cutscenes then
-        for _, cutscene in pairs(cutscenes:GetChildren()) do
+        local cutscenes = mainGame:FindFirstChild("Cutscenes", true)
+        if cutscenes then
+            for _, cutscene in pairs(cutscenes:GetChildren()) do
                 if table.find(CutsceneExclude, cutscene.Name) then continue end
     
                 local defaultName = cutscene.Name:gsub("_", "")
