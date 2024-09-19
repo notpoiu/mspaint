@@ -3097,10 +3097,14 @@ Toggles.FakeRevive:OnChanged(function(value)
 			end))
 		end
 
+        if character:FindFirstChild("LeftFoot") then character.LeftFoot.CanCollide = true end
+        if character:FindFirstChild("RightFoot") then character.RightFoot.CanCollide = true end
+        
         fakeReviveConnections["mainStepped"] = RunService.RenderStepped:Connect(function()
             -- deivid gonna get mad at this line :content:
             if character:FindFirstChild("Humanoid") then character.Humanoid.WalkSpeed = 15 + Options.SpeedSlider.Value end
             
+
             if rootPart and rootPart.Position.Y < -150 then
                 rootPart.Position = workspace.SpawnLocation.Position
             end
