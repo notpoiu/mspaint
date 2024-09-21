@@ -1545,16 +1545,6 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
             end
         end)
     elseif isMines then
-        AutomationGroupBox:AddToggle("MinecartSpam", {
-            Text = "Spam Minecart Interact",
-            Default = false
-        }):AddKeyPicker("MinecartSpamKey", {
-            Default = "Q",
-            Text = "Spam Minecart Interact",
-            Mode = Library.IsMobile and "Toggle" or "Hold",
-            SyncToggleState = Library.IsMobile
-        })
-
         AutomationGroupBox:AddToggle("AutoAnchorSolver", {
             Text = "Auto Anchor Solver",
             Default = false
@@ -4105,19 +4095,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                             Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
                         end
                     end)
-                end
-            end
-            
-            local isEnabledMobile = (Toggles.MinecartSpam.Value and Library.IsMobile)
-            local isEnabledPC = (Options.MinecartSpamKey:GetState() and Toggles.MinecartSpam.Value and not Library.IsMobile)
-    
-            if isEnabledMobile or isEnabledPC then
-                local prompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
-                    return prompt.Name == "PushPrompt" and prompt.Parent.Name == "Cart"
-                end)
-    
-                if prompt then
-                    fireproximityprompt(prompt)
                 end
             end
         end
