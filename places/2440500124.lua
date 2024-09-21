@@ -1,3 +1,6 @@
+--!native
+--!optimize 2
+
 if not getgenv().mspaint_loaded then
     getgenv().mspaint_loaded = true
 else return end
@@ -1657,6 +1660,11 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
 
     BypassGroupBox:AddDivider()
     
+    BypassGroupBox:AddToggle("InfItems", {
+        Text = "Infinite Lockpick",
+        Default = false
+    })
+
     BypassGroupBox:AddToggle("FakeRevive", {
         Text = "Fake Revive",
         Default = false
@@ -3632,6 +3640,38 @@ if isBackdoor then
     end))
 end
 
+Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+    if player ~= localPlayer or not character then return end
+    
+    local isDoorLock = prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock" and not prompt.Parent.Parent:GetAttribute("Opened")
+    local isSkeletonDoor = prompt.Name == "SkullPrompt" and prompt.Parent.Name == "SkullLock" and not (prompt.Parent:FindFirstChild("Door") and prompt.Parent.Door.Transparency == 1)
+    local isChestBox = prompt.Name == "ActivateEventPrompt" and prompt.Parent.Name == "ChestBoxLocked" and prompt.Parent:GetAttribute("Locked")
+    local isRoomsDoorLock = prompt.Parent.Parent.Parent.Name == "RoomsDoor_Entrance" and prompt.Enabled
+    
+    if isDoorLock or isSkeletonDoor or isChestBox or isRoomsDoorLock then
+        local equippedTool = character:FindFirstChildOfClass("Tool")
+        local toolId = equippedTool and equippedTool:GetAttribute("ID")
+
+        if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
+            task.wait(isChestBox and 0.15 or 0)
+            remotesFolder.DropItem:FireServer(equippedTool)
+
+            task.spawn(function()
+                equippedTool.Destroying:Wait() 
+                task.wait(0.15)
+
+                local itemPickupPrompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
+                    return prompt.Name == "ModulePrompt" and prompt.Parent:GetAttribute("Tool_ID") == toolId
+                end)
+
+                if itemPickupPrompt then
+                    fireproximityprompt(itemPickupPrompt)
+                end
+            end)
+        end
+    end
+end))
+
 Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     task.delay(0.1, function()
         if table.find(EntityName, child.Name) then
@@ -4012,7 +4052,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
 
-            for _, prompt in pairs(prompts) do
+            for _, prompt: ProximityPrompt in pairs(prompts) do
+                if prompt:GetAttribute("JeffShop") then continue end
+                if prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" then continue end 
+
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
