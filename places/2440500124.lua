@@ -4045,7 +4045,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             for _, prompt: ProximityPrompt in pairs(prompts) do
                 if prompt:GetAttribute("JeffShop") then continue end
                 if prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" then continue end 
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" then continue end 
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
