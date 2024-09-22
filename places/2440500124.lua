@@ -2672,9 +2672,12 @@ Toggles.UpsideDown:OnChanged(function(value)
 
         task.spawn(function()
             repeat task.wait() until not Toggles.UpsideDown.Value or Library.Unloaded
-            rotation = collision.Rotation
-
-            collision.Rotation = Vector3.new(rotation.X, rotation.Y, 90)
+            
+            if collision then
+                rotation = collision.Rotation
+    
+                collision.Rotation = Vector3.new(rotation.X, rotation.Y, 90)
+            end
         end)
     end
 end)
