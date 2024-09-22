@@ -2327,7 +2327,7 @@ task.spawn(function()
                             if recalculate then break end
                         end
                     else
-                        Script.Functions.Log("Pathfinding failed with status " .. tostring(path.Status), 5, Toggles.AutoRooms.Value)
+                        Script.Functions.Log("Pathfinding failed with status " .. tostring(path.Status), 5, Toggles.AutoRoomsDebug.Value)
                     end
                 end
 
