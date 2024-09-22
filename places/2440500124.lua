@@ -2665,8 +2665,18 @@ end)
 Toggles.UpsideDown:OnChanged(function(value)
     if not collision then return end
     
-    local rotation = collision.Rotation
-    collision.Rotation = value and Vector3.new(rotation.X, rotation.Y, -90) or Vector3.new(rotation.X, rotation.Y, 90)
+    -- im sorry deivid
+    if value then
+        local rotation = collision.Rotation
+        collision.Rotation = Vector3.new(rotation.X, rotation.Y, -90)
+
+        task.spawn(function()
+            repeat task.wait() until not Toggles.UpsideDown.Value or Library.Unloaded
+            rotation = collision.Rotation
+
+            collision.Rotation = Vector3.new(rotation.X, rotation.Y, 90)
+        end)
+    end
 end)
 
 function Script.Functions.SpeedBypass()
