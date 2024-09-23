@@ -635,14 +635,14 @@ function Script.Functions.PlayerESP(player: Player)
     local playerEsp = Script.Functions.ESP({
         Type = "Player",
         Object = player.Character,
-        Text = string.format("%s [%.1f]", player.Name, humanoid.Health),
+        Text = string.format("%s [%.1f]", player.DisplayName, humanoid.Health),
         TextParent = player.Character.PrimaryPart,
         Color = Options.PlayerEspColor.Value
     })
 
     player.Character.Humanoid.HealthChanged:Connect(function(newHealth)
         if newHealth > 0 then
-            playerEsp.Text = Text = string.format("%s [%.1f]", player.Name, newHealth)
+            playerEsp.Text = Text = string.format("%s [%.1f]", player.DisplayName, newHealth)
         else
             playerEsp.Destroy()
         end
