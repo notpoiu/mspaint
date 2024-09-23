@@ -1368,7 +1368,7 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddSlider("VelocityLimiter", {
         Text = "Velocity Limiter",
-        Default = 5,
+        Default = 25,
         Min = 0,
         Max = 25,
         Rounding = 1
