@@ -642,7 +642,7 @@ function Script.Functions.PlayerESP(player: Player)
 
     player.Character.Humanoid.HealthChanged:Connect(function(newHealth)
         if newHealth > 0 then
-            playerEsp.Text = Text = string.format("%s [%.1f]", player.DisplayName, newHealth)
+            playerEsp.Text = string.format("%s [%.1f]", player.DisplayName, newHealth)
         else
             playerEsp.Destroy()
         end
