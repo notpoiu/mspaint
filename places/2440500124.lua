@@ -162,6 +162,7 @@ local humanoid: Humanoid
 local rootPart: BasePart
 local collision
 local collisionClone
+local velocityLimiter
 
 local mtHook
 local _fixDistanceFromCharacter
@@ -1109,6 +1110,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             if collisionClone then
                 collisionClone:Destroy()
             end
+
+            if velocityLimiter then
+                velocityLimiter:Destroy()
+            end
         end)
 
         if isFools then
@@ -1138,6 +1143,13 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             local existingProperties = rootPart.CustomPhysicalProperties
             rootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
         end
+
+        velocityLimiter = Instance.new("LinearVelocity", character)
+        velocityLimiter.Enabled = false
+        velocityLimiter.MaxForce = math.huge
+        velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
+        velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
+        velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
     end
 
     collision = character:WaitForChild("Collision")
@@ -1351,6 +1363,14 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
         Default = 0,
         Min = 0,
         Max = 7,
+        Rounding = 1
+    })
+
+    PlayerGroupBox:AddSlider("VelocityLimiter", {
+        Text = "Velocity Limiter",
+        Default = 5,
+        Min = 0,
+        Max = 50,
         Rounding = 1
     })
 
@@ -4013,7 +4033,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
     if character then
         character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
-        if character:FindFirstChild("Head") then character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 1 or 0 end
+        if character:FindFirstChild("Head") then character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1 end
 
         local speedBoostAssignObj = isFools and humanoid or character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
@@ -4024,8 +4044,14 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
         if rootPart then
             rootPart.CanCollide = not Toggles.Noclip.Value
-        end
 
+            if rootPart.AssemblyLinearVelocity.Magnitude > (Options.VelocityLimiter.Value * 10) then
+                velocityLimiter.Enabled = true
+            else
+                velocityLimiter.Enabled = false
+            end
+        end
+        
         if collision then
             if Toggles.Noclip.Value then
                 collision.CanCollide = not Toggles.Noclip.Value
@@ -4215,6 +4241,10 @@ Library:OnUnload(function()
     if character then
         local speedBoostAssignObj = isFools and humanoid or character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
+
+        if velocityLimiter then
+            velocityLimiter:Destroy()
+        end
     end
 
     if alive then
