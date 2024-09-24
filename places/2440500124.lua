@@ -55,6 +55,7 @@ local Script = {
         AnchorFinished = {},
         FlyBody = nil,
         Guidance = {},
+        MinecartPathfinding = {}
     }
 }
 
@@ -131,6 +132,10 @@ local PromptTable = {
     Excluded = {
         "HintPrompt",
         "InteractPrompt"
+    },
+
+    ParentExcluded = {
+        "Padlock"
     }
 }
 
@@ -782,7 +787,7 @@ function Script.Functions.CameraCheck(child)
 end
 
 function Script.Functions.ChildCheck(child)
-    if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) then
+    if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) and not table.find(PromptTable.ParentExcluded, child.Parent.Name) then
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
             if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
@@ -1335,6 +1340,191 @@ function Script.Functions.EnableBreaker(breaker, value)
     end
 
     breaker.Sound:Play()
+end
+
+type tGroupTrack = {
+    nodes: table,
+    hasStart: boolean,
+    hasEnd: boolean,
+}
+
+function Script.Functions.PathfindSeekMinecartRoom(room: Model)
+    local runnerNodes = room:WaitForChild("RunnerNodes", 5)
+
+    assert(runnerNodes, "Failed to find runner nodes")
+
+    local nodes = runnerNodes:GetChildren()
+    if #nodes <= 1 then return end
+
+    --[[
+        Pathfind is a computational expensive process to make, 
+        however we don't have node loops, 
+        so we can ignore a few verifications.
+        If you want to understand how this is working, search for "Pathfiding Algorithms"
+
+        The shortest explanation i can give is that, this is a custom pathfinding to find "gaps" between
+        nodes and creating "path" groups. With the groups estabilished we can make the correct validations.
+    ]]
+    --Distance weights [DO NOT EDIT, unless something breaks...]
+    local shortWeight = 4
+    local longWeight = 24
+
+    local objective = room:WaitForChild("Door", 5) -- Will be used to find the correct last node.
+
+    local startNode = nodes[1]
+    local endNode = nil
+
+    local groupTrackIndex = 1
+    local stackNode = {} --Group all track groups here.
+    stackNode[groupTrackIndex] = {
+        nodes    = {},
+        hasStart = false,
+        hasEnd   = false,
+    }
+    
+    --Ensure sort all nodes properly (reversed)
+    table.sort(nodes, function(nodeA, nodeB)
+        local roomANameSub = nodeA.Name:gsub("MinecartNode", "")
+        local roomBNameSub = nodeB.Name:gsub("MinecartNode", "")
+        local nodeANumber = tonumber(roomANameSub)
+        local nodeBNumber = tonumber(roomBNameSub)
+
+        return nodeANumber > nodeBNumber
+    end)
+
+    for i = 2, #nodes do
+        local nodeA: Part = nodes[i - 1]
+        local nodeB: Part = endNode and nodes[i] or objective
+
+        local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+        local isEndNode = distance <= shortWeight
+        local isNodeNear = (distance > shortWeight and distance <= longWeight)
+
+        local currentNodeStatus = "Track"
+        if isNodeNear or isEndNode then
+            if not endNode then -- this will only be true, once.
+                currentNodeStatus = "End"
+                endNode = nodeA
+            end
+        else
+            currentNodeStatus = "Fake"
+        end
+
+        --check if group is diff, ignore "End" or "Start" tasks
+        if (currentNodeStatus == "Fake" or currentNodeStatus == "End") and endNode then
+            groupTrackIndex += 1
+            
+            stackNode[groupTrackIndex] = {
+                nodes    = {},
+                hasStart = false,
+                hasEnd   = false,
+            }
+
+            if currentNodeStatus == "End" then
+                stackNode[groupTrackIndex].hasEnd = true
+            end
+        end
+
+        table.insert(stackNode[groupTrackIndex].nodes, nodeA)
+    end
+
+    stackNode[groupTrackIndex].hasStart = true --after the reversed path finding, the last group has the start node.
+    table.insert(stackNode[groupTrackIndex].nodes, startNode)
+    
+    local closestNode = {} --unwanted nodes if any
+    local isPathNotFound = false -- if this is true, we're cooked. No path for you ):
+    
+    if #stackNode > 1 then
+        for trackIndex, v in ipairs(stackNode) do
+            closestNode[trackIndex] = {}
+            if trackIndex <= 1 then continue end
+            
+            table.sort(v.nodes, function(nodeA, nodeB)
+                local nodeAName = nodeA.Name:gsub("MinecartNode", "")
+                local nodeBName = nodeB.Name:gsub("MinecartNode", "")
+                local nodeANumber = tonumber(nodeAName)
+                local nodeBNumber = tonumber(nodeBName)
+
+                return nodeANumber < nodeBNumber
+            end)
+
+            local hasNodeJump = false
+            local gpLast = 1
+            for nodeIndex = 2, #v.nodes, 1 do
+                local nodeA: Part = v.nodes[gpLast]
+                local nodeB: Part = v.nodes[nodeIndex]
+
+                local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+                hasNodeJump = (distance >= longWeight)
+                if not hasNodeJump then gpLast = nodeIndex continue end
+                
+                local nodeSearchPath = nodeB
+
+                local closestDistance = math.huge
+
+                local gpFlast = #v.nodes
+                for i = gpFlast - 1, 1, -1 do
+                    local currentNode = v.nodes[gpFlast]
+                    local Sdistance = (nodeSearchPath:GetPivot().Position - currentNode:GetPivot().Position).Magnitude
+                    gpFlast = i
+
+                    if Sdistance == 0 then continue end --node is self
+
+                    if Sdistance <= closestDistance then
+                        closestDistance = Sdistance
+                        table.insert(closestNode[trackIndex], currentNode)
+                        table.remove(v.nodes, gpFlast+1)
+                        continue
+                    end
+                    break
+                end
+
+                isPathNotFound = not (#closestNode[trackIndex] > 1)
+                break
+            end
+        end
+    end
+
+    local realNodes = {} --our precious nodes finally here :pray:
+    local fakeNodes = {} --we hate you but ok
+    
+    for groupTrackIndex, v: tGroupTrack in ipairs(stackNode) do
+        local finalWrongNode = false
+        if groupTrackIndex == 1 and #stackNode > 1 then
+            finalWrongNode = true 
+        end
+
+        for _, vfinal in ipairs(v.nodes) do
+            if finalWrongNode then
+                table.insert(fakeNodes, vfinal)
+                continue
+            end
+            table.insert(realNodes, vfinal)
+        end
+
+        for _, nfinal in ipairs(closestNode[groupTrackIndex]) do
+            table.insert(fakeNodes, nfinal)
+        end
+    end
+
+    local roomNum = tonumber(room.Name)
+
+    table.sort(realNodes, function(nodeA, nodeB)
+        local nodeAName = nodeA.Name:gsub("MinecartNode", "")
+        local nodeBName = nodeB.Name:gsub("MinecartNode", "")
+        local nodeANumber = tonumber(nodeAName)
+        local nodeBNumber = tonumber(nodeBName)
+        return nodeANumber < nodeBNumber
+    end)
+
+    return {
+        correctNodes = realNodes,
+        incorrectNodes = fakeNodes,
+        success = isPathNotFound,
+        room = roomNum
+    }
 end
 
 function Script.Functions.Alert(message: string, duration: number | nil)
@@ -2042,7 +2232,60 @@ task.spawn(function()
                 Text = "Anticheat Bypass",
                 Default = false
             })
+
+            Mines_AutomationGroupBox:AddToggle("AutoSeekMinecart", {
+                Text = "Auto Seek Minecart",
+                Default = false
+            })
         end
+
+        local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visual") do
+            Mines_VisualGroupBox:AddToggle("SeekMinecartPath", {
+                Text = "Show Correct Minecart Path",
+                Default = false
+            })
+        end
+
+        Toggles.SeekMinecartPath:OnChanged(function(value)
+            if not latestRoom then return end
+            
+            local isInMinecartChase = (latestRoom.Value >= 45 and latestRoom.Value <= 49)
+            if value and isInMinecartChase then
+                for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                    local isMinecartChaseRoom = (tonumber(room.Name) >= 45 and tonumber(room.Name) <= 49)
+                    local isValidRoom = latestRoom.Value <= tonumber(room.Name)
+                    
+                    if isMinecartChaseRoom and isValidRoom then
+                        task.spawn(function()
+                            local path_data = Script.Functions.PathfindSeekMinecartRoom(room)
+                            
+                            if path_data and path_data.success then
+                                for _, node in pairs(path_data.correctNodes) do
+                                    node.Color = Color3.new(0, 1, 0)
+                                    node.Transparency = 0
+                                    node.Shape = Enum.PartType.Ball
+                                    node.Size = Vector3.new(.5, .5, .5)
+                                    node.Material = Enum.Material.Neon
+                                end
+
+                                for _, node in pairs(path_data.incorrectNodes) do
+                                    node.Color = Color3.new(1, 0, 0)
+                                    node.Transparency = 0
+                                    node.Shape = Enum.PartType.Ball
+                                    node.Size = Vector3.new(.5, .5, .5)
+                                    node.Material = Enum.Material.Neon
+                                end
+                                
+                                table.insert(Script.Temp.MinecartPathfinding, path_data)
+                            else
+                                Script.Functions.Alert("Auto Minecart Pathfinding failed for room " .. room.Name, 5)
+                            end
+                        end)
+                    end
+
+                end
+            end
+        end)
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
@@ -2610,7 +2853,7 @@ end)
 
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and not table.find(PromptTable.ParentExcluded, child.Parent.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
             if value then
                 prompt.RequiresLineOfSight = false
                 if prompt.Name == "ModulePrompt" then
@@ -2634,7 +2877,7 @@ end)
 
 Options.PromptReachMultiplier:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) then
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and not table.find(PromptTable.ParentExcluded, child.Parent.Name) then
             if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
 
             prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
@@ -3759,6 +4002,35 @@ for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
 end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
+
+    local isMinecartChaseRoom = (tonumber(room.Name) >= 45 and tonumber(room.Name) <= 49)
+    if isMines and isMinecartChaseRoom and Toggles.SeekMinecartPath.Value then
+        task.spawn(function()
+            local path_data = Script.Functions.PathfindSeekMinecartRoom(room)
+            
+            if path_data and path_data.success then
+                for _, node in pairs(path_data.correctNodes) do
+                    node.Color = Color3.new(0, 1, 0)
+                    node.Transparency = 0
+                    node.Shape = Enum.PartType.Ball
+                    node.Size = Vector3.new(.5, .5, .5)
+                    node.Material = Enum.Material.Neon
+                end
+
+                for _, node in pairs(path_data.incorrectNodes) do
+                    node.Color = Color3.new(1, 0, 0)
+                    node.Transparency = 0
+                    node.Shape = Enum.PartType.Ball
+                    node.Size = Vector3.new(.5, .5, .5)
+                    node.Material = Enum.Material.Neon
+                end
+            else
+                Script.Functions.Alert("Was unable to pathfind room " .. room.Name, 5)
+            end
+
+            table.insert(Script.Temp.MinecartPathfinding, path_data)
+        end)
+    end
 end))
 
 
