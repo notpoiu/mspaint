@@ -1,5 +1,10 @@
 # mspaint
 A decent roblox doors script. Free and Open Source 🥶
 
-[website](https://mspaint.upio.dev/)
-[discord link](https://discord.com/invite/cfyMptntHr)
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()
+```
+
+**Links**:
+- [🌐 Website](https://mspaint.upio.dev/)
+- [💬 Discord](https://discord.com/invite/cfyMptntHr)
