@@ -4383,6 +4383,7 @@ CreditsGroup:AddLabel("upio - script dev")
 CreditsGroup:AddDivider()
 CreditsGroup:AddLabel("Script Contributors:")
 CreditsGroup:AddLabel("mstudio45 - fake revive & firepp")
+CreditsGroup:AddLabel("the_gsc - room detection")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
