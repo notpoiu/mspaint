@@ -129,15 +129,9 @@ local PromptTable = {
     },
 
     Excluded = {
-        Prompt = {
-            "HintPrompt",
-            "InteractPrompt"
-        },
-        
-        Parent = {
-            "Padlock"
-        }
-    },
+        "HintPrompt",
+        "InteractPrompt"
+    }
 }
 
 local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChild("EntityModules")
@@ -788,7 +782,7 @@ function Script.Functions.CameraCheck(child)
 end
 
 function Script.Functions.ChildCheck(child)
-    if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded.Prompt, child.Name) and not table.find(PromptTable.Excluded.Parent, child.Parent.Name) then
+    if child:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, child.Name) then
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
             if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
@@ -2616,7 +2610,7 @@ end)
 
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded.Prompt, child.Name) and not table.find(PromptTable.Excluded.Parent, child.Parent.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
             if value then
                 prompt.RequiresLineOfSight = false
                 if prompt.Name == "ModulePrompt" then
@@ -2640,7 +2634,7 @@ end)
 
 Options.PromptReachMultiplier:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded.Prompt, child.Name) and not table.find(PromptTable.Excluded.Parent, child.Parent.Name) then
+        if prompt:IsA("ProximityPrompt") and not table.find(PromptTable.Excluded, prompt.Name) then
             if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
 
             prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
