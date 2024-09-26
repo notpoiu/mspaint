@@ -4038,7 +4038,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     local isThirdPersonEnabled = Toggles.ThirdPerson.Value and (Library.IsMobile or Options.ThirdPersonKey:GetState())
     if mainGameSrc then
         if isThirdPersonEnabled then
-            mainGameSrc.finalCamCFrame = mainGameSrc.finalCamCFrame * CFrame.new(1.5, -0.5, 6.5)
+            camera.CFrame = mainGameSrc.finalCamCFrame * CFrame.new(1.5, -0.5, 6.5)
         end
         mainGameSrc.fovtarget = Options.FOV.Value
 
@@ -4053,8 +4053,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
-        character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
-        if character:FindFirstChild("Head") then character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 1 or 0 end
+        if character:FindFirstChild("Head") and not (mainGameSrc and mainGameSrc.stopcam or rootPart.Anchored and not character:GetAttribute("Hiding")) then
+            character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
+            character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1
+        end
 
         local speedBoostAssignObj = if isFools then humanoid else character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
