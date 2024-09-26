@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -53,15 +54,18 @@ local Script = {
     }
 }
 
-local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"}
-local SideEntityName = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"}
-local ShortNames = {
+local EntityTable = {
+    ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
+    ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
+    ["ShortNames"] = {
     ["BackdoorRush"] = "Blitz",
     ["JeffTheKiller"] = "Jeff The Killer"
-}
-local EntityNotify = {
+    },
+    ["NotifyMessage"] = {
     ["GloombatSwarm"] = "Gloombats in next room!"
 }
+}
+
 local HidingPlaceName = {
     ["Hotel"] = "Closet",
     ["Backdoor"] = "Closet",
@@ -864,6 +868,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
                     Script.Functions.Alert(string.format("Library Code: %s", output))
+
+                    if Toggles.NotifyChat.Value and count == 0 then
+                        RBXGeneral:SendAsync(string.format("Library Code: %s", output))
+                    end
                 end
             end
         end)
@@ -1060,6 +1068,10 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
                     Script.Functions.Alert(string.format("Library Code: %s", output))
+
+                    if Toggles.NotifyChat.Value and count == 0 then
+                        RBXGeneral:SendAsync(string.format("Library Code: %s", output))
+                    end
                 end
             end
         end)
@@ -1067,8 +1079,8 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
 end
 
 function Script.Functions.GetShortName(entityName: string)
-    if ShortNames[entityName] then
-        return ShortNames[entityName]
+    if EntityTable.ShortNames[entityName] then
+        return EntityTable.ShortNames[entityName]
     end
 
     local suffixPrefix = {
@@ -1687,6 +1699,14 @@ end
 
 local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
+        NotifyTab:AddDropdown("NotifyEntity", {
+            AllowNull = true,
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Default = {},
+            Multi = true,
+
+            Text = "Notify Entities"
+        })
         NotifyTab:AddToggle("NotifyEntity", {
             Text = "Notify Entity",
             Default = false,
@@ -1704,6 +1724,14 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     end
 
     local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
+        NotifySettingsTab:AddToggle("NotifyChat", {
+            Text = "Notify Chat",
+            Tooltip = "Entity and Padlock Code",
+            Default = false,
+        })
+
+        NotifySettingsTab:AddDivider()
+
         NotifySettingsTab:AddToggle("NotifySound", {
             Text = "Play Alert Sound",
             Default = true,
@@ -3254,7 +3282,7 @@ Toggles.EntityESP:OnChanged(function(value)
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, entity in pairs(currentRoomModel:GetDescendants()) do
-                if table.find(SideEntityName, entity.Name) then
+                if table.find(EntityTable.SideNames, entity.Name) then
                     Script.Functions.SideEntityESP(entity)
                 end
             end
@@ -3676,30 +3704,38 @@ end))
 
 Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     task.delay(0.1, function()
-        if table.find(EntityName, child.Name) then
+        local shortName = Script.Functions.GetShortName(child.Name)
+
+        if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
                 repeat
                     task.wait()
                 until Script.Functions.DistanceFromCharacter(child) < 2000 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
-                    local entityName = Script.Functions.GetShortName(child.Name)
-
                     if isFools and child.Name == "RushMoving" then
-                        entityName = child.PrimaryPart.Name:gsub("New", "")
+                        shortName = child.PrimaryPart.Name:gsub("New", "")
                     end
 
                     if Toggles.EntityESP.Value then
                         Script.Functions.EntityESP(child)  
                     end
 
-                    if Toggles.NotifyEntity.Value then
-                        Script.Functions.Alert(entityName .. " has spawned!")
+                    if Options.NotifyEntity.Value[shortName] == true then
+                        Script.Functions.Alert(shortName .. " has spawned!")
+
+                        if Toggles.NotifyChat.Value then
+                            RBXGeneral:SendAsync(shortName .. " has spawned!")
+                        end
                     end
                 end
             end)
-        elseif EntityNotify[child.Name] and Toggles.NotifyEntity.Value then
-            Script.Functions.Alert(EntityNotify[child.Name])
+        elseif EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
+            Script.Functions.Alert(EntityTable.NotifyMessage[child.Name])
+
+            if Toggles.NotifyChat.Value then
+                RBXGeneral:SendAsync(EntityTable.NotifyMessage[child.Name])     
+            end
         end
 
         if isFools then
@@ -3855,7 +3891,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
                 task.spawn(Script.Functions.ObjectiveESP, asset)
             end
 
-            if Toggles.EntityESP.Value and table.find(SideEntityName, asset.Name) then    
+            if Toggles.EntityESP.Value and table.find(EntityTable.SideNames, asset.Name) then    
                 task.spawn(Script.Functions.SideEntityESP, asset)
             end
     
