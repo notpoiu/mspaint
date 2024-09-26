@@ -194,6 +194,7 @@ if not isFools then
     floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
     remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
 else
+    bypassed = true
     remotesFolder = ReplicatedStorage:WaitForChild("EntityInfo")
 end
 
@@ -2469,6 +2470,8 @@ Toggles.NoAccel:OnChanged(function(value)
 end)
 
 Toggles.EnableJump:OnChanged(function(value)
+    if isFools then return end
+
     if character then
         character:SetAttribute("CanJump", value)
     end
@@ -2665,12 +2668,9 @@ Toggles.SpeedBypass:OnChanged(function(value)
     else
         if fakeReviveEnabled then return end
 
-        if isMines and Toggles.EnableJump.Value then
-            Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
-        else
-            Options.SpeedSlider:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 7)
-        end
+        local speed = if bypassed then 45 elseif Toggles.EnableJump.Value then 3 else 7
 
+        Options.SpeedSlider:SetMax(speed)
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
     end
 end)
