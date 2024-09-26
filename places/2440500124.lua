@@ -3643,7 +3643,7 @@ if isBackdoor then
 end
 
 Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    if player ~= localPlayer or not character then return end
+    if player ~= localPlayer or not character or isFools then return end
     
     local isDoorLock = prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock" and not prompt.Parent.Parent:GetAttribute("Opened")
     local isSkeletonDoor = prompt.Name == "SkullPrompt" and prompt.Parent.Name == "SkullLock" and not (prompt.Parent:FindFirstChild("Door") and prompt.Parent.Door.Transparency == 1)
