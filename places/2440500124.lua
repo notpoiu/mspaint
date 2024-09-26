@@ -1597,13 +1597,18 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     end
 
     local ESPSettingsTab = ESPTabBox:AddTab("Settings") do
+        ESPSettingsTab:AddToggle("ESPHighlight", {
+            Text = "Enable Highlight",
+            Default = true,
+        })
+
         ESPSettingsTab:AddToggle("ESPTracer", {
             Text = "Enable Tracer",
             Default = true,
         })
     
-        ESPSettingsTab:AddToggle("ESPHighlight", {
-            Text = "Enable Highlight",
+        ESPSettingsTab:AddToggle("ESPRainbow", {
+            Text = "Rainbow ESP",
             Default = true,
         })
     
@@ -3419,10 +3424,6 @@ Options.GuidingLightEspColor:OnChanged(function(value)
     end
 end)
 
-Toggles.ESPTracer:OnChanged(function(value)
-    ESPLibrary.Tracers.Set(value)
-end)
-
 Toggles.ESPHighlight:OnChanged(function(value)
     warn("changing highlight to", value)
 
@@ -3431,6 +3432,14 @@ Toggles.ESPHighlight:OnChanged(function(value)
             esp.SetVisible(value, false)
         end
     end
+end)
+
+Toggles.ESPTracer:OnChanged(function(value)
+    ESPLibrary.Tracers.Set(value)
+end)
+
+Toggles.ESPRainbow:OnChanged(function(value)
+    ESPLibrary.Rainbow.Set(value)
 end)
 
 Options.ESPFillTransparency:OnChanged(function(value)
