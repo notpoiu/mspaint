@@ -4218,6 +4218,8 @@ Library:OnUnload(function()
     end
 
     if character then
+        character:SetAttribute("CanJump", false)
+
         local speedBoostAssignObj = isFools and humanoid or character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
 
