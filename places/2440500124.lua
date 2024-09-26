@@ -321,9 +321,11 @@ function Script.Functions.ESP(args: ESP)
         FillColor = ESPManager.Color,
         OutlineColor = ESPManager.Color,
         TextColor = ESPManager.Color,
+        TextSize = Options.ESPTextSize.Value or 16,
 
         Tracer = {
             Enabled = Toggles.ESPTracer.Value,
+            From = Options.ESPTracerStart.Value,
             Color = ESPManager.Color
         }
     })
@@ -353,7 +355,7 @@ function Script.Functions.DoorESP(room)
 
         Script.Connections[room.Name .. "Opened"] = door:GetAttributeChangedSignal("Opened"):Connect(function()
             if Script.FeatureConnections.Door[room.Name] then Script.Connections.Door[room.Name]:Disconnect() end
-            doorEsp.SetText(string.format("Door %s [Opened]", doorNumber))
+            if doorEsp then doorEsp.SetText(string.format("Door %s [Opened]", doorNumber)) end
         end)
     end
 end 
@@ -597,46 +599,6 @@ function Script.Functions.GetNearestPromptWithCondition(condition)
 
     return nearestPrompt
 end
-
-function Script.Functions.GetTracerStartY(position: string)
-    if position == "Bottom" then
-        return camera.ViewportSize.Y
-    elseif position == "Center" then
-        return camera.ViewportSize.Y / 2
-    else
-        return 0
-    end
-end
-
---[[function Script.Functions.FindTool(name: string)
-    local function check_player(player)
-        local function check_validity(obj)
-            return obj:FindFirstChild(name) and obj:FindFirstAncestor(name):IsA("Tool")
-        end
-
-        local targetTool
-        if player.Character and check_validity(player.Character) then
-            targetTool = player.Character:FindFirstChild(name)
-        end
-
-        if #player.Backpack:GetChildren() ~= 0 and check_validity(player.Backpack) then
-            targetTool = player.Backpack:FindFirstChild(name)
-        end
-
-        return targetTool
-    end
-
-    local tool = check_player(localPlayer)
-    if not tool then
-        for _, player in pairs(Players:GetPlayers()) do
-            if tool ~= nil then break end
-
-            tool = check_player(player)
-        end
-    end
-
-    return tool
-end]]
 
 function Script.Functions.CameraCheck(child)
     if child:IsA("BasePart") and child.Name == "Guidance" and Toggles.GuidingLightESP.Value then
@@ -1109,6 +1071,7 @@ function Script.Functions.GetShortName(entityName: string)
         ["Ragdoll"] = "",
         ["Rig"] = "",
         ["Wall"] = "",
+        ["Clock"] = " Clock",
         ["Key"] = " Key",
         ["Pack"] = " Pack",
         ["Swarm"] = " Swarm",
@@ -1122,6 +1085,7 @@ function Script.Functions.GetShortName(entityName: string)
 end
 
 function Script.Functions.DistanceFromCharacter(position: Instance | Vector3, getPositionFromCamera: boolean | nil)
+    if not position then return 9e9 end
     if typeof(position) == "Instance" then
         position = position:GetPivot().Position
     end
@@ -1646,6 +1610,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
         ESPSettingsTab:AddToggle("ESPDistance", {
             Text = "Show Distance",
             Default = true,
+            Visible = false, -- Not implemented in mstudio45's ESP library
         })
     
         ESPSettingsTab:AddSlider("ESPFillTransparency", {
@@ -1674,7 +1639,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
 
         ESPSettingsTab:AddDropdown("ESPTracerStart", {
             AllowNull = false,
-            Values = {"Bottom", "Center", "Top"},
+            Values = {"Bottom", "Center", "Top", "Mouse"},
             Default = "Bottom",
             Multi = false,
 
@@ -3451,6 +3416,52 @@ Options.GuidingLightEspColor:OnChanged(function(value)
             OutlineColor = value,
             TextColor = value,
         })
+    end
+end)
+
+Toggles.ESPTracer:OnChanged(function(value)
+    ESPLibrary.Tracers.Set(value)
+end)
+
+Toggles.ESPHighlight:OnChanged(function(value)
+    warn("changing highlight to", value)
+
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.SetVisible(value, false)
+        end
+    end
+end)
+
+Options.ESPFillTransparency:OnChanged(function(value)
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Update({ FillTransparency = value })
+        end
+    end
+end)
+
+Options.ESPOutlineTransparency:OnChanged(function(value)
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Update({ OutlineTransparency = value })
+        end
+    end
+end)
+
+Options.ESPTextSize:OnChanged(function(value)
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Update({ TextSize = value })
+        end
+    end
+end)
+
+Options.ESPTracerStart:OnChanged(function(value)
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Update({ Tracer = { From = value } })
+        end
     end
 end)
 
