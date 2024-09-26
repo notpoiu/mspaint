@@ -815,26 +815,8 @@ function Script.Functions.SetupRoomConnection(room)
         task.delay(0.1, Script.Functions.ChildCheck, child)
         
         task.spawn(function()
-            if child.Name == "TriggerEventCollision" and Toggles.DeleteSeek.Value and character then
-                Script.Functions.Alert("Deleting Seek, do not open the next door...", child:FindFirstChildOfClass("BasePart"))
-                
-                if fireTouch then
-                    repeat
-                        for _, v in pairs(child:GetChildren()) do
-                            fireTouch(v, rootPart, 1)
-                            task.wait()
-                            fireTouch(v, rootPart, 0)
-                            task.wait()
-                        end
-                    until #child:GetChildren() == 0 or not Toggles.DeleteSeek.Value
-                else
-                    child:PivotTo(CFrame.new(rootPart.Position))
-                    rootPart.Anchored = true
-    
-                    repeat task.wait() until #child:GetChildren() == 0 or not Toggles.DeleteSeek.Value
-                end
-                
-                Script.Functions.Alert("Deleted Seek successfully! You can open the next door", 5)
+            if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
+                Script.Functions.DeleteSeek(child)
             end
         end)
     end)
@@ -1192,6 +1174,35 @@ function Script.Functions.EnableBreaker(breaker, value)
     end
 
     breaker.Sound:Play()
+end
+
+function Script.Functions.DeleteSeek(collision: BasePart)
+    if not rootPart then return end
+
+    task.spawn(function()
+        local attemps = 0
+        repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
+        
+        if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
+            if fireTouch then
+                repeat
+                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 1) end
+                    task.wait()
+                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 0) end
+                    task.wait()
+                until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+            else
+                collision:PivotTo(CFrame.new(rootPart.Position))
+                rootPart.Anchored = true
+
+                repeat task.wait() until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+            end
+            
+            if not collision:IsDescendantOf(workspace) then
+                Script.Functions.Alert("Deleted Seek Trigger successfully!")
+            end
+        end
+    end)
 end
 
 function Script.Functions.Alert(message: string, duration: number | nil)
