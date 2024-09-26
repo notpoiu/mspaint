@@ -1709,10 +1709,6 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
 
             Text = "Notify Entities"
         })
-        NotifyTab:AddToggle("NotifyEntity", {
-            Text = "Notify Entity",
-            Default = false,
-        })
 
         NotifyTab:AddToggle("NotifyPadlock", {
             Text = "Notify Library Code",
