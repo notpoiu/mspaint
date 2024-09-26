@@ -225,12 +225,57 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-	Main = Window:AddTab("Main"),
+    Main = Window:AddTab("Main"),
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
     Floor = Window:AddTab("Floor"),
-	["UI Settings"] = Window:AddTab("UI Settings"),
+    ["UI Settings"] = Window:AddTab("UI Settings"),
+    Custom = Window:AddTab("Custom")
 }
+
+local function CreateCustomTab(TabHolder)
+    local CustomTab = TabHolder
+
+    local AddButton = CustomTab:AddButton({
+        Title = "Add Custom Element",
+        Description = "Click to add a new custom element",
+        Callback = function()
+            local ElementType = "Button" -- You can expand this to allow choosing between Button, Slider, and Toggle
+            local ElementName = "Custom" .. ElementType
+            local CodeToRun = ""
+
+            local NewElement = CustomTab:AddButton({
+                Title = ElementName,
+                Description = "Enter Lua code below",
+                Callback = function()
+                    local success, error = pcall(function()
+                        loadstring(CodeToRun)()
+                    end)
+                    if not success then
+                        warn("Error running custom code: " .. error)
+                    end
+                end
+            })
+
+            local CodeBox = CustomTab:AddInput({
+                Title = "Code Input",
+                Default = "Enter Lua code here",
+                Placeholder = "Enter Lua code here",
+                Numeric = false,
+                Finished = false,
+                Callback = function(Value)
+                    CodeToRun = Value
+                end
+            })
+        end
+    })
+
+    return CustomTab
+end
+
+-- Call CreateCustomTab function for the Custom tab
+CreateCustomTab(Tabs.Custom)
+
 
 local _mspaint_custom_captions = Instance.new("ScreenGui") do
     local Frame = Instance.new("Frame", _mspaint_custom_captions)
