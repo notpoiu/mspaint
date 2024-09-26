@@ -1475,7 +1475,8 @@ local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
 
     AntiEntityGroupBox:AddToggle("AntiHearing", {
         Text = "Anti-Figure Hearing",
-        Default = false
+        Default = false,
+        Visible = not isFools
     })
 end
 
@@ -2557,6 +2558,7 @@ Toggles.AntiSnare:OnChanged(function(value)
 end)
 
 Toggles.AntiHearing:OnChanged(function(value)
+    if isFools then return end
     remotesFolder.Crouch:FireServer(value)
 end)
 
