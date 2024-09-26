@@ -11,7 +11,9 @@ if not ExecutorSupport then
         return success
     end
 
-    test("require", require, game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
+    test("require", function() 
+        require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
+    end)
     test("hookmetamethod", function()
         local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
         local ref = hookmetamethod(object, "__index", function() return true end)
