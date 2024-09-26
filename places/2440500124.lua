@@ -873,6 +873,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
+        Script.Connections["Crouching"] = character:GetAttributeChangedSignal("Crouching"):Connect(function()
+            if not character:GetAttribute("Crouching") and Toggles.AntiHearing.Value then
+                remotesFolder.Crouch:FireServer(true)
+            end
+        end)
+
         Script.Connections["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
             if not character:GetAttribute("Hiding") then return end
     
@@ -1466,6 +1472,11 @@ local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
         Text = "Anti-Snare",
         Default = false
     })
+
+    AntiEntityGroupBox:AddToggle("AntiHearing", {
+        Text = "Anti-Figure Hearing",
+        Default = false
+    })
 end
 
 local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
@@ -1609,7 +1620,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     
         ESPSettingsTab:AddToggle("ESPRainbow", {
             Text = "Rainbow ESP",
-            Default = true,
+            Default = false,
         })
     
         ESPSettingsTab:AddToggle("ESPDistance", {
@@ -2543,6 +2554,10 @@ Toggles.AntiSnare:OnChanged(function(value)
             end
         end
     end
+end)
+
+Toggles.AntiHearing:OnChanged(function(value)
+    remotesFolder.Crouch:FireServer(value)
 end)
 
 Toggles.UpsideDown:OnChanged(function(value)
