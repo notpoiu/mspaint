@@ -210,7 +210,7 @@ type ESP = {
 }
 
 --// Library \\--
-local repo = "https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/"
+local repo = "https://raw.githubusercontent.com/deividcomsono/LinoriaLib/refs/heads/main/"
 
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
@@ -225,6 +225,7 @@ local Window = Library:CreateWindow({
 	Center = true,
 	AutoShow = true,
 	Resizable = true,
+    NotifySide = "Right",
 	ShowCustomCursor = true,
 	TabPadding = 2,
 	MenuFadeTime = 0
@@ -1744,6 +1745,15 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
         NotifySettingsTab:AddToggle("NotifySound", {
             Text = "Play Alert Sound",
             Default = true,
+        })
+
+        NotifySettingsTab:AddDropdown("NotifySide", {
+            AllowNull = false,
+            Values = {"Left", "Right"},
+            Default = "Right",
+            Multi = false,
+
+            Text = "Notification Side"
         })
     end
 end
@@ -3579,6 +3589,11 @@ Toggles.AntiLag:OnChanged(function(value)
     workspace.Terrain.WaterWaveSize = value and 0 or 0.05
     workspace.Terrain.WaterWaveSpeed = value and 0 or 8
     Lighting.GlobalShadows = not value
+end)
+
+Options.NotifySide:OnChanged(function(value)
+    print("changing to side", value)
+    Library.NotifySide = value
 end)
 
 Toggles.NoCutscenes:OnChanged(function(value)
