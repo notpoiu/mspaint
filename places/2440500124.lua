@@ -4138,7 +4138,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 local isGrabbing = Options.GrabBananaJeff:GetState() and Toggles.GrabBananaJeffToggle.Value
                 local isThrowing = Options.ThrowBananaJeff:GetState()
                 
-                if isThrowing and isnetworkowner(HoldingItem) then
+                if isThrowing and HoldingItem and isnetworkowner(HoldingItem) then
                     Script.Functions.ThrowBananaJeff()
                 end
                 
