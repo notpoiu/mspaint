@@ -24,6 +24,7 @@ end
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
+local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
