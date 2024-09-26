@@ -1236,7 +1236,8 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddToggle("EnableJump", {
         Text = "Enable Jump",
-        Default = false
+        Default = false,
+        Visible = not isFools,
     })
 
     PlayerGroupBox:AddToggle("Noclip", {
@@ -1526,7 +1527,8 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     
     BypassGroupBox:AddToggle("InfItems", {
         Text = "Infinite Lockpick",
-        Default = false
+        Default = false,
+        Visible = not isFools
     })
 
     BypassGroupBox:AddToggle("FakeRevive", {
