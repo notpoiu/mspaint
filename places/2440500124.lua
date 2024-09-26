@@ -1397,6 +1397,11 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddDivider()
 
+    PlayerGroupBox:AddToggle("EnableJump", {
+        Text = "Enable Jump",
+        Default = false
+    })
+
     PlayerGroupBox:AddToggle("Noclip", {
         Text = "Noclip",
         Default = false
@@ -2588,6 +2593,16 @@ Toggles.NoAccel:OnChanged(function(value)
     else
         local existingProperties = rootPart.CustomPhysicalProperties
         rootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
+    end
+end)
+
+Toggles.EnableJump:OnChanged(function(value)
+    if character then
+        character:SetAttribute("CanJump", value)
+    end
+
+    if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 and not fakeReviveEnabled then
+        Options.SpeedSlider:SetMax(7)
     end
 end)
 
