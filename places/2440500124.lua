@@ -130,6 +130,7 @@ local PromptTable = {
         },
 
         Parent = {
+            "KeyObtainFake",
             "Padlock"
         }
     }
