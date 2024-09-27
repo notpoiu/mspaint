@@ -1,9 +1,8 @@
 --!native
 --!optimize 2
 
-if not getgenv().mspaint_loaded then
-    getgenv().mspaint_loaded = true
-else return end
+if getgenv().mspaint_loaded then return end
+getgenv().mspaint_loaded = true
 
 --// Services \\--
 local Lighting = game:GetService("Lighting")
@@ -1724,7 +1723,8 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
     AutomationGroupBox:AddToggle("AutoHeartbeat", {
         Text = "Auto Heartbeat Minigame",
-        Default = false
+        Default = false,
+        Visible = ExecutorSupport["getnamecallmethod"]
     })
 
     if isHotel or isFools then
@@ -3424,7 +3424,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 		local function usePreviewCharacter(doStepped)
 			-- fuck you roblox for using head instead of primarypart or char:GetPivot() 
             -- mstudio45 2023 ^^
-            if ExecutorSupport["hookmetamethod"] then
+            if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
                 _fixDistanceFromCharacter = hookmetamethod(localPlayer, "__namecall", function(self, ...)
                     local method = getnamecallmethod();
                     local args = {...}
@@ -4072,13 +4072,18 @@ end)
 
 --// Connections \\--
 
-if ExecutorSupport["hookmetamethod"] then
+if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
     mtHook = hookmetamethod(game, "__namecall", function(self, ...)
         local args = {...}
         local namecallMethod = getnamecallmethod()
     
-        if namecallMethod == "FireServer" and self.Name == "ClutchHeartbeat" and Toggles.AutoHeartbeat.Value then
-            return
+        if namecallMethod == "FireServer" then
+            if self.Name == "ClutchHeartbeat" and Toggles.AutoHeartbeat.Value then
+                return
+            elseif self.Name == "Crouch" and Toggles.AntiHearing.Value then
+                args[1] = true
+                return mtHook(self, unpack(args))
+            end
         elseif namecallMethod == "Destroy" and self.Name == "RunnerNodes" then
             return
         end

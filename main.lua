@@ -20,17 +20,13 @@ if not ExecutorSupport then
         local ref = hookmetamethod(object, "__index", function() return true end)
         assert(object.test == true, "Failed to hook a metamethod and change the return value")
         assert(ref() == false, "Did not return the original function")
-
-        local method
-        local ref
-        ref = hookmetamethod(game, "__namecall", function(...)
-            if not method then
-                method = getnamecallmethod()
-            end
-            return ref(...)
+    end)
+    test("getnamecallmethod", function()
+        pcall(function()
+            game:NAMECALL_METHODS_ARE_IMPORTANT()
         end)
-        game:GetService("Lighting")
-        assert(method == "GetService", "Did not get the correct method (GetService)")
+    
+        assert(getnamecallmethod() == "NAMECALL_METHODS_ARE_IMPORTANT", "getnamecallmethod did not return the real namecall method")
     end)
     test("firesignal", function()
         local event = Instance.new("BindableEvent")
