@@ -317,9 +317,24 @@ function Script.Functions.ESP(args: ESP)
         Text = args.Text or "No Text",
         Color = args.Color or Color3.new(),
         Offset = args.Offset or Vector3.zero,
+        IsEntity = args.IsEntity or false,
         IsDoubleDoor = args.IsDoubleDoor or false,
-        Type = args.Type or "None"
+        Type = args.Type or "None",
+
+        Invisible = false,
+        Humanoid = nil
     }
+
+    if ESPManager.IsEntity and ESPManager.Object.PrimaryPart then
+        if ESPManager.Object.PrimaryPart.Transparency == 1 then
+            ESPManager.Invisible = true
+            ESPManager.Object.PrimaryPart.Transparency = 0.99
+        end
+
+        local humanoid = ESPManager.Object:FindFirstChildOfClass("Humanoid")
+        if not humanoid then humanoid = Instance.new("Humanoid", ESPManager.Object) end
+        ESPManager.Humanoid = humanoid
+    end
 
     local highlight = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
@@ -335,7 +350,12 @@ function Script.Functions.ESP(args: ESP)
             Enabled = Toggles.ESPTracer.Value,
             From = Options.ESPTracerStart.Value,
             Color = ESPManager.Color
-        }
+        },
+
+        OnDestroy = function()
+            if ESPManager.Object.PrimaryPart and ESPManager.Invisible then ESPManager.Object.PrimaryPart.Transparency = 1 end
+            if ESPManager.Humanoid then ESPManager.Humanoid:Destroy() end
+        end
     })
 
     table.insert(Script.ESPTable[args.Type], highlight)
@@ -4076,7 +4096,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
     if character then
         if character:FindFirstChild("Head") and not (mainGameSrc and mainGameSrc.stopcam or rootPart.Anchored and not character:GetAttribute("Hiding")) then
-            character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
             character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1
         end
 
