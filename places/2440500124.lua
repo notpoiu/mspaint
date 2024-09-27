@@ -494,6 +494,8 @@ function Script.Functions.EntityESP(entity)
 end
 
 function Script.Functions.SideEntityESP(entity)
+    if entity.Name == "Snare" and not entity:FindFirstChild("Hitbox") then return end
+
     Script.Functions.ESP({
         Type = "SideEntity",
         Object = entity,
