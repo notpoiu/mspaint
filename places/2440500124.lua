@@ -2923,7 +2923,7 @@ Toggles.Fly:OnChanged(function(value)
         Script.Connections["Fly"] = RunService.RenderStepped:Connect(function()
             local velocity = Vector3.zero
 
-            if ExecutorSupport["require"] and controlModule then
+            if controlModule then
                 local moveVector = controlModule:GetMoveVector()
                 velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
             else
@@ -4669,10 +4669,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end)
 
             for _, prompt: ProximityPrompt in pairs(prompts) do
-                if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
+                if not prompt.Parent then continue end
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
+                if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
