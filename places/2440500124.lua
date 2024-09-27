@@ -3317,6 +3317,12 @@ end)
 
 Toggles.EntityESP:OnChanged(function(value)
     if value then
+        for _, entity in pairs(workspace:GetChildren()) do
+            if table.find(EntityTable.Names, entity.Name) then
+                Script.Functions.EntityESP(entity)
+            end
+        end
+
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, entity in pairs(currentRoomModel:GetDescendants()) do
