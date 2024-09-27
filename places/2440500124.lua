@@ -101,6 +101,7 @@ local PromptTable = {
         ["SkullPrompt"] = false,
         ["UnlockPrompt"] = true,
         ["ValvePrompt"] = false,
+        ["PropPrompt"] = true
     },
     AuraObjects = {
         "Lock",
@@ -4160,6 +4161,36 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
+                        -- painting checks
+                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") and character then
+                            if Script.Temp.PaintingDebounce then return end
+                            
+                            local currentPainting = character:FindFirstChild("Prop")
+                            if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
+                                return fireproximityprompt(prompt)
+                            end
+
+                            if prompt.Parent:FindFirstChild("Prop") then 
+                                if prompt.Parent:GetAttribute("Hint") == prompt.Parent.Prop:GetAttribute("Hint") then
+                                    return
+                                end
+                            end
+
+                            if prompt.Parent:GetAttribute("Hint") == currentPainting:GetAttribute("Hint") then
+                                Script.Temp.PaintingDebounce = true
+
+                                local oldHint = currentPainting:GetAttribute("Hint")
+                                repeat task.wait()
+                                    fireproximityprompt(prompt)
+                                until not character:FindFirstChild("Prop") or character:FindFirstChild("Prop"):GetAttribute("Hint") ~= oldHint
+
+                                task.wait(0.15)
+                                Script.Temp.PaintingDebounce = false
+                            end                            
+                            
+                            return
+                        end
+                        
                         fireproximityprompt(prompt)
                     end
                 end)
