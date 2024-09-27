@@ -13,7 +13,7 @@ if not ExecutorSupport then
     end
 
     test("require", function() 
-        require(Scripts:FindFirstChild("PlayerModule", true))
+        require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
     end)
     test("hookmetamethod", function()
         local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
