@@ -286,7 +286,7 @@ local Tabs = {
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
     Floor = Window:AddTab("Floor"),
-    Custom = Window:AddTab('Custom'),
+    CustomTab = Window:AddTab('Custom'),
 	["UI Settings"] = Window:AddTab("UI Settings"),
 }
 
