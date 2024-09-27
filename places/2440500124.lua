@@ -4925,7 +4925,7 @@ local function OpenElementCreationUI()
         OnChanged = function(text)
             luaCode = text
         end,
-        Size = UDim2.new(0, 600, 0, 400), -- Larger size for better code entry
+        Size = UDim2.new(1, 0, 0, 150), -- Full width, 150px height
         TextSize = 10, -- Adjust text size as needed
         MultiLine = true, -- Enable multi-line input
     })
