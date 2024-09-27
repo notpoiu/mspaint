@@ -4884,12 +4884,12 @@ end
 local function OpenElementCreationUI()
     local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
 
-    local elementName = ""
-    local elementType = ""
-    local luaCode = ""
+    local elementName = nil
+    local elementType = nil
+    local luaCode = nil
 
     -- Input for the element name
-    CreationGroupBox:AddInput('ElementNameInput', {
+    local ElementNameInput = CreationGroupBox:AddInput('ElementNameInput', {
         Text = 'Element Name',
         Placeholder = 'Enter the name of the element...',
         OnChanged = function(text)
@@ -4898,7 +4898,7 @@ local function OpenElementCreationUI()
     })
 
     -- Dropdown to select the element type
-    CreationGroupBox:AddDropdown('ElementTypeDropdown', {
+    local ElementTypeDropdown = CreationGroupBox:AddDropdown('ElementTypeDropdown', {
         Values = { 'Button', 'Toggle', 'Slider' },
         Text = 'Element Type',
         Default = 1, -- Default to 'Button'
@@ -4908,25 +4908,39 @@ local function OpenElementCreationUI()
     })
 
     -- Input for Lua code
-CreationGroupBox:AddInput('LuaCodeInput', {
-    Text = 'Lua Code',
-    Placeholder = 'Enter Lua code...',
-    OnChanged = function(text)
-        luaCode = text
-    end,
-    Size = UDim2.new(0, 600, 0, 300), -- Width: 600px, Height: 300px (adjust as necessary)
-    TextSize = 10, -- Adjust text size as needed
-    MultiLine = true, -- Enable multi-line input
-})
+    local LuaCodeInput = CreationGroupBox:AddInput('LuaCodeInput', {
+        Text = 'Lua Code',
+        Placeholder = 'Enter Lua code...',
+        OnChanged = function(text)
+            luaCode = text
+        end,
+        Size = UDim2.new(0, 600, 0, 400), -- Width: 600px, Height: 400px (adjust as necessary)
+        TextSize = 10, -- Adjust text size as needed
+        MultiLine = true, -- Enable multi-line input
+    })
 
     -- Save button to create the custom element
     CreationGroupBox:AddButton('Save', function()
-        -- Ensure elementName and luaCode are not empty
-        if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
-            -- Save the custom element
-            AddCustomElement(elementName, elementType, luaCode)
-            table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
+        -- Ensure the latest values are fetched before validation
+        elementName = ElementNameInput.Value
+        elementType = ElementTypeDropdown.Value
+        luaCode = LuaCodeInput.Value
+
+        -- Ensure elementName, elementType, and luaCode are not empty
+        if elementName == nil or elementName == "" then
+            warn("Please enter an element name.")
+            return
+        elseif elementType == nil or elementType == "" then
+            warn("Please select an element type.")
+            return
+        elseif luaCode == nil or luaCode == "" then
+            warn("Please enter Lua code.")
+            return
         end
+
+        -- Save the custom element
+        AddCustomElement(elementName, elementType, luaCode)
+        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
     end)
 end
 
@@ -4934,6 +4948,7 @@ end
 CustomGroupBox:AddButton('+', function()
     OpenElementCreationUI() -- Open the element creation UI
 end)
+
 
 
 
