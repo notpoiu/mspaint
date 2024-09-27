@@ -4843,6 +4843,9 @@ local CustomElements = {}
 -- Add a GroupBox for custom elements in the Custom Tab
 local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
 
+-- Variable to track the current UI for element creation (so we can close it)
+local CurrentCreationUI
+
 -- Function to add a new element to the Custom GroupBox
 local function AddCustomElement(name, elementType, luaCode)
     if elementType == "Button" then
@@ -4882,7 +4885,15 @@ end
 
 -- Function to open a UI section to input new element details
 local function OpenElementCreationUI()
+    -- Close any previous popup
+    if CurrentCreationUI then
+        CurrentCreationUI:Remove()
+        CurrentCreationUI = nil
+    end
+
+    -- Create a new GroupBox for element creation
     local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
+    CurrentCreationUI = CreationGroupBox -- Store it so we can remove it later
 
     local elementName = nil
     local elementType = nil
@@ -4907,14 +4918,14 @@ local function OpenElementCreationUI()
         end
     })
 
-    -- Input for Lua code
+    -- Input for Lua code with larger size
     local LuaCodeInput = CreationGroupBox:AddInput('LuaCodeInput', {
         Text = 'Lua Code',
         Placeholder = 'Enter Lua code...',
         OnChanged = function(text)
             luaCode = text
         end,
-        Size = UDim2.new(0, 600, 0, 400), -- Width: 600px, Height: 400px (adjust as necessary)
+        Size = UDim2.new(0, 600, 0, 400), -- Larger size for better code entry
         TextSize = 10, -- Adjust text size as needed
         MultiLine = true, -- Enable multi-line input
     })
@@ -4941,6 +4952,10 @@ local function OpenElementCreationUI()
         -- Save the custom element
         AddCustomElement(elementName, elementType, luaCode)
         table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
+
+        -- Close the element creation UI after saving
+        CreationGroupBox:Remove()
+        CurrentCreationUI = nil
     end)
 end
 
