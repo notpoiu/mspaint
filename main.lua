@@ -1,5 +1,6 @@
 if not ExecutorSupport then
     local Workspace = game:GetService("Workspace")
+    local Scripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts", 5)
 
     local executorSupport = {}
 
@@ -12,7 +13,7 @@ if not ExecutorSupport then
     end
 
     test("require", function() 
-        require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
+        require(Scripts:FindFirstChild("PlayerModule", true))
     end)
     test("hookmetamethod", function()
         local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
@@ -59,7 +60,6 @@ if not ExecutorSupport then
 
         prompt.Parent:Destroy()
         assert(triggered, "Failed to fire proximity prompt")
-        print("finished this one")
     end)
 
     --// Fixes \\--
