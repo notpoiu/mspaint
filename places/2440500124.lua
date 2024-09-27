@@ -4907,34 +4907,19 @@ local function OpenElementCreationUI()
         end
     })
 
-    -- Button to open a larger pop-up for Lua code input
-    CreationGroupBox:AddButton('Enter Lua Code', function()
-        Library:CreatePopup({
-            Title = 'Enter Lua Code',
-            Description = 'Input your Lua code here.',
-            Size = Vector2.new(600, 500), -- Set the size of the pop-up
-            Elements = {
-                {
-                    Type = 'TextInput',
-                    Title = 'Lua Code',
-                    Placeholder = 'Enter Lua code...',
-                    MultiLine = true, -- Enable multi-line input in pop-up
-                    OnChanged = function(text)
-                        luaCode = text -- Store Lua code in variable
-                    end
-                },
-                {
-                    Type = 'Button',
-                    Title = 'Save Lua Code',
-                    Callback = function()
-                        Library:ClosePopup() -- Close pop-up after saving
-                    end
-                }
-            }
-        })
-    end)
+    -- Input for Lua code
+CreationGroupBox:AddInput('LuaCodeInput', {
+    Text = 'Lua Code',
+    Placeholder = 'Enter Lua code...',
+    OnChanged = function(text)
+        luaCode = text
+    end,
+    Size = UDim2.new(0, 600, 0, 300), -- Width: 600px, Height: 300px (adjust as necessary)
+    TextSize = 10, -- Adjust text size as needed
+    MultiLine = true, -- Enable multi-line input
+})
 
-     -- Save button to create the custom element
+    -- Save button to create the custom element
     CreationGroupBox:AddButton('Save', function()
         -- Ensure elementName and luaCode are not empty
         if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
@@ -4947,11 +4932,11 @@ local function OpenElementCreationUI()
     end)
 end
 
-
 -- Add a "+" button in the Custom GroupBox to open the element creation UI
 CustomGroupBox:AddButton('+', function()
     OpenElementCreationUI() -- Open the element creation UI
 end)
+
 
 
 
