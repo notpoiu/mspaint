@@ -4901,7 +4901,7 @@ local function OpenElementCreationUI()
 
     -- Create a new, **larger** GroupBox for element creation
     local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
-    CreationGroupBox:SetSize(UDim2.new(1, 0, 0, 500)) -- Full width, 500px height to expand the UI
+    CreationGroupBox.Container.Size = UDim2.new(1, 0, 0, 500) -- Full width, 500px height to expand the UI
     CurrentCreationUI = CreationGroupBox -- Store reference
 
     local elementName = nil
