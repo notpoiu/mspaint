@@ -2518,7 +2518,7 @@ Toggles.Fly:OnChanged(function(value)
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then velocity += camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity += camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
             end
 
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
@@ -4129,7 +4129,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             for _, prompt: ProximityPrompt in pairs(prompts) do
                 if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" then continue end 
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
