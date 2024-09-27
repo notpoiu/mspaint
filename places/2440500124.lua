@@ -61,12 +61,17 @@ local EntityTable = {
     ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
     ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
     ["ShortNames"] = {
-    ["BackdoorRush"] = "Blitz",
-    ["JeffTheKiller"] = "Jeff The Killer"
+        ["BackdoorRush"] = "Blitz",
+        ["JeffTheKiller"] = "Jeff The Killer"
     },
     ["NotifyMessage"] = {
-    ["GloombatSwarm"] = "Gloombats in next room!"
-}
+        ["GloombatSwarm"] = "Gloombats in next room!"
+    },
+    ["NoCheck"] = {
+        "Eyes",
+        "BackdoorLookman",
+        "JeffTheKiller"
+    }
 }
 
 local HidingPlaceName = {
@@ -4148,9 +4153,19 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
 
         if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
+                local oldPosition = child:GetPivot().Position
+                task.delay(7, function()
+                    if not child or not child:IsDescendantOf(workspace) then return end
+                    if oldPosition ~= child:GetPivot().Position then return end
+                    if table.find(EntityTable.NoCheck, child.Name) then return end
+
+                    -- fake entity :content:
+                    child:Destroy()
+                end)
+
                 repeat
                     task.wait()
-                until Script.Functions.DistanceFromCharacter(child) < 2000 or not child:IsDescendantOf(workspace)
+                until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
                     if isFools and child.Name == "RushMoving" then
