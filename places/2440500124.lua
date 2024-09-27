@@ -49,11 +49,14 @@ local Script = {
         HidingSpot = {},
         None = {}
     },
-    Functions = {},
+    Functions = {
+        Minecart = {}
+    },
     Temp = {
         AnchorFinished = {},
         FlyBody = nil,
         Guidance = {},
+        PaintingDebounce = false
     }
 }
 
@@ -88,6 +91,20 @@ local SlotsName = {
     "Tall",
     "Wide"
 }
+local InfiniteCrucifixMovingEntitiesVelocity = {
+  ["RushMoving"] = {
+      threshold = 52,
+      minDistance = 55,
+  },
+  ["RushNew"] = {
+      threshold = 52,
+      minDistance = 55,
+  },    
+  ["AmbushMoving"] = {
+      threshold = 70,
+      minDistance = 80,
+  }
+}
 
 local PromptTable = {
     GamePrompts = {},
@@ -103,6 +120,7 @@ local PromptTable = {
         ["SkullPrompt"] = false,
         ["UnlockPrompt"] = true,
         ["ValvePrompt"] = false,
+        ["PropPrompt"] = true
     },
     AuraObjects = {
         "Lock",
@@ -192,10 +210,27 @@ local fakeReviveConnections = {}
 local lastSpeed = 0
 local bypassed = false
 
+local MinecartPathNodeColor = {
+    Disabled = nil,
+    Red =Color3.new(1, 0, 0),
+    Yellow =Color3.new(1, 1, 0),
+    Purple =Color3.new(1, 0, 1),
+    Green =Color3.new(0, 1, 0),
+    Cyan =Color3.new(0, 1, 1),
+    Orange =Color3.new(1, 0.5, 0),
+    White =Color3.new(1, 1, 1),
+}
+
+local MinecartPathfind = {
+    --ground chase [41 to 44]
+    --minecart chase [45 to 49]
+}
+
 if not isFools then
     floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
     remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
 else
+    bypassed = true
     remotesFolder = ReplicatedStorage:WaitForChild("EntityInfo")
 end
 
@@ -210,8 +245,22 @@ type ESP = {
     Type: string,
 }
 
+type tPathfind = {
+    esp: boolean,
+    room_number: number, -- the room number
+    real: table,
+    fake: table,
+    destroyed: boolean -- if the pathfind was destroyed for the Teleport
+}
+
+type tGroupTrack = {
+    nodes: table,
+    hasStart: boolean,
+    hasEnd: boolean,
+}
+
 --// Library \\--
-local repo = "https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/"
+local repo = "https://raw.githubusercontent.com/deividcomsono/LinoriaLib/refs/heads/main/"
 
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
@@ -219,13 +268,14 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 local Options = getgenv().Linoria.Options
 local Toggles = getgenv().Linoria.Toggles
 
-local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/mstudio45/MS-ESP/refs/heads/main/source.lua"))()
+local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/MS-ESP/refs/heads/main/source.lua"))()
 
 local Window = Library:CreateWindow({
 	Title = "mspaint v2",
 	Center = true,
 	AutoShow = true,
 	Resizable = true,
+    NotifySide = "Right",
 	ShowCustomCursor = true,
 	TabPadding = 2,
 	MenuFadeTime = 0
@@ -285,6 +335,24 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
+function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil)
+    if not instance then return false end
+    if not collision then return false end
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {character}
+
+    local direction = (instance:GetPivot().Position - collision.Position).unit * (range or 9e9)
+    local raycast = workspace:Raycast(collision.Position, direction, raycastParams)
+
+    if raycast and raycast.Instance:IsDescendantOf(instance) then
+        return true
+    end
+
+    return false
+end
+
 function Script.Functions.IsPromptInRange(prompt: ProximityPrompt)
     return Script.Functions.DistanceFromCharacter(prompt:FindFirstAncestorWhichIsA("BasePart") or prompt:FindFirstAncestorWhichIsA("Model") or prompt.Parent) <= prompt.MaxActivationDistance
 end
@@ -306,6 +374,312 @@ function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
     return nearest
 end
 
+local function changeNodeColor(node: Model, color: Color3): Model
+    if color == nil then
+        node.Color = MinecartPathNodeColor.Yellow
+        node.Transparency = 1
+        node.Size = Vector3.new(1.0, 1.0, 1.0)
+        return
+    end
+    node.Color = color
+    node.Material = Enum.Material.Neon
+    node.Transparency = 0
+    node.Shape = Enum.PartType.Ball
+    node.Size = Vector3.new(0.7, 0.7, 0.7)
+    return node
+end
+
+local function tPathfindNew(n: number)
+    local create: tPathfind = {
+        esp = false,
+        room_number = n,
+        real = {},
+        fake = {},
+        destroyed = false
+    }
+    return create
+end
+
+local function tGroupTrackNew(startNode: Part | nil): tGroupTrack
+    local create: tGroupTrack = {
+        nodes = startNode and {startNode} or {},
+        hasStart = false,
+        hasEnd   = false,
+    }
+    return create
+end
+
+function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
+    if not (lastRoom >= 40 and lastRoom <= 49) and not (lastRoom >= 95 and lastRoom <= 100) then return end
+    
+    local nodes = room:WaitForChild("RunnerNodes", 5.0) --well, skill issue ig
+    if (nodes == nil) then return end
+
+    --Script.Functions.Alert(string.format("[Minecart-Pathfind] Finding the correct path for the room %s, please wait...", room.Name), 3)
+    
+    -- if this is sent to the client, means that the room has all the nodes in the room.
+    --task.wait(0.5)
+    -- repeat
+    --     task.wait(0.1) --this doesn't be so intensive, we can check casually
+    -- until nodeSpawnTriggerRooms[lastRoom]
+
+    nodes = nodes:GetChildren()
+
+    local numOfNodes = #nodes
+    
+    local _debugAutoMinecart = false --if you know what you're doing
+    local function _dbgprint(...) 
+        if not _debugAutoMinecart then return end
+        local var = ... or "\n"
+        print("[Minecart-Pathfind DBG] " .. table.unpack({var}))
+    end
+
+    local detailog = string.format("[Minecart-Pathfind] Found room with tracks: %s - Nodes: %s", room.Name, numOfNodes)
+    _dbgprint(detailog)
+
+    if numOfNodes <= 1 then return end --This is literally impossible but... umm. acutally, yea why not.
+
+    --[[
+        Pathfind is a computational expensive process to make, 
+        however we don't have node loops, 
+        so we can ignore a few verifications.
+        If you want to understand how this is working, search for "Pathfiding Algorithms"
+
+        The shortest explanation i can give is that, this is a custom pathfinding to find "gaps" between
+        nodes and creating "path" groups. With the groups estabilished we can make the correct validations.
+    ]]
+    --Distance weights [DO NOT EDIT, unless something breaks...]
+    local _shortW = 4
+    local _longW = 24
+
+    local doorModel = room:WaitForChild("Door", 5) -- Will be used to find the correct last node.
+
+    local _startNode = changeNodeColor(nodes[1], MinecartPathNodeColor.Green)
+    local _lastNode = nil --we need to find this node.
+    --local _lastNodeTask = nil --Arbitrary tasks: "Start", "End", "Track", "Fake"
+
+    local _gpID = 1
+    local stackNode = {} --Group all track groups here.
+    stackNode[_gpID] = tGroupTrackNew()
+    
+    --Ensure sort all nodes properly (reversed)
+    table.sort(nodes, function(a,b)
+        local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+        local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+        return tonumber(_Asub) > tonumber(_Bsub)
+    end)
+
+    local _last = 1
+    for i=_last+1, numOfNodes, 1 do
+        local nodeA: Part = nodes[_last]
+        local nodeB: Part = _lastNode and nodes[i] or doorModel
+
+        local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+        local isEndNode = distance <= _shortW
+        local isNodeNear = (distance > _shortW and distance <= _longW)
+
+        local _currNodeTask = "Track"
+        if isNodeNear or isEndNode then
+            if not _lastNode then -- this will only be true, once.
+                _currNodeTask = "End"
+                _lastNode = nodeA
+            end
+        else
+            _currNodeTask = "Fake"
+        end
+
+        --check if group is diff, ignore "End" or "Start" tasks
+        if  (_currNodeTask == "Fake" or _currNodeTask == "End") and _lastNode then
+            _gpID += 1
+            stackNode[_gpID] = tGroupTrackNew()
+            if _currNodeTask == "End" then
+                stackNode[_gpID].hasEnd = true
+            end
+        end
+        table.insert(stackNode[_gpID].nodes, changeNodeColor(nodeA, MinecartPathNodeColor.White))
+
+        --Use this to debug the nodeTask
+        _dbgprint(string.format("[%s] - [%s] Distance between: %s <--> %s ==> %.2f", _gpID, _currNodeTask, nodeA.Name, nodeB.Name, distance))
+
+        _last = i
+        --_lastNodeTask = _currNodeTask
+    end
+    stackNode[_gpID].hasStart = true --after the reversed path finding, the last group has the start node.
+    table.insert(stackNode[_gpID].nodes, _startNode)
+    --if we only have one group, means that there's no fake path.
+    local hasMoreThanOneGroup = _gpID > 1
+
+    local _closestNodes = {} --unwanted nodes if any
+    local hasIncorrectPath = false -- if this is true, we're cooked. No path for you ):
+    if hasMoreThanOneGroup then
+        _dbgprint()
+        for _gpI, v: tGroupTrack in ipairs(stackNode) do
+            _closestNodes[_gpI] = {}
+            _dbgprint(string.format("[TrackGroup] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+
+            if _gpI <= 1 then continue end
+            _dbgprint(string.format("[TrackGroup] Group %s was selected to deep pathfinding", _gpI))
+
+            --Sort table for the normal flow, A -> B (was B -> A before)
+            table.sort(v.nodes, function(a,b)
+                local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+                local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+                return tonumber(_Asub) < tonumber(_Bsub)
+            end)
+
+            --Finally, perform the clean up by removing wrong nodes when a "distance jump" is found
+            local _gplast = 1
+            local hasNodeJump = false
+            for _gpS=_gplast+1, #v.nodes, 1 do
+                local nodeA: Part = v.nodes[_gplast]
+                local nodeB: Part = v.nodes[_gpS]
+
+                local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+                hasNodeJump = (distance >= _longW)
+                if not hasNodeJump then _gplast = _gpS continue end
+                _dbgprint(string.format("[%s] Distance between %s <--> %s ==> %.2f", _gpI, nodeA.Name, nodeB.Name, distance))
+
+                --Ok, we found a node jump, now we need to know what should be the closest node
+                --table.remove(v.nodes, _gpS)
+                _dbgprint(string.format("[TrackGroup] Group %s with, %s will find his closest node now.", _gpI, nodeB.Name))
+                local nodeSearchPath = nodeB
+
+                --Search again with the nodeSearchPath
+                local closestDistance = math.huge
+
+                local _gpFlast = #v.nodes
+                for i=_gpFlast-1, 1, -1 do
+
+                    local fnode = v.nodes[_gpFlast]
+                    local Sdistance = (nodeSearchPath:GetPivot().Position - fnode:GetPivot().Position).Magnitude
+                    _gpFlast = i
+
+                    if Sdistance == 0.00 then continue end --node is self
+                    _dbgprint(string.format("  [%s] DeepPath ==> Distance between %s <--> %s ==> %.2f", _gpI, nodeSearchPath.Name, fnode.Name, Sdistance))
+
+                    if Sdistance <= closestDistance then
+                        closestDistance = Sdistance
+                        table.insert(_closestNodes[_gpI], fnode)
+                        table.remove(v.nodes, _gpFlast+1)
+                        continue
+                    end
+                    break
+                end
+                --table.insert(v.nodes, _gpS, nodeSearchPath)
+
+                local _FoundAmount = #_closestNodes[_gpI]
+                if _FoundAmount > 1 then 
+                    _dbgprint(string.format("[TrackGroup] Group %s with, closest node is: %s ", _gpI, _closestNodes[_gpI][_FoundAmount].Name))
+                else
+                    warn(string.format("[TrackGroup] Group %s ERROR: Unable to find closest node, path is likely broken.", _gpI))
+                    hasIncorrectPath = true
+                end
+                break
+            end
+            if not hasNodeJump then
+                _dbgprint(string.format("[TrackGroup] Group %s has a correct path! ", _gpI))
+            end
+        end
+
+        for _gpI, v: tGroupTrack in ipairs(stackNode) do
+            _dbgprint(string.format("[TrackGroup -- VERIFY] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+        end
+
+        --table.remove(stackNode, 1) --remove the fake 
+    end
+
+    if hasIncorrectPath then return end
+
+    --finally, draw the correct path. gg
+    local realNodes = {} --our precious nodes finally here :pray:
+    local fakeNodes = {} --we hate you but ok
+    for _gpFI, v: tGroupTrack in ipairs(stackNode) do
+        local finalWrongNode = false
+        if _gpFI == 1 and hasMoreThanOneGroup then
+            finalWrongNode = true 
+        end
+
+        for _, vfinal in ipairs(v.nodes) do
+            if finalWrongNode then
+                table.insert(fakeNodes, vfinal)
+                continue
+            end
+            table.insert(realNodes, vfinal)
+        end
+
+        --Draw wrong path calculated on DeepPath.
+        for _, nfinal in ipairs(_closestNodes[_gpFI]) do
+            table.insert(fakeNodes, nfinal)
+        end
+    end
+    local roomNum = tonumber(room.Name)
+    --local success = string.format("Correct path was generated for the ROOM %d", roomNum)
+    --Script.Functions.Alert("[Minecart-Pathfind] " .. success, 2); _dbgprint(success)
+
+    table.sort(realNodes, function(a, b)
+        local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+        local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+        return tonumber(_Asub) < tonumber(_Bsub)
+    end)
+
+    --build pathfind
+    local buildPathfind = tPathfindNew(lastRoom)
+    buildPathfind.real = realNodes
+    buildPathfind.fake = fakeNodes
+    table.insert(MinecartPathfind, buildPathfind) --add to table
+
+    Script.Functions.Minecart.DrawNodes()
+    --add the ESP ToggleCheck if enabled.
+    --if true then
+        
+    --end    
+
+    --[[
+    if (roomNum >= 45) then --Functions AFTER this, is for processing on minecart chase only.
+
+        --add the Teleport Exploit ToggleCheck if enabled.
+
+        --if [THE TOOGLE HERE] then
+            --Start destroying nodes
+            Script.Functions.Minecart.NodeDestroy(roomNum)
+
+            --Start the Teleport module if the last room added is 45. 
+            ---Meaning that if last room >= 45 you can't enable Minecart.Teleport (TODO, fix that.)
+            Script.Functions.Minecart.Teleport(roomNum)
+        --end
+    end]]
+end
+
+--If ESP Toggle is changed, you can call this function directly.
+function Script.Functions.Minecart.DrawNodes()
+    local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
+    local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
+    local espFakeColor = pathESP_enabled and MinecartPathNodeColor.Red or MinecartPathNodeColor.Disabled
+    
+    for idx, path: tPathfind in ipairs(MinecartPathfind) do
+        if path.esp and pathESP_enabled then continue end -- if status is unchanged.
+
+        print(string.format("[ROOM %d] Drawing Node Pathfind ESP.", path.room_number))
+
+        --[ESP] Draw the real path
+        local realPath = path.real
+        for _, _real in pairs(realPath) do
+            changeNodeColor(_real, espRealColor)
+        end
+
+        --[ESP] Draw the fake path
+        local fakePath = path.fake
+        for _, _fake in pairs(fakePath) do
+            changeNodeColor(_fake, espFakeColor)
+        end
+
+        path.esp = pathESP_enabled --update if path esp status was changed.
+    end
+end
+
+
 function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
@@ -318,9 +692,24 @@ function Script.Functions.ESP(args: ESP)
         Text = args.Text or "No Text",
         Color = args.Color or Color3.new(),
         Offset = args.Offset or Vector3.zero,
+        IsEntity = args.IsEntity or false,
         IsDoubleDoor = args.IsDoubleDoor or false,
-        Type = args.Type or "None"
+        Type = args.Type or "None",
+
+        Invisible = false,
+        Humanoid = nil
     }
+
+    if ESPManager.IsEntity and ESPManager.Object.PrimaryPart then
+        if ESPManager.Object.PrimaryPart.Transparency == 1 then
+            ESPManager.Invisible = true
+            ESPManager.Object.PrimaryPart.Transparency = 0.99
+        end
+
+        local humanoid = ESPManager.Object:FindFirstChildOfClass("Humanoid")
+        if not humanoid then humanoid = Instance.new("Humanoid", ESPManager.Object) end
+        ESPManager.Humanoid = humanoid
+    end
 
     local highlight = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
@@ -336,7 +725,12 @@ function Script.Functions.ESP(args: ESP)
             Enabled = Toggles.ESPTracer.Value,
             From = Options.ESPTracerStart.Value,
             Color = ESPManager.Color
-        }
+        },
+
+        OnDestroy = function()
+            if ESPManager.Object.PrimaryPart and ESPManager.Invisible then ESPManager.Object.PrimaryPart.Transparency = 1 end
+            if ESPManager.Humanoid then ESPManager.Humanoid:Destroy() end
+        end
     })
 
     table.insert(Script.ESPTable[args.Type], highlight)
@@ -473,6 +867,8 @@ function Script.Functions.EntityESP(entity)
 end
 
 function Script.Functions.SideEntityESP(entity)
+    if entity.Name == "Snare" and not entity:FindFirstChild("Hitbox") then return end
+
     Script.Functions.ESP({
         Type = "SideEntity",
         Object = entity,
@@ -817,26 +1213,8 @@ function Script.Functions.SetupRoomConnection(room)
         task.delay(0.1, Script.Functions.ChildCheck, child)
         
         task.spawn(function()
-            if child.Name == "TriggerEventCollision" and Toggles.DeleteSeek.Value and character then
-                Script.Functions.Alert("Deleting Seek, do not open the next door...", child:FindFirstChildOfClass("BasePart"))
-                
-                if fireTouch then
-                    repeat
-                        for _, v in pairs(child:GetChildren()) do
-                            fireTouch(v, rootPart, 1)
-                            task.wait()
-                            fireTouch(v, rootPart, 0)
-                            task.wait()
-                        end
-                    until #child:GetChildren() == 0 or not Toggles.DeleteSeek.Value
-                else
-                    child:PivotTo(CFrame.new(rootPart.Position))
-                    rootPart.Anchored = true
-    
-                    repeat task.wait() until #child:GetChildren() == 0 or not Toggles.DeleteSeek.Value
-                end
-                
-                Script.Functions.Alert("Deleted Seek successfully! You can open the next door", 5)
+            if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
+                Script.Functions.DeleteSeek(child)
             end
         end)
     end)
@@ -1196,6 +1574,35 @@ function Script.Functions.EnableBreaker(breaker, value)
     breaker.Sound:Play()
 end
 
+function Script.Functions.DeleteSeek(collision: BasePart)
+    if not rootPart then return end
+
+    task.spawn(function()
+        local attemps = 0
+        repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
+        
+        if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
+            if fireTouch then
+                repeat
+                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 1) end
+                    task.wait()
+                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 0) end
+                    task.wait()
+                until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+            else
+                collision:PivotTo(CFrame.new(rootPart.Position))
+                rootPart.Anchored = true
+
+                repeat task.wait() until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+            end
+            
+            if not collision:IsDescendantOf(workspace) then
+                Script.Functions.Alert("Deleted Seek Trigger successfully!")
+            end
+        end
+    end)
+end
+
 function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
@@ -1543,6 +1950,7 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     
     BypassGroupBox:AddToggle("InfItems", {
         Text = "Infinite Lockpick",
+        Text = "Infinite Items",
         Default = false,
         Visible = not isFools
     })
@@ -1713,7 +2121,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
         })
         NotifyTab:AddToggle("NotifyEntity", {
             Text = "Notify Entity",
-            Default = false,
+            Default = false
         })
 
         NotifyTab:AddToggle("NotifyPadlock", {
@@ -1739,6 +2147,15 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
         NotifySettingsTab:AddToggle("NotifySound", {
             Text = "Play Alert Sound",
             Default = true,
+        })
+
+        NotifySettingsTab:AddDropdown("NotifySide", {
+            AllowNull = false,
+            Values = {"Left", "Right"},
+            Default = "Right",
+            Multi = false,
+
+            Text = "Notification Side"
         })
     end
 end
@@ -1934,6 +2351,14 @@ task.spawn(function()
                 Text = "Anticheat Bypass",
                 Default = false
             })
+
+        end
+        
+        local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
+            Mines_VisualGroupBox:AddToggle("MinecartPathVisualiser", {
+                Text = "Show Correct Minecart Path",
+                Default = false
+            })
         end
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
@@ -2009,6 +2434,10 @@ task.spawn(function()
                     end
                 end
             end
+        end)
+
+        Toggles.MinecartPathVisualiser:OnChanged(function(value)
+            Script.Functions.Minecart.DrawNodes()
         end)
     elseif isBackdoor then
         local Backdoors_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
@@ -2472,6 +2901,8 @@ Toggles.NoAccel:OnChanged(function(value)
 end)
 
 Toggles.EnableJump:OnChanged(function(value)
+    if isFools then return end
+
     if character then
         character:SetAttribute("CanJump", value)
     end
@@ -2501,7 +2932,7 @@ Toggles.Fly:OnChanged(function(value)
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then velocity += camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity += camera.CFrame.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
             end
 
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
@@ -2668,12 +3099,9 @@ Toggles.SpeedBypass:OnChanged(function(value)
     else
         if fakeReviveEnabled then return end
 
-        if isMines and Toggles.EnableJump.Value then
-            Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
-        else
-            Options.SpeedSlider:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 7)
-        end
+        local speed = if bypassed then 45 elseif Toggles.EnableJump.Value then 3 else 7
 
+        Options.SpeedSlider:SetMax(speed)
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
     end
 end)
@@ -3283,6 +3711,12 @@ end)
 
 Toggles.EntityESP:OnChanged(function(value)
     if value then
+        for _, entity in pairs(workspace:GetChildren()) do
+            if table.find(EntityTable.Names, entity.Name) then
+                Script.Functions.EntityESP(entity)
+            end
+        end
+
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, entity in pairs(currentRoomModel:GetDescendants()) do
@@ -3577,6 +4011,11 @@ Toggles.AntiLag:OnChanged(function(value)
     Lighting.GlobalShadows = not value
 end)
 
+Options.NotifySide:OnChanged(function(value)
+    print("changing to side", value)
+    Library.NotifySide = value
+end)
+
 Toggles.NoCutscenes:OnChanged(function(value)
     if mainGame then
         local cutscenes = mainGame:FindFirstChild("Cutscenes", true)
@@ -3763,6 +4202,126 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
             end
         end
 
+        if (child.Name == "RushMoving" or child.Name == "AmbushMoving") and Toggles.InfItems.Value and alive and character then
+            task.wait(1.5)
+            
+            local hasStoppedMoving = false --entity has stoped
+            local lastPosition = child:GetPivot().Position
+            local lastVelocity = Vector3.new(0, 0, 0)
+
+            local frameCount = 0
+            local nextTimer = tick()
+            local maxSavedFrames = 10 --after that we can ignore velocity by 0
+            local currentSavedFrames = 0
+            local physicsTickRate = (1 / 60) * 0.90 --usually is stable also wtf roblox why 60 Hz isn't (1 / 60) ????
+
+            local oldFrameHz = 0
+            local frameHz = 0
+            local frameRate = 1 -- in seconds
+            local nextTimerHz = tick()
+
+            local entityName = child.Name
+
+            local crucifixConnection; crucifixConnection = RunService.RenderStepped:Connect(function(deltaTime)
+                if not Toggles.InfItems.Value or not alive or not character then crucifixConnection:Disconnect() return end
+
+                local currentTimer = tick()
+                frameCount += 1 
+                frameHz += 1
+
+                -- get the client FPS
+                if currentTimer - nextTimerHz >= frameRate then
+                    oldFrameHz = frameHz;
+                    frameHz = 0
+                    nextTimerHz = currentTimer
+                    physicsTickRate = (1 / oldFrameHz) * 0.90
+                end
+
+                -- refresh rate (client) must be equal to the physics rate (server) for making the calculations properly.
+                if physicsTickRate == 0 or not (currentTimer - nextTimer >= physicsTickRate) then
+                    return
+                end
+
+                frameCount = 0
+                nextTimer = currentTimer
+            
+                local currentPosition = child:GetPivot().Position
+                -- Calculate velocity
+                local velocity = (currentPosition - lastPosition) / deltaTime
+                velocity = Vector3.new(velocity.X, 0, velocity.Z) -- Ignore Y
+            
+                -- Smooth velocity
+                local smoothedVelocity = lastVelocity:Lerp(velocity, 0.3) --we do math stuff
+                local entityVelocity = math.floor(smoothedVelocity.Magnitude)
+            
+                lastVelocity = smoothedVelocity
+                lastPosition = currentPosition
+            
+            
+                local inView = Script.Functions.IsInViewOfPlayer(child, InfiniteCrucifixMovingEntitiesVelocity[entityName].threshold)
+                local distanceFromPlayer = (child:GetPivot().Position - character:GetPivot().Position).Magnitude
+                local isInRangeOfPlayer = distanceFromPlayer <= InfiniteCrucifixMovingEntitiesVelocity[entityName].minDistance
+                --[[if currentSavedFrames < maxSavedFrames then
+                    print(string.format("[In range: %s | In view: %s] [Hz: %d] - Entity velocity is: %.2f | Distance: %.2f | Delta: %.2f", tostring(isInRangeOfPlayer), tostring(inView), oldFrameHz, entityVelocity, distanceFromPlayer, 0))
+                end]]
+            
+                if entityVelocity <= InfiniteCrucifixMovingEntitiesVelocity[entityName].threshold then
+                    if entityVelocity <= 0.5 and currentSavedFrames <= maxSavedFrames then
+                        currentSavedFrames += 1
+                    end
+            
+                    --switch and trigger a print
+                    if not hasStoppedMoving then
+                        --print("Entity has stopped moving!")
+                        hasStoppedMoving = true
+                    end
+            
+                    -- --ignore if raycast is false
+                    if not inView then
+                        return
+                    end
+            
+                    --ignore if distance is greater than X
+                    if not isInRangeOfPlayer then
+                        return
+                    end
+
+                    print("[HEURISTIC FINISH] --> Item dropped!")
+                    if character:FindFirstChild("Crucifix") then
+                        workspace.Drops.ChildAdded:Once(function(droppedItem)
+                            if droppedItem.Name == "Crucifix" then
+                                local targetProximityPrompt = droppedItem:WaitForChild("ModulePrompt", 3) or droppedItem:FindFirstChildOfClass("ProximityPrompt")
+                                repeat task.wait()
+                                    fireproximityprompt(targetProximityPrompt)
+                                until not droppedItem:IsDescendantOf(workspace)
+                            end
+                        end)
+
+                        print("[TOOL] Crucifix dropped!")
+                        remotesFolder.DropItem:FireServer(character.Crucifix);
+                    end
+
+                    return
+                end
+
+                currentSavedFrames = 0
+                if hasStoppedMoving then
+                    --print("Entity started moving!")
+                    hasStoppedMoving = false
+                end
+            end)
+            
+            local childRemovedConnection; childRemovedConnection = workspace.ChildRemoved:Connect(function(model: Model)
+                if model ~= child then return end
+
+                crucifixConnection:Disconnect()
+                childRemovedConnection:Disconnect()
+            end)
+
+            Library:GiveSignal(crucifixConnection)
+            Library:GiveSignal(childRemovedConnection)
+        end
+
     end)
 end))
 
@@ -3778,6 +4337,10 @@ for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
 end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
+    
+    if isMines then
+        task.delay(0.5, Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+    end
 end))
 
 
@@ -4041,7 +4604,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     local isThirdPersonEnabled = Toggles.ThirdPerson.Value and (Library.IsMobile or Options.ThirdPersonKey:GetState())
     if mainGameSrc then
         if isThirdPersonEnabled then
-            mainGameSrc.finalCamCFrame = mainGameSrc.finalCamCFrame * CFrame.new(1.5, -0.5, 6.5)
+            camera.CFrame = mainGameSrc.finalCamCFrame * CFrame.new(1.5, -0.5, 6.5)
         end
         mainGameSrc.fovtarget = Options.FOV.Value
 
@@ -4056,8 +4619,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end
 
     if character then
-        character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
-        if character:FindFirstChild("Head") then character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 1 or 0 end
+        if character:FindFirstChild("Head") and not (mainGameSrc and mainGameSrc.stopcam or rootPart.Anchored and not character:GetAttribute("Hiding")) then
+            character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
+            character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1
+        end
 
         local speedBoostAssignObj = if isFools then humanoid else character
         if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
@@ -4108,11 +4673,42 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             for _, prompt: ProximityPrompt in pairs(prompts) do
                 if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" then continue end 
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
+                if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
+                        -- painting checks
+                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") and character then
+                            if Script.Temp.PaintingDebounce then return end
+                            
+                            local currentPainting = character:FindFirstChild("Prop")
+                            if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
+                                return fireproximityprompt(prompt)
+                            end
+
+                            if prompt.Parent:FindFirstChild("Prop") then 
+                                if prompt.Parent:GetAttribute("Hint") == prompt.Parent.Prop:GetAttribute("Hint") then
+                                    return
+                                end
+                            end
+
+                            if prompt.Parent:GetAttribute("Hint") == currentPainting:GetAttribute("Hint") then
+                                Script.Temp.PaintingDebounce = true
+
+                                local oldHint = currentPainting:GetAttribute("Hint")
+                                repeat task.wait()
+                                    fireproximityprompt(prompt)
+                                until not character:FindFirstChild("Prop") or character:FindFirstChild("Prop"):GetAttribute("Hint") ~= oldHint
+
+                                task.wait(0.15)
+                                Script.Temp.PaintingDebounce = false
+                            end                            
+                            
+                            return
+                        end
+                        
                         fireproximityprompt(prompt)
                     end
                 end)
@@ -4350,6 +4946,8 @@ Library:OnUnload(function()
     end
 
     if character then
+        character:SetAttribute("CanJump", false)
+
         local speedBoostAssignObj = isFools and humanoid or character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
 
@@ -4432,6 +5030,12 @@ Library:OnUnload(function()
 
     for _, connection in pairs(Script.Connections) do
         connection:Disconnect()
+    end
+
+    for _, category in pairs(Script.FeatureConnections) do
+        for _, connection in pairs(category) do
+            connection:Disconnect()
+        end
     end
 
 	print("Unloaded!")
