@@ -2,7 +2,7 @@
 A decent roblox doors script. Free and Open Source 🥶
 
 ```lua
-[loadstring(game:HttpGet("https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/main.lua"](https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/main.lua)"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/main.lua")"))()
 ```
 
 **Links**:
