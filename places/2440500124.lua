@@ -4886,9 +4886,7 @@ end
 -- Function to hide/clear the UI when saved
 local function HideElementCreationUI()
     if CurrentCreationUI then
-        for _, element in pairs(CurrentCreationUI:GetChildren()) do
-            element.Visible = false -- Hide the UI elements
-        end
+        CurrentCreationUI:Remove() -- Properly removes the group box from the UI
         CurrentCreationUI = nil -- Clear reference
     end
 end
@@ -4900,8 +4898,9 @@ local function OpenElementCreationUI()
         HideElementCreationUI()
     end
 
-    -- Create a new GroupBox for element creation
+    -- Create a new, **larger** GroupBox for element creation
     local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
+    CreationGroupBox:SetSize(UDim2.new(1, 0, 0, 500)) -- Full width, 500px height to expand the UI
     CurrentCreationUI = CreationGroupBox -- Store reference
 
     local elementName = nil
@@ -4927,15 +4926,15 @@ local function OpenElementCreationUI()
         end
     })
 
-    -- Input for Lua code with larger size
+    -- Input for Lua code with **much larger** size
     local LuaCodeInput = CreationGroupBox:AddInput('LuaCodeInput', {
         Text = 'Lua Code',
         Placeholder = 'Enter Lua code...',
         OnChanged = function(text)
             luaCode = text
         end,
-        Size = UDim2.new(1, 0, 0, 300), -- Full width, 300px height
-        TextSize = 10, -- Adjust text size as needed
+        Size = UDim2.new(1, 0, 0, 300), -- Full width, larger 300px height for Lua box
+        TextSize = 12, -- Slightly larger text for better readability
         MultiLine = true, -- Enable multi-line input
     })
 
@@ -5112,7 +5111,7 @@ CreditsGroup:AddLabel("upio - script dev")
 CreditsGroup:AddDivider()
 CreditsGroup:AddLabel("Script Contributors:")
 CreditsGroup:AddLabel("mstudio45 - fake revive & firepp")
-CreditsGroup:AddLabel("RobloxEmployee - CustomTab")
+CreditsGroup:AddLabel("RobloxEmployee - Custom Tab")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
