@@ -52,6 +52,7 @@ local Script = {
         AnchorFinished = {},
         FlyBody = nil,
         Guidance = {},
+        PaintingDebounce = false
     }
 }
 
