@@ -4250,7 +4250,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 lastPosition = currentPosition
             
             
-                local inView = Script.Functions.IsInViewOfPlayer(child, InfiniteCrucifixMovingEntitiesVelocity[entityName].threshold)
+                local inView = Script.Functions.IsInViewOfPlayer(child, InfiniteCrucifixMovingEntitiesVelocity[entityName].minDistance)
                 local distanceFromPlayer = (child:GetPivot().Position - character:GetPivot().Position).Magnitude
                 local isInRangeOfPlayer = distanceFromPlayer <= InfiniteCrucifixMovingEntitiesVelocity[entityName].minDistance
                 --[[if currentSavedFrames < maxSavedFrames then
