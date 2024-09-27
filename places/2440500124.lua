@@ -1,9 +1,8 @@
 --!native
 --!optimize 2
 
-if not getgenv().mspaint_loaded then
-    getgenv().mspaint_loaded = true
-else return end
+if getgenv().mspaint_loaded then return end
+getgenv().mspaint_loaded = true
 
 --// Services \\--
 local Lighting = game:GetService("Lighting")
