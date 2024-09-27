@@ -47,7 +47,9 @@ local Script = {
         HidingSpot = {},
         None = {}
     },
-    Functions = {},
+    Functions = {
+        Minecart = {}
+    },
     Temp = {
         AnchorFinished = {},
         FlyBody = nil,
@@ -206,6 +208,22 @@ local fakeReviveConnections = {}
 local lastSpeed = 0
 local bypassed = false
 
+local MinecartPathNodeColor = {
+    Disabled = nil,
+    Red =Color3.new(1, 0, 0),
+    Yellow =Color3.new(1, 1, 0),
+    Purple =Color3.new(1, 0, 1),
+    Green =Color3.new(0, 1, 0),
+    Cyan =Color3.new(0, 1, 1),
+    Orange =Color3.new(1, 0.5, 0),
+    White =Color3.new(1, 1, 1),
+}
+
+local MinecartPathfind = {
+    --ground chase [41 to 44]
+    --minecart chase [45 to 49]
+}
+
 if not isFools then
     floorReplicated = ReplicatedStorage:WaitForChild("FloorReplicated")
     remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
@@ -223,6 +241,20 @@ type ESP = {
     Text: string,
     TextParent: Instance,
     Type: string,
+}
+
+type tPathfind = {
+    esp: boolean,
+    room_number: number, -- the room number
+    real: table,
+    fake: table,
+    destroyed: boolean -- if the pathfind was destroyed for the Teleport
+}
+
+type tGroupTrack = {
+    nodes: table,
+    hasStart: boolean,
+    hasEnd: boolean,
 }
 
 --// Library \\--
@@ -338,6 +370,312 @@ function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
 
     return nearest
 end
+
+local function changeNodeColor(node: Model, color: Color3): Model
+    if color == nil then
+        node.Color = MinecartPathNodeColor.Yellow
+        node.Transparency = 1
+        node.Size = Vector3.new(1.0, 1.0, 1.0)
+        return
+    end
+    node.Color = color
+    node.Material = Enum.Material.Neon
+    node.Transparency = 0
+    node.Shape = Enum.PartType.Ball
+    node.Size = Vector3.new(0.7, 0.7, 0.7)
+    return node
+end
+
+local function tPathfindNew(n: number)
+    local create: tPathfind = {
+        esp = false,
+        room_number = n,
+        real = {},
+        fake = {},
+        destroyed = false
+    }
+    return create
+end
+
+local function tGroupTrackNew(startNode: Part | nil): tGroupTrack
+    local create: tGroupTrack = {
+        nodes = startNode and {startNode} or {},
+        hasStart = false,
+        hasEnd   = false,
+    }
+    return create
+end
+
+function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
+    if not (lastRoom >= 40 and lastRoom <= 49) and not (lastRoom >= 95 and lastRoom <= 100) then return end
+    
+    local nodes = room:WaitForChild("RunnerNodes", 5.0) --well, skill issue ig
+    if (nodes == nil) then return end
+
+    --Script.Functions.Alert(string.format("[Minecart-Pathfind] Finding the correct path for the room %s, please wait...", room.Name), 3)
+    
+    -- if this is sent to the client, means that the room has all the nodes in the room.
+    --task.wait(0.5)
+    -- repeat
+    --     task.wait(0.1) --this doesn't be so intensive, we can check casually
+    -- until nodeSpawnTriggerRooms[lastRoom]
+
+    nodes = nodes:GetChildren()
+
+    local numOfNodes = #nodes
+    
+    local _debugAutoMinecart = false --if you know what you're doing
+    local function _dbgprint(...) 
+        if not _debugAutoMinecart then return end
+        local var = ... or "\n"
+        print("[Minecart-Pathfind DBG] " .. table.unpack({var}))
+    end
+
+    local detailog = string.format("[Minecart-Pathfind] Found room with tracks: %s - Nodes: %s", room.Name, numOfNodes)
+    _dbgprint(detailog)
+
+    if numOfNodes <= 1 then return end --This is literally impossible but... umm. acutally, yea why not.
+
+    --[[
+        Pathfind is a computational expensive process to make, 
+        however we don't have node loops, 
+        so we can ignore a few verifications.
+        If you want to understand how this is working, search for "Pathfiding Algorithms"
+
+        The shortest explanation i can give is that, this is a custom pathfinding to find "gaps" between
+        nodes and creating "path" groups. With the groups estabilished we can make the correct validations.
+    ]]
+    --Distance weights [DO NOT EDIT, unless something breaks...]
+    local _shortW = 4
+    local _longW = 24
+
+    local doorModel = room:WaitForChild("Door", 5) -- Will be used to find the correct last node.
+
+    local _startNode = changeNodeColor(nodes[1], MinecartPathNodeColor.Green)
+    local _lastNode = nil --we need to find this node.
+    --local _lastNodeTask = nil --Arbitrary tasks: "Start", "End", "Track", "Fake"
+
+    local _gpID = 1
+    local stackNode = {} --Group all track groups here.
+    stackNode[_gpID] = tGroupTrackNew()
+    
+    --Ensure sort all nodes properly (reversed)
+    table.sort(nodes, function(a,b)
+        local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+        local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+        return tonumber(_Asub) > tonumber(_Bsub)
+    end)
+
+    local _last = 1
+    for i=_last+1, numOfNodes, 1 do
+        local nodeA: Part = nodes[_last]
+        local nodeB: Part = _lastNode and nodes[i] or doorModel
+
+        local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+        local isEndNode = distance <= _shortW
+        local isNodeNear = (distance > _shortW and distance <= _longW)
+
+        local _currNodeTask = "Track"
+        if isNodeNear or isEndNode then
+            if not _lastNode then -- this will only be true, once.
+                _currNodeTask = "End"
+                _lastNode = nodeA
+            end
+        else
+            _currNodeTask = "Fake"
+        end
+
+        --check if group is diff, ignore "End" or "Start" tasks
+        if  (_currNodeTask == "Fake" or _currNodeTask == "End") and _lastNode then
+            _gpID += 1
+            stackNode[_gpID] = tGroupTrackNew()
+            if _currNodeTask == "End" then
+                stackNode[_gpID].hasEnd = true
+            end
+        end
+        table.insert(stackNode[_gpID].nodes, changeNodeColor(nodeA, MinecartPathNodeColor.White))
+
+        --Use this to debug the nodeTask
+        _dbgprint(string.format("[%s] - [%s] Distance between: %s <--> %s ==> %.2f", _gpID, _currNodeTask, nodeA.Name, nodeB.Name, distance))
+
+        _last = i
+        --_lastNodeTask = _currNodeTask
+    end
+    stackNode[_gpID].hasStart = true --after the reversed path finding, the last group has the start node.
+    table.insert(stackNode[_gpID].nodes, _startNode)
+    --if we only have one group, means that there's no fake path.
+    local hasMoreThanOneGroup = _gpID > 1
+
+    local _closestNodes = {} --unwanted nodes if any
+    local hasIncorrectPath = false -- if this is true, we're cooked. No path for you ):
+    if hasMoreThanOneGroup then
+        _dbgprint()
+        for _gpI, v: tGroupTrack in ipairs(stackNode) do
+            _closestNodes[_gpI] = {}
+            _dbgprint(string.format("[TrackGroup] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+
+            if _gpI <= 1 then continue end
+            _dbgprint(string.format("[TrackGroup] Group %s was selected to deep pathfinding", _gpI))
+
+            --Sort table for the normal flow, A -> B (was B -> A before)
+            table.sort(v.nodes, function(a,b)
+                local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+                local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+                return tonumber(_Asub) < tonumber(_Bsub)
+            end)
+
+            --Finally, perform the clean up by removing wrong nodes when a "distance jump" is found
+            local _gplast = 1
+            local hasNodeJump = false
+            for _gpS=_gplast+1, #v.nodes, 1 do
+                local nodeA: Part = v.nodes[_gplast]
+                local nodeB: Part = v.nodes[_gpS]
+
+                local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
+
+                hasNodeJump = (distance >= _longW)
+                if not hasNodeJump then _gplast = _gpS continue end
+                _dbgprint(string.format("[%s] Distance between %s <--> %s ==> %.2f", _gpI, nodeA.Name, nodeB.Name, distance))
+
+                --Ok, we found a node jump, now we need to know what should be the closest node
+                --table.remove(v.nodes, _gpS)
+                _dbgprint(string.format("[TrackGroup] Group %s with, %s will find his closest node now.", _gpI, nodeB.Name))
+                local nodeSearchPath = nodeB
+
+                --Search again with the nodeSearchPath
+                local closestDistance = math.huge
+
+                local _gpFlast = #v.nodes
+                for i=_gpFlast-1, 1, -1 do
+
+                    local fnode = v.nodes[_gpFlast]
+                    local Sdistance = (nodeSearchPath:GetPivot().Position - fnode:GetPivot().Position).Magnitude
+                    _gpFlast = i
+
+                    if Sdistance == 0.00 then continue end --node is self
+                    _dbgprint(string.format("  [%s] DeepPath ==> Distance between %s <--> %s ==> %.2f", _gpI, nodeSearchPath.Name, fnode.Name, Sdistance))
+
+                    if Sdistance <= closestDistance then
+                        closestDistance = Sdistance
+                        table.insert(_closestNodes[_gpI], fnode)
+                        table.remove(v.nodes, _gpFlast+1)
+                        continue
+                    end
+                    break
+                end
+                --table.insert(v.nodes, _gpS, nodeSearchPath)
+
+                local _FoundAmount = #_closestNodes[_gpI]
+                if _FoundAmount > 1 then 
+                    _dbgprint(string.format("[TrackGroup] Group %s with, closest node is: %s ", _gpI, _closestNodes[_gpI][_FoundAmount].Name))
+                else
+                    warn(string.format("[TrackGroup] Group %s ERROR: Unable to find closest node, path is likely broken.", _gpI))
+                    hasIncorrectPath = true
+                end
+                break
+            end
+            if not hasNodeJump then
+                _dbgprint(string.format("[TrackGroup] Group %s has a correct path! ", _gpI))
+            end
+        end
+
+        for _gpI, v: tGroupTrack in ipairs(stackNode) do
+            _dbgprint(string.format("[TrackGroup -- VERIFY] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+        end
+
+        --table.remove(stackNode, 1) --remove the fake 
+    end
+
+    if hasIncorrectPath then return end
+
+    --finally, draw the correct path. gg
+    local realNodes = {} --our precious nodes finally here :pray:
+    local fakeNodes = {} --we hate you but ok
+    for _gpFI, v: tGroupTrack in ipairs(stackNode) do
+        local finalWrongNode = false
+        if _gpFI == 1 and hasMoreThanOneGroup then
+            finalWrongNode = true 
+        end
+
+        for _, vfinal in ipairs(v.nodes) do
+            if finalWrongNode then
+                table.insert(fakeNodes, vfinal)
+                continue
+            end
+            table.insert(realNodes, vfinal)
+        end
+
+        --Draw wrong path calculated on DeepPath.
+        for _, nfinal in ipairs(_closestNodes[_gpFI]) do
+            table.insert(fakeNodes, nfinal)
+        end
+    end
+    local roomNum = tonumber(room.Name)
+    --local success = string.format("Correct path was generated for the ROOM %d", roomNum)
+    --Script.Functions.Alert("[Minecart-Pathfind] " .. success, 2); _dbgprint(success)
+
+    table.sort(realNodes, function(a, b)
+        local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
+        local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
+        return tonumber(_Asub) < tonumber(_Bsub)
+    end)
+
+    --build pathfind
+    local buildPathfind = tPathfindNew(lastRoom)
+    buildPathfind.real = realNodes
+    buildPathfind.fake = fakeNodes
+    table.insert(MinecartPathfind, buildPathfind) --add to table
+
+    Script.Functions.Minecart.DrawNodes()
+    --add the ESP ToggleCheck if enabled.
+    --if true then
+        
+    --end    
+
+    --[[
+    if (roomNum >= 45) then --Functions AFTER this, is for processing on minecart chase only.
+
+        --add the Teleport Exploit ToggleCheck if enabled.
+
+        --if [THE TOOGLE HERE] then
+            --Start destroying nodes
+            Script.Functions.Minecart.NodeDestroy(roomNum)
+
+            --Start the Teleport module if the last room added is 45. 
+            ---Meaning that if last room >= 45 you can't enable Minecart.Teleport (TODO, fix that.)
+            Script.Functions.Minecart.Teleport(roomNum)
+        --end
+    end]]
+end
+
+--If ESP Toggle is changed, you can call this function directly.
+function Script.Functions.Minecart.DrawNodes()
+    local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
+    local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
+    local espFakeColor = pathESP_enabled and MinecartPathNodeColor.Red or MinecartPathNodeColor.Disabled
+    
+    for idx, path: tPathfind in ipairs(MinecartPathfind) do
+        if path.esp and pathESP_enabled then continue end -- if status is unchanged.
+
+        print(string.format("[ROOM %d] Drawing Node Pathfind ESP.", path.room_number))
+
+        --[ESP] Draw the real path
+        local realPath = path.real
+        for _, _real in pairs(realPath) do
+            changeNodeColor(_real, espRealColor)
+        end
+
+        --[ESP] Draw the fake path
+        local fakePath = path.fake
+        for _, _fake in pairs(fakePath) do
+            changeNodeColor(_fake, espFakeColor)
+        end
+
+        path.esp = pathESP_enabled --update if path esp status was changed.
+    end
+end
+
 
 function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
@@ -2005,6 +2343,14 @@ task.spawn(function()
                 Text = "Anticheat Bypass",
                 Default = false
             })
+
+        end
+        
+        local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
+            Mines_VisualGroupBox:AddToggle("MinecartPathVisualiser", {
+                Text = "Show Correct Minecart Path",
+                Default = false
+            })
         end
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
@@ -2080,6 +2426,10 @@ task.spawn(function()
                     end
                 end
             end
+        end)
+
+        Toggles.MinecartPathVisualiser:OnChanged(function(value)
+            Script.Functions.Minecart.DrawNodes()
         end)
     elseif isBackdoor then
         local Backdoors_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
@@ -3979,6 +4329,10 @@ for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
 end
 Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
+    
+    if isMines then
+        task.delay(0.5, Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+    end
 end))
 
 
