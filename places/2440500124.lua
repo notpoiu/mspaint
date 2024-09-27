@@ -4130,6 +4130,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
+                if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
