@@ -4912,7 +4912,7 @@ local function OpenElementCreationUI()
         Library:CreatePopup({
             Title = 'Enter Lua Code',
             Description = 'Input your Lua code here.',
-            Size = Vector2.new(400, 300), -- Set the size of the pop-up
+            Size = Vector2.new(600, 500), -- Set the size of the pop-up
             Elements = {
                 {
                     Type = 'TextInput',
@@ -4934,7 +4934,7 @@ local function OpenElementCreationUI()
         })
     end)
 
-    -- Save button to create the custom element
+     -- Save button to create the custom element
     CreationGroupBox:AddButton('Save', function()
         -- Ensure elementName and luaCode are not empty
         if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
