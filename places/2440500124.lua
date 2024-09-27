@@ -4887,7 +4887,7 @@ end
 local function OpenElementCreationUI()
     -- Close any previous popup
     if CurrentCreationUI then
-        CurrentCreationUI:Remove()
+        CurrentCreationUI:Destroy() -- Use Destroy instead of Remove
         CurrentCreationUI = nil
     end
 
@@ -4954,7 +4954,7 @@ local function OpenElementCreationUI()
         table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
 
         -- Close the element creation UI after saving
-        CreationGroupBox:Remove()
+        CreationGroupBox:Destroy() -- Use Destroy instead of Remove
         CurrentCreationUI = nil
     end)
 end
@@ -4963,8 +4963,6 @@ end
 CustomGroupBox:AddButton('+', function()
     OpenElementCreationUI() -- Open the element creation UI
 end)
-
-
 
 
 
