@@ -4071,8 +4071,13 @@ if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] th
         local args = {...}
         local namecallMethod = getnamecallmethod()
     
-        if namecallMethod == "FireServer" and self.Name == "ClutchHeartbeat" and Toggles.AutoHeartbeat.Value then
-            return
+        if namecallMethod == "FireServer" then
+            if self.Name == "ClutchHeartbeat" and Toggles.AutoHeartbeat.Value then
+                return
+            elseif self.Name == "Crouch" and Toggles.AntiHearing.Value then
+                args[1] = true
+                return mtHook(self, unpack(args))
+            end
         elseif namecallMethod == "Destroy" and self.Name == "RunnerNodes" then
             return
         end
