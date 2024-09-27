@@ -16,8 +16,6 @@ local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
---//Custom Table\\--
-local CustomElements = {}
 --// Loading Wait \\--
 if not game.IsLoaded then game.Loaded:Wait() end
 if Players.LocalPlayer.PlayerGui:FindFirstChild("LoadingUI") and Players.LocalPlayer.PlayerGui.LoadingUI.Enabled then
@@ -4839,92 +4837,104 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end)
 end))
 
--- Function to add a new element to the Custom Tab
+-- Initialize CustomElements table to store custom elements
+local CustomElements = {}
+
+-- Add a GroupBox for custom elements in the Custom Tab
+local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
+
+-- Function to add a new element to the Custom GroupBox
 local function AddCustomElement(name, elementType, luaCode)
     if elementType == "Button" then
-        Tabs.CustomTab:AddButton(name, function()
-            loadstring(luaCode)() -- Execute the Lua code
+        CustomGroupBox:AddButton(name, function()
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in button code: " .. err)
+            end
         end)
     elseif elementType == "Toggle" then
-        Tabs.CustomTab:AddToggle(name, {
+        CustomGroupBox:AddToggle(name, {
             Text = name,
             Default = false,
         }):OnChanged(function(state)
             if state then
-                loadstring(luaCode)() -- Execute the Lua code when toggled on
+                local success, err = pcall(function() loadstring(luaCode)() end)
+                if not success then
+                    print("Error in toggle code: " .. err)
+                end
             end
         end)
     elseif elementType == "Slider" then
-        Tabs.CustomTab:AddSlider(name, {
+        CustomGroupBox:AddSlider(name, {
             Text = name,
             Default = 1,
             Min = 0,
             Max = 100,
             Rounding = 1,
         }):OnChanged(function(value)
-            loadstring(luaCode)() -- Execute the Lua code when the slider is adjusted
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in slider code: " .. err)
+            end
         end)
     end
 end
 
--- Function to open a popup for input
-local function OpenPopup()
-    -- Initialize variables to store input data
+-- Function to open a UI section to input new element details
+local function OpenElementCreationUI()
+    local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
+
     local elementName = ""
     local elementType = ""
     local luaCode = ""
 
-    Library:CreatePopup({
-        Title = 'Create New Element',
-        Description = 'Choose element type and input Lua code.',
-        Elements = {
-            {
-                Type = 'TextInput',
-                Title = 'Element Name',
-                Placeholder = 'Enter the name of the element...',
-                Callback = function(text)
-                    elementName = text
-                end
-            },
-            {
-                Type = 'Dropdown',
-                Title = 'Element Type',
-                Items = { 'Button', 'Toggle', 'Slider' },
-                Callback = function(selected)
-                    elementType = selected
-                end
-            },
-            {
-                Type = 'TextInput',
-                Title = 'Lua Code',
-                Placeholder = 'Enter Lua code...',
-                Callback = function(text)
-                    luaCode = text
-                end
-            },
-            {
-                Type = 'Button',
-                Title = 'Save',
-                Callback = function()
-                    -- Ensure elementName and luaCode are not empty
-                    if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
-                        -- Save the custom element
-                        AddCustomElement(elementName, elementType, luaCode)
-                        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
-                        Library:ClosePopup() -- Close the popup after saving
-                    else
-                        print("Please fill out all fields!")
-                    end
-                end
-            }
-        }
+    -- Input for the element name
+    CreationGroupBox:AddInput('ElementNameInput', {
+        Text = 'Element Name',
+        Placeholder = 'Enter the name of the element...',
+        OnChanged = function(text)
+            elementName = text
+        end
     })
+
+    -- Dropdown to select the element type
+    CreationGroupBox:AddDropdown('ElementTypeDropdown', {
+        Values = { 'Button', 'Toggle', 'Slider' },
+        Text = 'Element Type',
+        Default = 1, -- Default to 'Button'
+        OnChanged = function(selected)
+            elementType = selected
+        end
+    })
+
+    -- Input for Lua code
+    CreationGroupBox:AddInput('LuaCodeInput', {
+        Text = 'Lua Code',
+        Placeholder = 'Enter Lua code...',
+        OnChanged = function(text)
+            luaCode = text
+        end
+    })
+
+    -- Save button to create the custom element
+    CreationGroupBox:AddButton('Save', function()
+        -- Ensure elementName and luaCode are not empty
+        if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
+            -- Save the custom element
+            AddCustomElement(elementName, elementType, luaCode)
+            table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
+        else
+            print("Please fill out all fields!")
+        end
+    end)
 end
 
--- Add "+" button in the custom tab
-Tabs.CustomTab:AddButton('+', function()
-    OpenPopup() -- Open popup to create a new element
+-- Add a "+" button in the Custom GroupBox to open the element creation UI
+CustomGroupBox:AddButton('+', function()
+    OpenElementCreationUI() -- Open the element creation UI
 end)
+
+
 
 --// Script Load \\--
 
