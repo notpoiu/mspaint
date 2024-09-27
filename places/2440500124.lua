@@ -4907,16 +4907,32 @@ local function OpenElementCreationUI()
         end
     })
 
-    -- Input for Lua code (larger box)
-    CreationGroupBox:AddInput('LuaCodeInput', {
-        Text = 'Lua Code',
-        Placeholder = 'Enter Lua code...',
-        MultiLine = true, -- This would enable multi-line input if Linoria supported it
-        -- You can also adjust height here if supported by Linoria's theme system
-        OnChanged = function(text)
-            luaCode = text
-        end
-    }):AddToolTip('Enter Lua code here. Longer scripts should fit in this input.')
+    -- Button to open a larger pop-up for Lua code input
+    CreationGroupBox:AddButton('Enter Lua Code', function()
+        Library:CreatePopup({
+            Title = 'Enter Lua Code',
+            Description = 'Input your Lua code here.',
+            Size = Vector2.new(400, 300), -- Set the size of the pop-up
+            Elements = {
+                {
+                    Type = 'TextInput',
+                    Title = 'Lua Code',
+                    Placeholder = 'Enter Lua code...',
+                    MultiLine = true, -- Enable multi-line input in pop-up
+                    OnChanged = function(text)
+                        luaCode = text -- Store Lua code in variable
+                    end
+                },
+                {
+                    Type = 'Button',
+                    Title = 'Save Lua Code',
+                    Callback = function()
+                        Library:ClosePopup() -- Close pop-up after saving
+                    end
+                }
+            }
+        })
+    end)
 
     -- Save button to create the custom element
     CreationGroupBox:AddButton('Save', function()
@@ -4930,6 +4946,7 @@ local function OpenElementCreationUI()
         end
     end)
 end
+
 
 -- Add a "+" button in the Custom GroupBox to open the element creation UI
 CustomGroupBox:AddButton('+', function()
