@@ -4843,7 +4843,7 @@ local CustomElements = {}
 -- Add a GroupBox for custom elements in the Custom Tab
 local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
 
--- Variable to track the current UI for element creation (so we can close it)
+-- Variable to track the current UI for element creation (so we can hide it)
 local CurrentCreationUI
 
 -- Function to add a new element to the Custom GroupBox
@@ -4883,17 +4883,26 @@ local function AddCustomElement(name, elementType, luaCode)
     end
 end
 
+-- Function to hide/clear the UI when saved
+local function HideElementCreationUI()
+    if CurrentCreationUI then
+        for _, element in pairs(CurrentCreationUI:GetChildren()) do
+            element.Visible = false -- Hide the UI elements
+        end
+        CurrentCreationUI = nil -- Clear reference
+    end
+end
+
 -- Function to open a UI section to input new element details
 local function OpenElementCreationUI()
-    -- Close any previous popup
+    -- Hide any previous UI if it exists
     if CurrentCreationUI then
-        CurrentCreationUI:Destroy() -- Use Destroy instead of Remove
-        CurrentCreationUI = nil
+        HideElementCreationUI()
     end
 
     -- Create a new GroupBox for element creation
     local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
-    CurrentCreationUI = CreationGroupBox -- Store it so we can remove it later
+    CurrentCreationUI = CreationGroupBox -- Store reference
 
     local elementName = nil
     local elementType = nil
@@ -4925,7 +4934,7 @@ local function OpenElementCreationUI()
         OnChanged = function(text)
             luaCode = text
         end,
-        Size = UDim2.new(1, 0, 0, 150), -- Full width, 150px height
+        Size = UDim2.new(1, 0, 0, 300), -- Full width, 300px height
         TextSize = 10, -- Adjust text size as needed
         MultiLine = true, -- Enable multi-line input
     })
@@ -4953,9 +4962,8 @@ local function OpenElementCreationUI()
         AddCustomElement(elementName, elementType, luaCode)
         table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
 
-        -- Close the element creation UI after saving
-        CreationGroupBox:Destroy() -- Use Destroy instead of Remove
-        CurrentCreationUI = nil
+        -- Hide the element creation UI after saving
+        HideElementCreationUI()
     end)
 end
 
@@ -4963,7 +4971,6 @@ end
 CustomGroupBox:AddButton('+', function()
     OpenElementCreationUI() -- Open the element creation UI
 end)
-
 
 
 --// Script Load \\--
