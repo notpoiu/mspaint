@@ -4926,8 +4926,6 @@ CreationGroupBox:AddInput('LuaCodeInput', {
             -- Save the custom element
             AddCustomElement(elementName, elementType, luaCode)
             table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
-        else
-            print("Please fill out all fields!")
         end
     end)
 end
