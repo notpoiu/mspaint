@@ -4612,6 +4612,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
     if character then
         if character:FindFirstChild("Head") and not (mainGameSrc and mainGameSrc.stopcam or rootPart.Anchored and not character:GetAttribute("Hiding")) then
+            character:SetAttribute("ShowInFirstPerson", isThirdPersonEnabled)
             character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1
         end
 
