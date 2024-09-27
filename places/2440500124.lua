@@ -11,10 +11,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
+--//Custom Table\\--
+local CustomElements = {}
 --// Loading Wait \\--
 if not game.IsLoaded then game.Loaded:Wait() end
 if Players.LocalPlayer.PlayerGui:FindFirstChild("LoadingUI") and Players.LocalPlayer.PlayerGui.LoadingUI.Enabled then
@@ -23,6 +26,7 @@ end
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
+local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
@@ -53,15 +57,18 @@ local Script = {
     }
 }
 
-local EntityName = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"}
-local SideEntityName = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"}
-local ShortNames = {
+local EntityTable = {
+    ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
+    ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
+    ["ShortNames"] = {
     ["BackdoorRush"] = "Blitz",
     ["JeffTheKiller"] = "Jeff The Killer"
-}
-local EntityNotify = {
+    },
+    ["NotifyMessage"] = {
     ["GloombatSwarm"] = "Gloombats in next room!"
 }
+}
+
 local HidingPlaceName = {
     ["Hotel"] = "Closet",
     ["Backdoor"] = "Closet",
@@ -225,57 +232,13 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab("Main"),
+	Main = Window:AddTab("Main"),
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
     Floor = Window:AddTab("Floor"),
-    ["UI Settings"] = Window:AddTab("UI Settings"),
-    Custom = Window:AddTab("Custom")
+    Custom = Window:AddTab('Custom'),
+	["UI Settings"] = Window:AddTab("UI Settings"),
 }
-
-local function CreateCustomTab(TabHolder)
-    local CustomTab = TabHolder
-
-    local AddButton = CustomTab:AddButton({
-        Title = "Add Custom Element",
-        Description = "Click to add a new custom element",
-        Callback = function()
-            local ElementType = "Button" -- You can expand this to allow choosing between Button, Slider, and Toggle
-            local ElementName = "Custom" .. ElementType
-            local CodeToRun = ""
-
-            local NewElement = CustomTab:AddButton({
-                Title = ElementName,
-                Description = "Enter Lua code below",
-                Callback = function()
-                    local success, error = pcall(function()
-                        loadstring(CodeToRun)()
-                    end)
-                    if not success then
-                        warn("Error running custom code: " .. error)
-                    end
-                end
-            })
-
-            local CodeBox = CustomTab:AddInput({
-                Title = "Code Input",
-                Default = "Enter Lua code here",
-                Placeholder = "Enter Lua code here",
-                Numeric = false,
-                Finished = false,
-                Callback = function(Value)
-                    CodeToRun = Value
-                end
-            })
-        end
-    })
-
-    return CustomTab
-end
-
--- Call CreateCustomTab function for the Custom tab
-CreateCustomTab(Tabs.Custom)
-
 
 local _mspaint_custom_captions = Instance.new("ScreenGui") do
     local Frame = Instance.new("Frame", _mspaint_custom_captions)
@@ -909,6 +872,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
                     Script.Functions.Alert(string.format("Library Code: %s", output))
+
+                    if Toggles.NotifyChat.Value and count == 0 then
+                        RBXGeneral:SendAsync(string.format("Library Code: %s", output))
+                    end
                 end
             end
         end)
@@ -1105,6 +1072,10 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
                     Script.Functions.Alert(string.format("Library Code: %s", output))
+
+                    if Toggles.NotifyChat.Value and count == 0 then
+                        RBXGeneral:SendAsync(string.format("Library Code: %s", output))
+                    end
                 end
             end
         end)
@@ -1112,8 +1083,8 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
 end
 
 function Script.Functions.GetShortName(entityName: string)
-    if ShortNames[entityName] then
-        return ShortNames[entityName]
+    if EntityTable.ShortNames[entityName] then
+        return EntityTable.ShortNames[entityName]
     end
 
     local suffixPrefix = {
@@ -1281,7 +1252,8 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddToggle("EnableJump", {
         Text = "Enable Jump",
-        Default = false
+        Default = false,
+        Visible = not isFools,
     })
 
     PlayerGroupBox:AddToggle("Noclip", {
@@ -1571,7 +1543,8 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     
     BypassGroupBox:AddToggle("InfItems", {
         Text = "Infinite Lockpick",
-        Default = false
+        Default = false,
+        Visible = not isFools
     })
 
     BypassGroupBox:AddToggle("FakeRevive", {
@@ -1730,6 +1703,14 @@ end
 
 local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
+        NotifyTab:AddDropdown("NotifyEntity", {
+            AllowNull = true,
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Default = {},
+            Multi = true,
+
+            Text = "Notify Entities"
+        })
         NotifyTab:AddToggle("NotifyEntity", {
             Text = "Notify Entity",
             Default = false,
@@ -1747,6 +1728,14 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     end
 
     local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
+        NotifySettingsTab:AddToggle("NotifyChat", {
+            Text = "Notify Chat",
+            Tooltip = "Entity and Padlock Code",
+            Default = false,
+        })
+
+        NotifySettingsTab:AddDivider()
+
         NotifySettingsTab:AddToggle("NotifySound", {
             Text = "Play Alert Sound",
             Default = true,
@@ -3297,7 +3286,7 @@ Toggles.EntityESP:OnChanged(function(value)
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, entity in pairs(currentRoomModel:GetDescendants()) do
-                if table.find(SideEntityName, entity.Name) then
+                if table.find(EntityTable.SideNames, entity.Name) then
                     Script.Functions.SideEntityESP(entity)
                 end
             end
@@ -3686,7 +3675,7 @@ if isBackdoor then
 end
 
 Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    if player ~= localPlayer or not character then return end
+    if player ~= localPlayer or not character or isFools then return end
     
     local isDoorLock = prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock" and not prompt.Parent.Parent:GetAttribute("Opened")
     local isSkeletonDoor = prompt.Name == "SkullPrompt" and prompt.Parent.Name == "SkullLock" and not (prompt.Parent:FindFirstChild("Door") and prompt.Parent.Door.Transparency == 1)
@@ -3719,30 +3708,38 @@ end))
 
 Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     task.delay(0.1, function()
-        if table.find(EntityName, child.Name) then
+        local shortName = Script.Functions.GetShortName(child.Name)
+
+        if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
                 repeat
                     task.wait()
                 until Script.Functions.DistanceFromCharacter(child) < 2000 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
-                    local entityName = Script.Functions.GetShortName(child.Name)
-
                     if isFools and child.Name == "RushMoving" then
-                        entityName = child.PrimaryPart.Name:gsub("New", "")
+                        shortName = child.PrimaryPart.Name:gsub("New", "")
                     end
 
                     if Toggles.EntityESP.Value then
                         Script.Functions.EntityESP(child)  
                     end
 
-                    if Toggles.NotifyEntity.Value then
-                        Script.Functions.Alert(entityName .. " has spawned!")
+                    if Options.NotifyEntity.Value[shortName] == true then
+                        Script.Functions.Alert(shortName .. " has spawned!")
+
+                        if Toggles.NotifyChat.Value then
+                            RBXGeneral:SendAsync(shortName .. " has spawned!")
+                        end
                     end
                 end
             end)
-        elseif EntityNotify[child.Name] and Toggles.NotifyEntity.Value then
-            Script.Functions.Alert(EntityNotify[child.Name])
+        elseif EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
+            Script.Functions.Alert(EntityTable.NotifyMessage[child.Name])
+
+            if Toggles.NotifyChat.Value then
+                RBXGeneral:SendAsync(EntityTable.NotifyMessage[child.Name])     
+            end
         end
 
         if isFools then
@@ -3898,7 +3895,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
                 task.spawn(Script.Functions.ObjectiveESP, asset)
             end
 
-            if Toggles.EntityESP.Value and table.find(SideEntityName, asset.Name) then    
+            if Toggles.EntityESP.Value and table.find(EntityTable.SideNames, asset.Name) then    
                 task.spawn(Script.Functions.SideEntityESP, asset)
             end
     
@@ -4183,7 +4180,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 local isGrabbing = Options.GrabBananaJeff:GetState() and Toggles.GrabBananaJeffToggle.Value
                 local isThrowing = Options.ThrowBananaJeff:GetState()
                 
-                if isThrowing and isnetworkowner(HoldingItem) then
+                if isThrowing and HoldingItem and isnetworkowner(HoldingItem) then
                     Script.Functions.ThrowBananaJeff()
                 end
                 
@@ -4245,6 +4242,93 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         end
     end)
 end))
+
+-- Function to add a new element to the Custom Tab
+local function AddCustomElement(name, elementType, luaCode)
+    if elementType == "Button" then
+        Tabs.CustomTab:AddButton(name, function()
+            loadstring(luaCode)() -- Execute the Lua code
+        end)
+    elseif elementType == "Toggle" then
+        Tabs.CustomTab:AddToggle(name, {
+            Text = name,
+            Default = false,
+        }):OnChanged(function(state)
+            if state then
+                loadstring(luaCode)() -- Execute the Lua code when toggled on
+            end
+        end)
+    elseif elementType == "Slider" then
+        Tabs.CustomTab:AddSlider(name, {
+            Text = name,
+            Default = 1,
+            Min = 0,
+            Max = 100,
+            Rounding = 1,
+        }):OnChanged(function(value)
+            loadstring(luaCode)() -- Execute the Lua code when the slider is adjusted
+        end)
+    end
+end
+
+-- Function to open a popup for input
+local function OpenPopup()
+    -- Initialize variables to store input data
+    local elementName = ""
+    local elementType = ""
+    local luaCode = ""
+
+    Library:CreatePopup({
+        Title = 'Create New Element',
+        Description = 'Choose element type and input Lua code.',
+        Elements = {
+            {
+                Type = 'TextInput',
+                Title = 'Element Name',
+                Placeholder = 'Enter the name of the element...',
+                Callback = function(text)
+                    elementName = text
+                end
+            },
+            {
+                Type = 'Dropdown',
+                Title = 'Element Type',
+                Items = { 'Button', 'Toggle', 'Slider' },
+                Callback = function(selected)
+                    elementType = selected
+                end
+            },
+            {
+                Type = 'TextInput',
+                Title = 'Lua Code',
+                Placeholder = 'Enter Lua code...',
+                Callback = function(text)
+                    luaCode = text
+                end
+            },
+            {
+                Type = 'Button',
+                Title = 'Save',
+                Callback = function()
+                    -- Ensure elementName and luaCode are not empty
+                    if elementName ~= "" and luaCode ~= "" and elementType ~= "" then
+                        -- Save the custom element
+                        AddCustomElement(elementName, elementType, luaCode)
+                        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
+                        Library:ClosePopup() -- Close the popup after saving
+                    else
+                        print("Please fill out all fields!")
+                    end
+                end
+            }
+        }
+    })
+end
+
+-- Add "+" button in the custom tab
+Tabs.CustomTab:AddButton('+', function()
+    OpenPopup() -- Open popup to create a new element
+end)
 
 --// Script Load \\--
 
@@ -4377,6 +4461,7 @@ CreditsGroup:AddLabel("upio - script dev")
 CreditsGroup:AddDivider()
 CreditsGroup:AddLabel("Script Contributors:")
 CreditsGroup:AddLabel("mstudio45 - fake revive & firepp")
+CreditsGroup:AddLabel("RobloxEmployee - CustomTab")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
