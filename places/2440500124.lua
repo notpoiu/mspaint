@@ -1952,7 +1952,7 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     })
     BypassGroupBox:AddToggle("AntiEntities", {
         Text = "AntiEntitiesz",
-        Default = false,
+        Default = false
     })
 
     BypassGroupBox:AddToggle("FakeRevive", {
