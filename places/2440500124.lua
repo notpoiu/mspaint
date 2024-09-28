@@ -4153,16 +4153,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
 
         if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
-                local oldPosition = child:GetPivot().Position
-                task.delay(7, function()
-                    if not child or not child:IsDescendantOf(workspace) then return end
-                    if oldPosition ~= child:GetPivot().Position then return end
-                    if table.find(EntityTable.NoCheck, child.Name) then return end
-
-                    -- fake entity :content:
-                    child:Destroy()
-                end)
-
+                
                 repeat
                     task.wait()
                 until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
