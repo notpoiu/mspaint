@@ -670,12 +670,6 @@ function Script.Functions.Minecart.DrawNodes()
             changeNodeColor(_real, espRealColor)
         end
 
-        --[ESP] Draw the fake path
-        local fakePath = path.fake
-        for _, _fake in pairs(fakePath) do
-            changeNodeColor(_fake, espFakeColor)
-        end
-
         path.esp = pathESP_enabled --update if path esp status was changed.
     end
 end
