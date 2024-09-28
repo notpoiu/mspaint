@@ -273,12 +273,12 @@ local Toggles = getgenv().Linoria.Toggles
 local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/MS-ESP/refs/heads/main/source.lua"))()
 
 local Window = Library:CreateWindow({
-	Title = "mspaint v2",
+	Title = "🪑Vitaly's Chair🚪",
 	Center = true,
 	AutoShow = true,
 	Resizable = true,
     NotifySide = "Right",
-	ShowCustomCursor = true,
+	ShowCustomCursor = false,
 	TabPadding = 2,
 	MenuFadeTime = 0
 })
