@@ -4846,11 +4846,8 @@ end))
 -- Initialize CustomElements table to store custom elements
 local CustomElements = {}
 
--- Add a GroupBox for custom elements in the Custom Tab
+-- Add a GroupBox for custom elements in the Custom Tab (left side)
 local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
-
--- Variable to track the current UI for element creation (so we can hide it)
-local CurrentCreationUI
 
 -- Function to add a new element to the Custom GroupBox
 local function AddCustomElement(name, elementType, luaCode)
@@ -4891,23 +4888,14 @@ end
 
 -- Function to hide/clear the UI when saved
 local function HideElementCreationUI()
-    if CurrentCreationUI then
-        CurrentCreationUI:Remove() -- Properly removes the group box from the UI
-        CurrentCreationUI = nil -- Clear reference
-    end
+    -- No longer necessary, but keeping in case we want to hide in future
 end
 
 -- Function to open a UI section to input new element details
 local function OpenElementCreationUI()
-    -- Hide any previous UI if it exists
-    if CurrentCreationUI then
-        HideElementCreationUI()
-    end
-
-    -- Create a new, **larger** GroupBox for element creation
-    local CreationGroupBox = Tabs.CustomTab:AddLeftGroupbox('Create New Element')
+    -- Create the element creation GroupBox on the right side
+    local CreationGroupBox = Tabs.CustomTab:AddRightGroupbox('Create New Element')
     CreationGroupBox.Container.Size = UDim2.new(1, 0, 0, 500) -- Full width, 500px height to expand the UI
-    CurrentCreationUI = CreationGroupBox -- Store reference
 
     local elementName = nil
     local elementType = nil
@@ -4932,7 +4920,7 @@ local function OpenElementCreationUI()
         end
     })
 
-    -- Input for Lua code with **much larger** size
+    -- Input for Lua code with larger size
     local LuaCodeInput = CreationGroupBox:AddInput('LuaCodeInput', {
         Text = 'Lua Code',
         Placeholder = 'Enter Lua code...',
@@ -4946,12 +4934,11 @@ local function OpenElementCreationUI()
 
     -- Save button to create the custom element
     CreationGroupBox:AddButton('Save', function()
-        -- Ensure the latest values are fetched before validation
+        -- Ensure elementName, elementType, and luaCode are valid
         elementName = ElementNameInput.Value
         elementType = ElementTypeDropdown.Value
         luaCode = LuaCodeInput.Value
 
-        -- Ensure elementName, elementType, and luaCode are not empty
         if elementName == nil or elementName == "" then
             warn("Please enter an element name.")
             return
@@ -4966,17 +4953,11 @@ local function OpenElementCreationUI()
         -- Save the custom element
         AddCustomElement(elementName, elementType, luaCode)
         table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
-
-        -- Hide the element creation UI after saving
-        HideElementCreationUI()
     end)
 end
 
--- Add a "+" button in the Custom GroupBox to open the element creation UI
-CustomGroupBox:AddButton('+', function()
-    OpenElementCreationUI() -- Open the element creation UI
-end)
-
+-- Open the element creation UI when script runs
+OpenElementCreationUI()
 
 --// Script Load \\--
 
