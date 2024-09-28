@@ -455,7 +455,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
 
     local doorModel = room:WaitForChild("Door", 5) -- Will be used to find the correct last node.
 
-    local _startNode = changeNodeColor(nodes[1], MinecartPathNodeColor.Green)
+    local _startNode = nodes[1]
     local _lastNode = nil --we need to find this node.
     --local _lastNodeTask = nil --Arbitrary tasks: "Start", "End", "Track", "Fake"
 
@@ -498,7 +498,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
                 stackNode[_gpID].hasEnd = true
             end
         end
-        table.insert(stackNode[_gpID].nodes, changeNodeColor(nodeA, MinecartPathNodeColor.White))
+        table.insert(stackNode[_gpID].nodes, nodeA)
 
         --Use this to debug the nodeTask
         _dbgprint(string.format("[%s] - [%s] Distance between: %s <--> %s ==> %.2f", _gpID, _currNodeTask, nodeA.Name, nodeB.Name, distance))
@@ -657,7 +657,6 @@ end
 function Script.Functions.Minecart.DrawNodes()
     local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
     local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
-    local espFakeColor = pathESP_enabled and MinecartPathNodeColor.Red or MinecartPathNodeColor.Disabled
     
     for idx, path: tPathfind in ipairs(MinecartPathfind) do
         if path.esp and pathESP_enabled then continue end -- if status is unchanged.
