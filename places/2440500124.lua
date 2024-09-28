@@ -1951,7 +1951,7 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
         Visible = not isFools
     })
     BypassGroupBox:AddToggle("AntiEntities", {
-        Text = "Infinite Items",
+        Text = "AntiEntitiess",
         Default = false,
         Visible = not isFools
     })
