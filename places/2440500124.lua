@@ -61,12 +61,17 @@ local EntityTable = {
     ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
     ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
     ["ShortNames"] = {
-    ["BackdoorRush"] = "Blitz",
-    ["JeffTheKiller"] = "Jeff The Killer"
+        ["BackdoorRush"] = "Blitz",
+        ["JeffTheKiller"] = "Jeff The Killer"
     },
     ["NotifyMessage"] = {
-    ["GloombatSwarm"] = "Gloombats in next room!"
-}
+        ["GloombatSwarm"] = "Gloombats in next room!"
+    },
+    ["NoCheck"] = {
+        "Eyes",
+        "BackdoorLookman",
+        "JeffTheKiller"
+    }
 }
 
 local HidingPlaceName = {
@@ -451,7 +456,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
 
     local doorModel = room:WaitForChild("Door", 5) -- Will be used to find the correct last node.
 
-    local _startNode = changeNodeColor(nodes[1], MinecartPathNodeColor.Green)
+    local _startNode = nodes[1]
     local _lastNode = nil --we need to find this node.
     --local _lastNodeTask = nil --Arbitrary tasks: "Start", "End", "Track", "Fake"
 
@@ -494,7 +499,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
                 stackNode[_gpID].hasEnd = true
             end
         end
-        table.insert(stackNode[_gpID].nodes, changeNodeColor(nodeA, MinecartPathNodeColor.White))
+        table.insert(stackNode[_gpID].nodes, nodeA)
 
         --Use this to debug the nodeTask
         _dbgprint(string.format("[%s] - [%s] Distance between: %s <--> %s ==> %.2f", _gpID, _currNodeTask, nodeA.Name, nodeB.Name, distance))
@@ -653,7 +658,6 @@ end
 function Script.Functions.Minecart.DrawNodes()
     local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
     local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
-    local espFakeColor = pathESP_enabled and MinecartPathNodeColor.Red or MinecartPathNodeColor.Disabled
     
     for idx, path: tPathfind in ipairs(MinecartPathfind) do
         if path.esp and pathESP_enabled then continue end -- if status is unchanged.
@@ -664,12 +668,6 @@ function Script.Functions.Minecart.DrawNodes()
         local realPath = path.real
         for _, _real in pairs(realPath) do
             changeNodeColor(_real, espRealColor)
-        end
-
-        --[ESP] Draw the fake path
-        local fakePath = path.fake
-        for _, _fake in pairs(fakePath) do
-            changeNodeColor(_fake, espFakeColor)
         end
 
         path.esp = pathESP_enabled --update if path esp status was changed.
@@ -4154,9 +4152,10 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
 
         if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
+                
                 repeat
                     task.wait()
-                until Script.Functions.DistanceFromCharacter(child) < 2000 or not child:IsDescendantOf(workspace)
+                until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
                     if isFools and child.Name == "RushMoving" then
