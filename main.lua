@@ -1,18 +1,19 @@
-if not ExecutorSupport then
+if not getgenv().ExecutorSupport then
     local Workspace = game:GetService("Workspace")
-    local Scripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts", 5)
 
     local executorSupport = {}
+    local executorName = string.split(identifyexecutor() or "None", " ")[1]
+    local noRequire = {"Arceus", "Codex", "Vega"}
 
     function test(name: string, func: () -> (), ...)
         local success, _ = pcall(func, ...)
-        
         executorSupport[name] = success
         
         return success
     end
 
-    test("require", function() 
+    test("require", function()
+        assert(table.find(noRequire, executorName) == nil, "garbage executor")
         require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
     end)
     test("hookmetamethod", function()
@@ -112,6 +113,7 @@ if not ExecutorSupport then
 
     --// Load \\--
 
+    executorSupport["_ExecutorName"] = executorName
     for name, result in pairs(executorSupport) do
         print(name .. ":", result)
     end
