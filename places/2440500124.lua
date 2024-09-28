@@ -67,10 +67,28 @@ local EntityTable = {
     ["NotifyMessage"] = {
         ["GloombatSwarm"] = "Gloombats in next room!"
     },
+    ["Avoid"] = {
+        "RushMoving",
+        "AmbushMoving"
+    },
     ["NoCheck"] = {
         "Eyes",
         "BackdoorLookman",
         "JeffTheKiller"
+    },
+    ["InfCrucifixVelocity"] = {
+        ["RushMoving"] = {
+            threshold = 52,
+            minDistance = 55,
+        },
+        ["RushNew"] = {
+            threshold = 52,
+            minDistance = 55,
+        },    
+        ["AmbushMoving"] = {
+            threshold = 70,
+            minDistance = 80,
+        }
     }
 }
 
@@ -92,20 +110,6 @@ local SlotsName = {
     "Square",
     "Tall",
     "Wide"
-}
-local InfiniteCrucifixMovingEntitiesVelocity = {
-  ["RushMoving"] = {
-      threshold = 52,
-      minDistance = 55,
-  },
-  ["RushNew"] = {
-      threshold = 52,
-      minDistance = 55,
-  },    
-  ["AmbushMoving"] = {
-      threshold = 70,
-      minDistance = 80,
-  }
 }
 
 local PromptTable = {
@@ -1580,7 +1584,7 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
             task.delay(5, function()
                 if collision:IsDescendantOf(workspace) then
-                    Script.Functions.Alert("FAILED to delete Seek trigger!")
+                    Script.Functions.Alert("Failed to delete Seek trigger!")
                 end
             end)
             
@@ -1599,10 +1603,28 @@ function Script.Functions.DeleteSeek(collision: BasePart)
             end
             
             if not collision:IsDescendantOf(workspace) then
-                Script.Functions.Log("Deleted Seek Trigger successfully!")
+                Script.Functions.Log("Deleted Seek trigger successfully!")
             end
         end
     end)
+end
+
+function Script.Functions.AvoidEntity(value: boolean, oldNoclip: boolean)
+    if not rootPart or not collision then return end
+
+    local lastCFrame = rootPart.CFrame
+    task.wait()
+    if value then
+        Toggles.Noclip:SetValue(true)
+        collision.Position += Vector3.new(0, 24, 0)
+        task.wait()
+        character:PivotTo(lastCFrame)
+    else
+        collision.Position -= Vector3.new(0, 24, 0)
+        task.wait()
+        character:PivotTo(lastCFrame)
+        Toggles.Noclip:SetValue(oldNoclip or false)
+    end
 end
 
 function Script.Functions.Alert(message: string, duration: number | nil)
@@ -2210,6 +2232,15 @@ task.spawn(function()
             Hotel_AntiEntityGroupBox:AddToggle("AntiSeekObstructions", {
                 Text = "Anti-Seek Obstructions",
                 Default = false
+            })
+        end
+
+        local Hotel_BypassGroupBox = Tabs.Floor:AddLeftGroupbox("Bypass") do
+            Hotel_BypassGroupBox:AddToggle("AvoidRushAmbush", {
+                Text = "Avoid Rush/Ambush",
+                Tooltip = "Doesn't work for greenhouse :(",
+                Default = false,
+                Risky = true
             })
         end
 
@@ -4010,7 +4041,6 @@ Toggles.AntiLag:OnChanged(function(value)
 end)
 
 Options.NotifySide:OnChanged(function(value)
-    print("changing to side", value)
     Library.NotifySide = value
 end)
 
@@ -4160,6 +4190,24 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
 
                 if child:IsDescendantOf(workspace) then
+                    if isHotel and Toggles.AvoidRushAmbush.Value and table.find(EntityTable.Avoid, child.Name) then
+                        local oldNoclip = Toggles.Noclip.Value
+                        local distance = Script.Functions.DistanceFromCharacter(child)
+
+                        task.spawn(function()
+                            repeat 
+                                RunService.Heartbeat:Wait()
+                                distance = Script.Functions.DistanceFromCharacter(child)
+                            until distance <= 150 or not child:IsDescendantOf(workspace)
+
+                            if child:IsDescendantOf(workspace) then
+                                Script.Functions.AvoidEntity(true)
+                                repeat task.wait() until not child:IsDescendantOf(workspace)
+                                Script.Functions.AvoidEntity(false, oldNoclip)
+                            end
+                        end)
+                    end
+                    
                     if isFools and child.Name == "RushMoving" then
                         shortName = child.PrimaryPart.Name:gsub("New", "")
                     end
@@ -4262,14 +4310,14 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 lastPosition = currentPosition
             
             
-                local inView = Script.Functions.IsInViewOfPlayer(child, InfiniteCrucifixMovingEntitiesVelocity[entityName].minDistance)
+                local inView = Script.Functions.IsInViewOfPlayer(child, EntityTable.InfCrucifixVelocity[entityName].minDistance)
                 local distanceFromPlayer = (child:GetPivot().Position - character:GetPivot().Position).Magnitude
-                local isInRangeOfPlayer = distanceFromPlayer <= InfiniteCrucifixMovingEntitiesVelocity[entityName].minDistance
+                local isInRangeOfPlayer = distanceFromPlayer <= EntityTable.InfCrucifixVelocity[entityName].minDistance
                 --[[if currentSavedFrames < maxSavedFrames then
                     print(string.format("[In range: %s | In view: %s] [Hz: %d] - Entity velocity is: %.2f | Distance: %.2f | Delta: %.2f", tostring(isInRangeOfPlayer), tostring(inView), oldFrameHz, entityVelocity, distanceFromPlayer, 0))
                 end]]
             
-                if entityVelocity <= InfiniteCrucifixMovingEntitiesVelocity[entityName].threshold then
+                if entityVelocity <= EntityTable.InfCrucifixVelocity[entityName].threshold then
                     if entityVelocity <= 0.5 and currentSavedFrames <= maxSavedFrames then
                         currentSavedFrames += 1
                     end
@@ -4290,7 +4338,6 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         return
                     end
 
-                    print("[HEURISTIC FINISH] --> Item dropped!")
                     if character:FindFirstChild("Crucifix") then
                         workspace.Drops.ChildAdded:Once(function(droppedItem)
                             if droppedItem.Name == "Crucifix" then
@@ -4301,7 +4348,6 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                             end
                         end)
 
-                        print("[TOOL] Crucifix dropped!")
                         remotesFolder.DropItem:FireServer(character.Crucifix);
                     end
 
@@ -4415,7 +4461,6 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
         for _, doorEsp in pairs(Script.ESPTable.Door) do
             doorEsp.Destroy()
         end
-        print("Doors ESP got deleted")
 
         if currentRoomModel then
             task.spawn(Script.Functions.DoorESP, currentRoomModel)
