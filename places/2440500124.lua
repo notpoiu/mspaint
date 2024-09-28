@@ -705,7 +705,7 @@ function Script.Functions.ESP(args: ESP)
         ESPManager.Humanoid = humanoid
     end
 
-    local highlight = ESPLibrary.ESP.Highlight({
+    local ESPInstance = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
         Model = ESPManager.Object,
         StudsOffset = ESPManager.Offset,
@@ -727,7 +727,9 @@ function Script.Functions.ESP(args: ESP)
         end
     })
 
-    table.insert(Script.ESPTable[args.Type], highlight)
+    table.insert(Script.ESPTable[args.Type], ESPInstance)
+
+    return ESPInstance
 end
 
 function Script.Functions.DoorESP(room)
