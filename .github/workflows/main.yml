@@ -12,7 +12,7 @@ jobs:
     - name: Checkout your fork's repository
       uses: actions/checkout@v3
       with:
-        persist-credentials: false # Use personal token instead of GitHub Actions token
+        persist-credentials: false
         fetch-depth: 0
 
     - name: Add upstream repository
@@ -26,4 +26,4 @@ jobs:
 
     - name: Push changes to your fork
       run: |
-        git push origin main
+        git push https://${{ secrets.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}}@github.com/Fuydutdtu/mshubv3omg.git main
