@@ -1951,9 +1951,8 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
         Visible = not isFools
     })
     BypassGroupBox:AddToggle("AntiEntities", {
-        Text = "AntiEntitiess",
+        Text = "AntiEntitiesz",
         Default = false,
-        Visible = not isFools
     })
 
     BypassGroupBox:AddToggle("FakeRevive", {
