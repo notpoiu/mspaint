@@ -4288,6 +4288,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     if character:FindFirstChild("Crucifix") then
                         workspace.Drops.ChildAdded:Once(function(droppedItem)
                             if droppedItem.Name == "Crucifix" then
+				task.wait(0.4)										
                                 local targetProximityPrompt = droppedItem:WaitForChild("ModulePrompt", 3) or droppedItem:FindFirstChildOfClass("ProximityPrompt")
                                 repeat task.wait()
                                     fireproximityprompt(targetProximityPrompt)
