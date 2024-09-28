@@ -1578,6 +1578,12 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
         
         if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
+            task.delay(6, function()
+                if collision:IsDescendantOf(workspace) then
+                    Script.Functions.Alert("Failed to delete seek trigger!")
+                end
+            end)
+            
             if fireTouch then
                 repeat
                     if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 1) end
