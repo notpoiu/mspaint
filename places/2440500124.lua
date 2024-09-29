@@ -5164,7 +5164,6 @@ local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
 
 -- Function to add a new element to the Custom GroupBox
 local function AddCustomElement(name, elementType, luaCode)
-    -- Add the element based on its type
     if elementType == "Button" then
         CustomGroupBox:AddButton(name, function()
             local success, err = pcall(function() loadstring(luaCode)() end)
@@ -5198,22 +5197,6 @@ local function AddCustomElement(name, elementType, luaCode)
             end
         end)
     end
-
-    -- Add a "Remove" button for the element
-    CustomGroupBox:AddButton('Remove ' .. name, function()
-        -- Find the index of the element in the CustomElements table
-        for i, element in ipairs(CustomElements) do
-            if element.Name == name then
-                table.remove(CustomElements, i) -- Remove the element from the table
-                break
-            end
-        end
-        -- Optionally, you can print or log the removal for testing purposes
-        print("Removed element: " .. name)
-    end)
-
-    -- Save the custom element to the table
-    table.insert(CustomElements, { Name = name, Type = elementType, Code = luaCode })
 end
 
 -- Function to hide/clear the UI when saved
@@ -5282,12 +5265,12 @@ local function OpenElementCreationUI()
 
         -- Save the custom element
         AddCustomElement(elementName, elementType, luaCode)
+        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
     end)
 end
 
--- Open the element creation UI when the script runs
+-- Open the element creation UI when script runs
 OpenElementCreationUI()
-
 
 
 --// Script Load \\--
