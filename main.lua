@@ -53,7 +53,7 @@ if not getgenv().BloxstrapRPC then
     getgenv().BloxstrapRPC = BloxstrapRPC
 end
 
-local mapping: gameMapping = HttpService:JSONDecode(game:HttpGet(baseURL .. "/mappings/" .. game.GameId .. ".json"))()
+local mapping: gameMapping = HttpService:JSONDecode(game:HttpGet(baseURL .. "/mappings/" .. game.GameId .. ".json"))
 local scriptPath = mapping.main
 
 if mapping.exclusions and mapping.exclusions[tostring(game.PlaceId)] then
