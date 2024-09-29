@@ -29,9 +29,12 @@ local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     FeatureConnections = {
+        Character = {},
         Clip = {},
         Door = {},
+        Humanoid = {},
         Player = {},
+        RootPart = {},
     },
     ESPTable = {
         Chest = {},
@@ -48,6 +51,13 @@ local Script = {
     },
     Functions = {
         Minecart = {}
+    },
+    Lagback = {
+        Detected = false,
+        Threshold = 1,
+        Anchors = 0,
+        LastAnchored = 0,
+        LastSpeed = 0
     },
     Temp = {
         AnchorFinished = {},
@@ -232,6 +242,7 @@ local speedBypassing = false
 local fakeReviveDebounce = false
 local fakeReviveEnabled = false
 local fakeReviveConnections = {}
+
 local lastSpeed = 0
 local bypassed = false
 
@@ -1329,7 +1340,11 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     character = newCharacter
     if character then
-        Script.Connections["ChildAdded"] = character.ChildAdded:Connect(function(child)
+        for _, oldConnection in pairs(Script.FeatureConnections.Character) do
+            oldConnection:Disconnect()
+        end
+
+        Script.FeatureConnections.Character["ChildAdded"] = character.ChildAdded:Connect(function(child)
             if child:IsA("Tool") and child.Name:match("LibraryHintPaper") then
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
@@ -1350,19 +1365,19 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["CanJump"] = character:GetAttributeChangedSignal("CanJump"):Connect(function()
+        Script.FeatureConnections.Character["CanJump"] = character:GetAttributeChangedSignal("CanJump"):Connect(function()
             if not character:GetAttribute("CanJump") and Toggles.EnableJump.Value then
                 character:SetAttribute("CanJump", true)
             end
         end)
 
-        Script.Connections["Crouching"] = character:GetAttributeChangedSignal("Crouching"):Connect(function()
+        Script.FeatureConnections.Character["Crouching"] = character:GetAttributeChangedSignal("Crouching"):Connect(function()
             if not character:GetAttribute("Crouching") and Toggles.AntiHearing.Value then
                 remotesFolder.Crouch:FireServer(true)
             end
         end)
 
-        Script.Connections["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
+        Script.FeatureConnections.Character["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
             if not character:GetAttribute("Hiding") then return end
     
             if Toggles.TranslucentHidingSpot.Value then
@@ -1397,7 +1412,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
+        Script.FeatureConnections.Character["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
             if character:GetAttribute("Oxygen") < 100 and Toggles.NotifyOxygen.Value then
                 if ExecutorSupport["firesignal"] then
                     firesignal(remotesFolder.Caption.OnClientEvent, string.format("Oxygen: %.1f", character:GetAttribute("Oxygen")))
@@ -1410,13 +1425,17 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     humanoid = character:WaitForChild("Humanoid")
     if humanoid then
-        Script.Connections["Move"] = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+        for _, oldConnection in pairs(Script.FeatureConnections.Humanoid) do
+            oldConnection:Disconnect()
+        end
+
+        Script.FeatureConnections.Humanoid["Move"] = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if Toggles.FastClosetExit.Value and humanoid.MoveDirection.Magnitude > 0 and character:GetAttribute("Hiding") then
                 remotesFolder.CamLock:FireServer()
             end
         end)
 
-        Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
+        Script.FeatureConnections.Humanoid["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
             if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not fakeReviveEnabled then
                 if humanoid.JumpHeight > 0 then
                     lastSpeed = Options.SpeedSlider.Value
@@ -1429,7 +1448,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["Died"] = humanoid.Died:Connect(function()
+        Script.FeatureConnections.Humanoid["Died"] = humanoid.Died:Connect(function()
             if collisionClone then
                 collisionClone:Destroy()
             end
@@ -1473,6 +1492,33 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
         velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
         velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
+
+        Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
+            local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
+
+            if rootPart.Anchored and Toggles.LagbackDetection and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
+                Script.Lagback.Anchors += 1
+                Script.Lagback.LastAnchored = os.time()
+
+                if Script.Lagback.Anchors >= 2 and lastAnchoredDelta <= Script.Lagback.Threshold then
+                    Script.Lagback.Detected = true
+                    Script.Lagback.Anchors = 0
+                    Script.Lagback.LastSpeed = Options.SpeedSlider.Value
+
+                    Script.Functions.Alert("Fixing Lagback")
+                    Toggles.SpeedBypass:SetValue(false)
+
+                    if rootPart.Anchored then rootPart:GetPropertyChangedSignal("Anchored"):Wait() end
+                    rootPart:GetPropertyChangedSignal("CFrame"):Wait()
+                    if rootPart.Anchored then rootPart:GetPropertyChangedSignal("Anchored"):Wait() end
+
+                    Toggles.SpeedBypass:SetValue(true)
+                    Options.SpeedSlider:SetValue(Script.Lagback.LastSpeed)
+                    Script.Lagback.Detected = false
+                    Script.Functions.Alert("Fixed Lagback")
+                end
+            end
+        end)
     end
 
     collision = character:WaitForChild("Collision")
@@ -2069,6 +2115,11 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
 
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
+        Default = false
+    })
+
+    BypassGroupBox:AddToggle("LagbackDetection", {
+        Text = "Lagback Detection",
         Default = false
     })
 
@@ -3201,23 +3252,25 @@ function Script.Functions.SpeedBypass()
         end
     end
 
-    if SpeedBypassMethod == "Massless" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
-            collisionClone.Massless = not collisionClone.Massless
-            task.wait(Options.SpeedBypassDelay.Value)
+    task.spawn(function()
+        if SpeedBypassMethod == "Massless" then
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+                collisionClone.Massless = not collisionClone.Massless
+                task.wait(Options.SpeedBypassDelay.Value)
+            end
+    
+            cleanup()
+        elseif SpeedBypassMethod == "Size" then
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+                collisionClone.Size = Vector3.new(3, 5.5, 3)
+                task.wait(Options.SpeedBypassDelay.Value)
+                collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
+                task.wait(Options.SpeedBypassDelay.Value)
+            end
+    
+            cleanup()
         end
-
-        cleanup()
-    elseif SpeedBypassMethod == "Size" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
-            collisionClone.Size = Vector3.new(3, 5.5, 3)
-            task.wait(Options.SpeedBypassDelay.Value)
-            collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
-            task.wait(Options.SpeedBypassDelay.Value)
-        end
-
-        cleanup()
-    end
+    end)
 end
 
 Toggles.SpeedBypass:OnChanged(function(value)
