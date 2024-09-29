@@ -51,10 +51,11 @@ local Script = {
     },
     Temp = {
         AnchorFinished = {},
+        AutoWardrobeEntities = {},
         FlyBody = nil,
         Guidance = {},
         PaintingDebounce = false,
-        AutoWardrobeEntities = {}
+        UsedBreakers = {},
     }
 }
 
@@ -1162,70 +1163,7 @@ function Script.Functions.ChildCheck(child)
 
     if child:IsA("Model") then
         if child.Name == "ElevatorBreaker" and Toggles.AutoBreakerSolver.Value then
-            local isInMinigame = (child.DoorHinge or child:FindFirstChildWhichIsA("HingeConstant")).TargetAngle ~= 0
-            if isInMinigame then
-                local autoConnections = {}
-    
-                if not child:GetAttribute("Solving") then
-                    child:SetAttribute("Solving", true)
-    
-                    local code = child:FindFirstChild("Code", true)
-    
-                    local breakers = {}
-                    for _, breaker in pairs(child:GetChildren()) do
-                        if breaker.Name == "BreakerSwitch" then
-                            local id = string.format("%02d", breaker:GetAttribute("ID"))
-                            breakers[id] = breaker
-                        end
-                    end
-    
-                    if code and code:FindFirstChild("Frame") then
-                        local correct = child.Box.Correct
-                        local used = {}
-                        
-                        autoConnections["Reset"] = correct:GetPropertyChangedSignal("Playing"):Connect(function()
-                            if correct.Playing then
-                                table.clear(used)
-                            end
-                        end)
-    
-                        autoConnections["Code"] = code:GetPropertyChangedSignal("Text"):Connect(function()
-                            task.wait(0.1)
-                            local newCode = code.Text
-                            local isEnabled = code.Frame.BackgroundTransparency == 0
-    
-                            local breaker = breakers[newCode]
-    
-                            if newCode == "??" and #used == 9 then
-                                for i = 1, 10 do
-                                    local id = string.format("%02d", i)
-    
-                                    if not table.find(used, id) then
-                                        breaker = breakers[id]
-                                    end
-                                end
-                            end
-    
-                            if breaker then
-                                table.insert(used, newCode)
-                                if breaker:GetAttribute("Enabled") ~= isEnabled then
-                                    Script.Functions.EnableBreaker(breaker, isEnabled)
-                                end
-                            end
-                        end)
-                    end
-                end
-    
-                repeat
-                    task.wait()
-                    isInMinigame = (child.DoorHinge or child:FindFirstChildWhichIsA("HingeConstant")).TargetAngle ~= 0
-                until not child or not isInMinigame or not Toggles.AutoBreakerSolver.Value or not child:GetAttribute("Solving")
-    
-                if child then child:SetAttribute("Solving", nil) end
-                for _, connection in pairs(autoConnections) do
-                    connection:Disconnect()
-                end
-            end
+            Script.Functions.SolveBreakerBox(child)
         end
 
         if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" then
@@ -1698,7 +1636,7 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
         
         if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
-            task.delay(5, function()
+            task.delay(4, function()
                 if collision:IsDescendantOf(workspace) then
                     Script.Functions.Alert("Failed to delete Seek trigger!")
                 end
@@ -1740,6 +1678,66 @@ function Script.Functions.AvoidEntity(value: boolean, oldNoclip: boolean)
         task.wait()
         character:PivotTo(lastCFrame)
         Toggles.Noclip:SetValue(oldNoclip or false)
+    end
+end
+
+function Script.Functions.SolveBreakerBox(breakerBox)
+    if not breakerBox then return end
+
+    local code = breakerBox:FindFirstChild("Code", true)
+    local correct = breakerBox:FindFirstChild("Correct", true)
+
+    repeat task.wait() until code.Text ~= "..." or not breakerBox:IsDescendantOf(workspace)
+    if not breakerBox:IsDescendantOf(workspace) then return end
+
+    Script.Temp.UsedBreakers = {}
+    if Script.Connections["Reset"] then Script.Connections["Reset"]:Disconnect() end
+    if Script.Connections["Code"] then Script.Connections["Code"]:Disconnect() end
+
+    local breakers = {}
+    for _, breaker in pairs(breakerBox:GetChildren()) do
+        if breaker.Name == "BreakerSwitch" then
+            local id = string.format("%02d", breaker:GetAttribute("ID"))
+            breakers[id] = breaker
+        end
+    end
+
+    if code:FindFirstChild("Frame") then
+        Script.Functions.AutoBreaker(code, breakers)
+
+        Script.Connections["Reset"] = correct:GetPropertyChangedSignal("Playing"):Connect(function()
+            if correct.Playing then table.clear(Script.Temp.UsedBreakers) end
+        end)
+
+        Script.Connections["Code"] = code:GetPropertyChangedSignal("Text"):Connect(function()
+            task.delay(0.1, Script.Functions.AutoBreaker, code, breakers)
+        end)
+    end
+end
+
+function Script.Functions.AutoBreaker(code, breakers)
+    local newCode = code.Text
+    if not tonumber(newCode) and newCode ~= "??" then return end
+
+    local isEnabled = code.Frame.BackgroundTransparency == 0
+
+    local breaker = breakers[newCode]
+
+    if newCode == "??" and #Script.Temp.UsedBreakers == 9 then
+        for i = 1, 10 do
+            local id = string.format("%02d", i)
+
+            if not table.find(Script.Temp.UsedBreakers, id) then
+                breaker = breakers[id]
+            end
+        end
+    end
+
+    if breaker then
+        table.insert(Script.Temp.UsedBreakers, newCode)
+        if breaker:GetAttribute("Enabled") ~= isEnabled then
+            Script.Functions.EnableBreaker(breaker, isEnabled)
+        end
     end
 end
 
@@ -1919,72 +1917,11 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         end)
 
         Toggles.AutoBreakerSolver:OnChanged(function(value)
-            local elevatorBreaker = workspace.CurrentRooms:FindFirstChild("ElevatorBreaker", true)
-            if not (value and elevatorBreaker) then return end
-
-            local isInMinigame = (elevatorBreaker.DoorHinge or elevatorBreaker:FindFirstChildWhichIsA("HingeConstant")).TargetAngle ~= 0
-            if isInMinigame then
-                local autoConnections = {}
+            if value then
+                local elevatorBreaker = workspace.CurrentRooms:FindFirstChild("ElevatorBreaker", true)
+                if not elevatorBreaker then return end
     
-                if not elevatorBreaker:GetAttribute("Solving") then
-                    elevatorBreaker:SetAttribute("Solving", true)
-    
-                    local code = elevatorBreaker:FindFirstChild("Code", true)
-    
-                    local breakers = {}
-                    for _, breaker in pairs(elevatorBreaker:GetChildren()) do
-                        if breaker.Name == "BreakerSwitch" then
-                            local id = string.format("%02d", breaker:GetAttribute("ID"))
-                            breakers[id] = breaker
-                        end
-                    end
-    
-                    if code and code:FindFirstChild("Frame") then
-                        local correct = elevatorBreaker.Box.Correct
-                        local used = {}
-                        
-                        autoConnections["Reset"] = correct:GetPropertyChangedSignal("Playing"):Connect(function()
-                            if correct.Playing then
-                                table.clear(used)
-                            end
-                        end)
-    
-                        autoConnections["Code"] = code:GetPropertyChangedSignal("Text"):Connect(function()
-                            task.wait(0.1)
-                            local newCode = code.Text
-                            local isEnabled = code.Frame.BackgroundTransparency == 0
-    
-                            local breaker = breakers[newCode]
-    
-                            if newCode == "??" and #used == 9 then
-                                for i = 1, 10 do
-                                    local id = string.format("%02d", i)
-    
-                                    if not table.find(used, id) then
-                                        breaker = breakers[id]
-                                    end
-                                end
-                            end
-    
-                            if breaker then
-                                table.insert(used, newCode)
-                                if breaker:GetAttribute("Enabled") ~= isEnabled then
-                                    Script.Functions.EnableBreaker(breaker, isEnabled)
-                                end
-                            end
-                        end)
-                    end
-                end
-    
-                repeat
-                    task.wait()
-                    isInMinigame = (elevatorBreaker.DoorHinge or elevatorBreaker:FindFirstChildWhichIsA("HingeConstant")).TargetAngle ~= 0
-                until not elevatorBreaker or not isInMinigame or not Toggles.AutoBreakerSolver.Value or not elevatorBreaker:GetAttribute("Solving")
-    
-                if elevatorBreaker then elevatorBreaker:SetAttribute("Solving", nil) end
-                for _, connection in pairs(autoConnections) do
-                    connection:Disconnect()
-                end
+                Script.Functions.SolveBreakerBox(elevatorBreaker)
             end
         end)
     elseif isMines then
@@ -5295,7 +5232,6 @@ SaveManager:SetLibrary(Library)
 
 SaveManager:IgnoreThemeSettings()
 
-ThemeManager:SetFolder("mspaint")
 SaveManager:SetFolder("mspaint/doors")
 
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
