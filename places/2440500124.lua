@@ -198,6 +198,8 @@ local PromptTable = {
     }
 }
 
+local executorSupport: {[string]: boolean} = ExecutorSupport or setmetatable({}, {__index = function() return true end})
+
 local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChild("EntityModules")
 
 local gameData = ReplicatedStorage:WaitForChild("GameData")
@@ -215,10 +217,10 @@ local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer.PlayerGui
 local mainUI = playerGui:WaitForChild("MainUI")
 local mainGame = mainUI:WaitForChild("Initiator"):WaitForChild("Main_Game")
-local mainGameSrc = if ExecutorSupport["require"] then require(mainGame) else nil
+local mainGameSrc = if executorSupport["require"] then require(mainGame) else nil
 
 local playerScripts = localPlayer.PlayerScripts
-local controlModule = if ExecutorSupport["require"] then require(playerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule")) else nil
+local controlModule = if executorSupport["require"] then require(playerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule")) else nil
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local alive = localPlayer:GetAttribute("Alive")
@@ -770,7 +772,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
 
 
     local atempts, maxAtempts = 0, 60
-    if ExecutorSupport["fireproximityprompt"] then
+    if executorSupport["fireproximityprompt"] then
         repeat task.wait()
             atempts += 1
             fireproximityprompt(targetWardrobePrompt)
@@ -791,7 +793,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
 
         if not character:GetAttribute("Hiding") then
             local atempts = 0
-            if ExecutorSupport["fireproximityprompt"] then
+            if executorSupport["fireproximityprompt"] then
                 repeat task.wait()
                     atempts += 1
                     fireproximityprompt(targetWardrobePrompt)
@@ -1418,7 +1420,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
         Script.FeatureConnections.Character["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
             if character:GetAttribute("Oxygen") < 100 and Toggles.NotifyOxygen.Value then
-                if ExecutorSupport["firesignal"] then
+                if executorSupport["firesignal"] then
                     firesignal(remotesFolder.Caption.OnClientEvent, string.format("Oxygen: %.1f", character:GetAttribute("Oxygen")))
                 else
                     Script.Functions.Captions(string.format("Oxygen: %.1f", character:GetAttribute("Oxygen")))
@@ -1967,7 +1969,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
     AutomationGroupBox:AddToggle("AutoHeartbeat", {
         Text = "Auto Heartbeat Minigame",
         Default = false,
-        Visible = ExecutorSupport["getnamecallmethod"]
+        Visible = executorSupport["getnamecallmethod"]
     })
 
     if isHotel or isFools then
@@ -2362,7 +2364,7 @@ local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
     SelfGroupBox:AddToggle("NoCamShake", {
         Text = "No Camera Shake",
         Default = false,
-        Visible = ExecutorSupport["require"]
+        Visible = executorSupport["require"]
     })
 
     SelfGroupBox:AddToggle("NoCutscenes", {
@@ -2756,7 +2758,7 @@ task.spawn(function()
                 local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
                 if Script.Functions.IsPromptInRange(pathfindingGoal.Parent.HidePrompt) then
-                    if ExecutorSupport["fireproximityprompt"] then
+                    if executorSupport["fireproximityprompt"] then
                         fireproximityprompt(pathfindingGoal.Parent.HidePrompt)
                     else
                         fireproximityprompt(pathfindingGoal.Parent.HidePrompt, true)
@@ -3531,7 +3533,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 							local anim = toolsAnim.use or (tool:GetAttribute("LightSource") and toolsAnim.open)
 		
 							if anim then
-                                if ExecutorSupport["require"] then require(tool.ToolModule).fire() end
+                                if executorSupport["require"] then require(tool.ToolModule).fire() end
                                 local toolRemote = tool:FindFirstChild("Remote")
                                 if toolRemote then
                                     toolRemote:FireServer()
@@ -3623,7 +3625,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 		local function usePreviewCharacter(doStepped)
 			-- fuck you roblox for using head instead of primarypart or char:GetPivot() 
             -- mstudio45 2023 ^^
-            if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
+            if executorSupport["hookmetamethod"] and executorSupport["getnamecallmethod"] then
                 _fixDistanceFromCharacter = hookmetamethod(localPlayer, "__namecall", function(self, ...)
                     local method = getnamecallmethod();
                     local args = {...}
@@ -4270,7 +4272,7 @@ end)
 
 --// Connections \\--
 
-if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
+if executorSupport["hookmetamethod"] and executorSupport["getnamecallmethod"] then
     mtHook = hookmetamethod(game, "__namecall", function(self, ...)
         local args = {...}
         local namecallMethod = getnamecallmethod()
@@ -4720,7 +4722,7 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
                 mainGame = mainUI:WaitForChild("Initiator"):WaitForChild("Main_Game")
 
                 if mainGame then
-                    if ExecutorSupport["require"] then mainGameSrc = require(mainGame) end
+                    if executorSupport["require"] then mainGameSrc = require(mainGame) end
 
                     if mainGame:WaitForChild("Health", 5) then
                         if isHotel and Toggles.NoJammin.Value and liveModifiers:FindFirstChild("Jammin") then
