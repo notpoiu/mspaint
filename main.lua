@@ -1,5 +1,6 @@
 local HttpService = game:GetService("HttpService")
 local baseURL = "https://github.com/Fuydutdtu/mspaintv3omg"
+local baseURL = "https://raw.githubusercontent.com/notpoiu/mspaint/main"
 
 export type gameMapping = {
     exclusions: table?,
@@ -60,4 +61,5 @@ if mapping.exclusions and mapping.exclusions[tostring(game.PlaceId)] then
     scriptPath = mapping.exclusions[tostring(game.PlaceId)]
 end
 
+loadstring(game:HttpGet(baseURL .. scriptPath))()
 loadstring(game:HttpGet(baseURL .. scriptPath))()
