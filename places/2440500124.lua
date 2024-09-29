@@ -238,6 +238,10 @@ local velocityLimiter
 local mtHook
 local _fixDistanceFromCharacter
 
+local PrettyFloorName = {
+    ["Fools"] = "Super Hard Mode",
+}
+
 local isMines = floor.Value == "Mines"
 local isRooms = floor.Value == "Rooms"
 local isHotel = floor.Value == "Hotel"
@@ -403,6 +407,43 @@ function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | n
     end
 
     return false
+end
+
+function Script.Functions.UpdateRPC()
+    if not getgenv().BloxstrapRPC then return end
+
+    local roomNumberPrefix = "Room "
+    local prettifiedRoomNumber = currentRoom
+
+    if isRooms then
+        roomNumberPrefix = "A-"
+    end
+
+    if isBackdoor then
+        prettifiedRoomNumber = -50 + currentRoom
+    end
+
+    if isMines then
+        prettifiedRoomNumber += 100
+    end
+
+    prettifiedRoomNumber = tostring(prettifiedRoomNumber)
+
+    if isRooms then
+        prettifiedRoomNumber = string.format("%03d", prettifiedRoomNumber)
+    end
+
+    BloxstrapRPC.SetRichPresence({
+        details = "Playing DOORS [ mspaint v2 ]",
+        state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. (PrettyFloorName[floor.Value] and PrettyFloorName[floor.Value] or ("The " .. floor.Value) ) .. ")",
+        largeImage = {
+            hoverText = "Using mspaint v2"
+        },
+        smallImage = {
+            assetId = 6925817108,
+            hoverText = localPlayer.Name
+        }
+    })
 end
 
 function Script.Functions.IsPromptInRange(prompt: ProximityPrompt)
@@ -4715,6 +4756,8 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
 
+    Script.Functions.UpdateRPC()  
+
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
 
@@ -5169,6 +5212,19 @@ Library:OnUnload(function()
         table.clear(fakeReviveConnections)
     end
 
+    if getgenv().BloxstrapRPC then
+        BloxstrapRPC.SetRichPresence({
+            details = "<reset>",
+            state = "<reset>",
+            largeImage = {
+                reset = true
+            },
+            smallImage = {
+                reset = true
+            }
+        })
+    end
+
     if character then
         character:SetAttribute("CanJump", false)
 
@@ -5304,3 +5360,5 @@ SaveManager:BuildConfigSection(Tabs["UI Settings"])
 ThemeManager:ApplyToTab(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+
+Script.Functions.UpdateRPC()
