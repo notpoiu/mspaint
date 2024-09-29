@@ -1,5 +1,5 @@
-# mspaint
-A decent roblox doors script. Free and Open Source 🥶
+# mspaint 
+A decent roblox doors script. Free and Open Source 🥶 not made by me made by upio check his github below 
 
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()
