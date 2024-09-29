@@ -747,10 +747,11 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     until targetWardrobePrompt or not alive or not Toggles.AutoWardrobe.Value or character:GetAttribute("Hiding") or not Library.Unloaded
 
     if character:GetAttribute("Hiding") then return end
-    if not alive or not Toggles.AutoWardrobe.Value or Library.Unloaded then return end
+    if not Toggles.AutoWardrobe.Value or not alive or Library.Unloaded then return end
 
     local wardrobeEntityIndex = index or #Script.Temp.AutoWardrobeEntities + 1
     if not index then Script.Temp.AutoWardrobeEntities[wardrobeEntityIndex] = child end
+
 
     if ExecutorSupport["fireproximityprompt"] then
         repeat task.wait()
@@ -4300,7 +4301,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         end)
                     end
 
-                    if Toggles.AutoWardrobe.Value and table.find(EntityTable.AutoWardrobe.Entities, child.Name) then
+                    if table.find(EntityTable.AutoWardrobe.Entities, child.Name) then
                         local distance = EntityTable.AutoWardrobe.Distance[child.Name]
 
                         task.spawn(function()
