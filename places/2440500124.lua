@@ -95,6 +95,7 @@ local EntityTable = {
     ["AutoWardrobe"] = {
         ["Entities"] = {
             "RushMoving",
+            "AmbushMoving",
             "BackdoorRush",
             "A60",
             "A120",
