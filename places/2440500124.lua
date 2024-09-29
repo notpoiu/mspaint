@@ -1465,12 +1465,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         if isFools then
             local HoldingAnimation = Instance.new("Animation") do
                 HoldingAnimation.AnimationId = "rbxassetid://10479585177"
-                Script.Temp.ItemHoldTrack = humanoid:LoadAnimation(HoldingAnimation)
+                Script.Temp.ItemHoldTrack = humanoid.Animator:LoadAnimation(HoldingAnimation)
             end
 
             local ThrowAnimation = Instance.new("Animation") do
                 ThrowAnimation.AnimationId = "rbxassetid://10482563149"
-                Script.Temp.ItemThrowTrack = humanoid:LoadAnimation(ThrowAnimation)
+                Script.Temp.ItemThrowTrack = humanoid.Animator:LoadAnimation(ThrowAnimation)
             end
         end
     end
