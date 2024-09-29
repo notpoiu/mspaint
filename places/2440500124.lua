@@ -53,7 +53,8 @@ local Script = {
         AnchorFinished = {},
         FlyBody = nil,
         Guidance = {},
-        PaintingDebounce = false
+        PaintingDebounce = false,
+        AutoWardrobeEntities = {}
     }
 }
 
@@ -88,6 +89,22 @@ local EntityTable = {
         ["AmbushMoving"] = {
             threshold = 70,
             minDistance = 80,
+        }
+    },
+    ["AutoWardrobe"] = {
+        ["Entities"] = {
+            "RushMoving",
+            "BackdoorRush",
+            "A60",
+            "A120",
+        },
+        ["Distance"] = {
+            ["RushMoving"] = 125,
+            ["BackdoorRush"] = 125,
+    
+            ["AmbushMoving"] = 200,
+            ["A60"] = 200,
+            ["A120"] = 200,
         }
     }
 }
@@ -340,19 +357,23 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil)
+function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: Instance | nil)
     if not instance then return false end
     if not collision then return false end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    raycastParams.FilterDescendantsInstances = {character}
+    raycastParams.FilterDescendantsInstances = {character, exclude}
 
     local direction = (instance:GetPivot().Position - collision.Position).unit * (range or 9e9)
     local raycast = workspace:Raycast(collision.Position, direction, raycastParams)
 
-    if raycast and raycast.Instance:IsDescendantOf(instance) then
-        return true
+    if raycast and raycast.Instance then
+        if raycast.Instance:IsDescendantOf(instance) or raycast.Instance == instance then
+            return true
+        end
+
+        return false
     end
 
     return false
@@ -665,8 +686,6 @@ function Script.Functions.Minecart.DrawNodes()
     for idx, path: tPathfind in ipairs(MinecartPathfind) do
         if path.esp and pathESP_enabled then continue end -- if status is unchanged.
 
-        print(string.format("[ROOM %d] Drawing Node Pathfind ESP.", path.room_number))
-
         --[ESP] Draw the real path
         local realPath = path.real
         for _, _real in pairs(realPath) do
@@ -681,6 +700,102 @@ end
 function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
+
+function Script.Functions.AutoWardrobe(child, index: number | nil)
+    local distance = EntityTable.AutoWardrobe.Distance[child.Name]
+    if not child or not alive or not Toggles.AutoWardrobe.Value or not child:IsDescendantOf(workspace) then
+        if index then
+            table.remove(Script.Temp.AutoWardrobeEntities, index)
+        end
+
+        return
+    end
+
+    local targetWardrobePrompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
+        if not prompt.Parent then return false end
+        if not prompt.Parent:FindFirstChild("HiddenPlayer") then return false end
+
+        return prompt.Name == "HidePrompt" and (prompt.Parent:GetAttribute("LoadModule") == "Wardrobe" or prompt.Parent.Name == "Rooms_Locker") and not prompt.Parent.HiddenPlayer.Value and (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance * Options.PromptReachMultiplier.Value)
+    end)
+
+    repeat task.wait()
+        targetWardrobePrompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
+            if not prompt.Parent then return false end
+            if not prompt.Parent:FindFirstChild("HiddenPlayer") then return false end
+
+            return prompt.Name == "HidePrompt" and prompt.Parent:GetAttribute("LoadModule") == "Wardrobe" and not prompt.Parent.HiddenPlayer.Value and (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance * Options.PromptReachMultiplier.Value)
+        end)
+    until targetWardrobePrompt or not alive or not Toggles.AutoWardrobe.Value or character:GetAttribute("Hiding") or not Library.Unloaded
+
+    if character:GetAttribute("Hiding") then return end
+    if not alive or not Toggles.AutoWardrobe.Value or Library.Unloaded then return end
+
+    local wardrobeEntityIndex = index or #Script.Temp.AutoWardrobeEntities + 1
+    if not index then Script.Temp.AutoWardrobeEntities[wardrobeEntityIndex] = child end
+
+    repeat task.wait()
+        fireproximityprompt(targetWardrobePrompt)
+    until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+
+    local conn; conn = character:GetAttributeChangedSignal("Hiding"):Connect(function()
+        if not child:IsDescendantOf(workspace) then
+            conn:Disconnect()
+            table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
+            return
+        end
+
+        if not character:GetAttribute("Hiding") then
+            repeat task.wait()
+                fireproximityprompt(targetWardrobePrompt)
+            until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+        end
+    end)
+
+    Library:GiveSignal(conn)
+
+    local didPlayerSeeEntity = false
+    task.spawn(function()
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        if alive and character:GetAttribute("Hiding") and child:IsDescendantOf(workspace) then
+            didPlayerSeeEntity = true
+        end
+    end)
+
+    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent))
+    
+    if child.Name ~= "A120" or child.Name ~= "AmbushMoving" then
+        task.delay(0.5, function()
+            conn:Disconnect()
+            table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
+    
+            if #Script.Temp.AutoWardrobeEntities == 0 then
+                remotesFolder.CamLock:FireServer()
+            end
+        end)
+    elseif child.Name == "AmbushMoving" then
+        task.wait(0.15)
+        conn:Disconnect()
+
+        -- wait for rebound
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        if alive and character:GetAttribute("Hiding") then
+            task.wait(0.25)
+
+            remotesFolder.CamLock:FireServer()
+            
+            -- restart
+            Script.Functions.AutoWardrobe(child, wardrobeEntityIndex)
+        end
+
+    elseif child.Name == "A120" then
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace)
+        
+        if alive and character:GetAttribute("Hiding") and not child:IsDescendantOf(workspace) then
+            remotesFolder.CamLock:FireServer()
+        end
+    end
+end
+
 
 function Script.Functions.ESP(args: ESP)
     if not args.Object then return Script.Functions.Warn("ESP Object is nil") end
@@ -1746,6 +1861,16 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         Default = "R",
         Text = "Auto Interact",
         SyncToggleState = Library.IsMobile
+    })
+
+    AutomationGroupBox:AddToggle("AutoWardrobe", {
+        Text = "Auto " .. HidingPlaceName[floor.Value],
+        Default = false
+    }):AddKeyPicker("AutoWardrobeKey", {
+        Mode = "Toggle",
+        Default = "Q",
+        Text = "Auto " .. HidingPlaceName[floor.Value],
+        SyncToggleState = true
     })
 
     AutomationGroupBox:AddToggle("AutoHeartbeat", {
@@ -4184,7 +4309,6 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
 
         if table.find(EntityTable.Names, child.Name) then
             task.spawn(function()
-                
                 repeat
                     task.wait()
                 until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
@@ -4204,6 +4328,18 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                                 Script.Functions.AvoidEntity(true)
                                 repeat task.wait() until not child:IsDescendantOf(workspace)
                                 Script.Functions.AvoidEntity(false, oldNoclip)
+                            end
+                        end)
+                    end
+
+                    if Toggles.AutoWardrobe.Value and table.find(EntityTable.AutoWardrobe.Entities, child.Name) then
+                        local distance = EntityTable.AutoWardrobe.Distance[child.Name]
+
+                        task.spawn(function()
+                            repeat RunService.Heartbeat:Wait() until not child:IsDescendantOf(workspace) or Script.Functions.DistanceFromCharacter(child) <= distance
+
+                            if child:IsDescendantOf(workspace) and Toggles.AutoWardrobe.Value then
+                                Script.Functions.AutoWardrobe(child)
                             end
                         end)
                     end
