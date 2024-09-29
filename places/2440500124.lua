@@ -5162,41 +5162,60 @@ local CustomElements = {}
 -- Add a GroupBox for custom elements in the Custom Tab (left side)
 local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
 
--- Function to add a new element to the Custom GroupBox
-local function AddCustomElement(name, elementType, luaCode)
-    if elementType == "Button" then
-        CustomGroupBox:AddButton(name, function()
-            local success, err = pcall(function() loadstring(luaCode)() end)
-            if not success then
-                print("Error in button code: " .. err)
-            end
-        end)
-    elseif elementType == "Toggle" then
-        CustomGroupBox:AddToggle(name, {
-            Text = name,
-            Default = false,
-        }):OnChanged(function(state)
-            if state then
-                local success, err = pcall(function() loadstring(luaCode)() end)
+-- Function to refresh the custom elements in the UI
+local function RefreshCustomElements()
+    CustomGroupBox:Clear() -- Clear the current elements in the group box
+
+    for index, element in ipairs(CustomElements) do
+        -- Display the element (Button/Toggle/Slider) based on its type
+        if element.Type == "Button" then
+            CustomGroupBox:AddButton(element.Name, function()
+                local success, err = pcall(function() loadstring(element.Code)() end)
                 if not success then
-                    print("Error in toggle code: " .. err)
+                    print("Error in button code: " .. err)
                 end
-            end
-        end)
-    elseif elementType == "Slider" then
-        CustomGroupBox:AddSlider(name, {
-            Text = name,
-            Default = 1,
-            Min = 0,
-            Max = 100,
-            Rounding = 1,
-        }):OnChanged(function(value)
-            local success, err = pcall(function() loadstring(luaCode)() end)
-            if not success then
-                print("Error in slider code: " .. err)
-            end
+            end)
+        elseif element.Type == "Toggle" then
+            CustomGroupBox:AddToggle(element.Name, {
+                Text = element.Name,
+                Default = false,
+            }):OnChanged(function(state)
+                if state then
+                    local success, err = pcall(function() loadstring(element.Code)() end)
+                    if not success then
+                        print("Error in toggle code: " .. err)
+                    end
+                end
+            end)
+        elseif element.Type == "Slider" then
+            CustomGroupBox:AddSlider(element.Name, {
+                Text = element.Name,
+                Default = 1,
+                Min = 0,
+                Max = 100,
+                Rounding = 1,
+            }):OnChanged(function(value)
+                local success, err = pcall(function() loadstring(element.Code)() end)
+                if not success then
+                    print("Error in slider code: " .. err)
+                end
+            end)
+        end
+
+        -- Add a "Remove" button to delete the element
+        CustomGroupBox:AddButton('Remove ' .. element.Name, function()
+            -- Remove the element from the table
+            table.remove(CustomElements, index)
+            -- Refresh the elements list after removal
+            RefreshCustomElements()
         end)
     end
+end
+
+-- Function to add a new element to the Custom GroupBox and CustomElements table
+local function AddCustomElement(name, elementType, luaCode)
+    table.insert(CustomElements, { Name = name, Type = elementType, Code = luaCode })
+    RefreshCustomElements() -- Refresh the UI to include the new element
 end
 
 -- Function to hide/clear the UI when saved
@@ -5265,12 +5284,12 @@ local function OpenElementCreationUI()
 
         -- Save the custom element
         AddCustomElement(elementName, elementType, luaCode)
-        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
     end)
 end
 
--- Open the element creation UI when script runs
+-- Open the element creation UI when the script runs
 OpenElementCreationUI()
+
 
 --// Script Load \\--
 
