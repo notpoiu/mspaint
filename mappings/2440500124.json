@@ -1,0 +1,6 @@
+{
+   "exclusions": {
+      "6516141723": "/places/doors/lobby.lua"
+   },
+    "main": "/places/doors/doors.lua"
+}
