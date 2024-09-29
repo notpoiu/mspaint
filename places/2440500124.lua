@@ -5162,60 +5162,58 @@ local CustomElements = {}
 -- Add a GroupBox for custom elements in the Custom Tab (left side)
 local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
 
--- Function to refresh the custom elements in the UI
-local function RefreshCustomElements()
-    CustomGroupBox:Clear() -- Clear the current elements in the group box
-
-    for index, element in ipairs(CustomElements) do
-        -- Display the element (Button/Toggle/Slider) based on its type
-        if element.Type == "Button" then
-            CustomGroupBox:AddButton(element.Name, function()
-                local success, err = pcall(function() loadstring(element.Code)() end)
+-- Function to add a new element to the Custom GroupBox
+local function AddCustomElement(name, elementType, luaCode)
+    -- Add the element based on its type
+    if elementType == "Button" then
+        CustomGroupBox:AddButton(name, function()
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in button code: " .. err)
+            end
+        end)
+    elseif elementType == "Toggle" then
+        CustomGroupBox:AddToggle(name, {
+            Text = name,
+            Default = false,
+        }):OnChanged(function(state)
+            if state then
+                local success, err = pcall(function() loadstring(luaCode)() end)
                 if not success then
-                    print("Error in button code: " .. err)
+                    print("Error in toggle code: " .. err)
                 end
-            end)
-        elseif element.Type == "Toggle" then
-            CustomGroupBox:AddToggle(element.Name, {
-                Text = element.Name,
-                Default = false,
-            }):OnChanged(function(state)
-                if state then
-                    local success, err = pcall(function() loadstring(element.Code)() end)
-                    if not success then
-                        print("Error in toggle code: " .. err)
-                    end
-                end
-            end)
-        elseif element.Type == "Slider" then
-            CustomGroupBox:AddSlider(element.Name, {
-                Text = element.Name,
-                Default = 1,
-                Min = 0,
-                Max = 100,
-                Rounding = 1,
-            }):OnChanged(function(value)
-                local success, err = pcall(function() loadstring(element.Code)() end)
-                if not success then
-                    print("Error in slider code: " .. err)
-                end
-            end)
-        end
-
-        -- Add a "Remove" button to delete the element
-        CustomGroupBox:AddButton('Remove ' .. element.Name, function()
-            -- Remove the element from the table
-            table.remove(CustomElements, index)
-            -- Refresh the elements list after removal
-            RefreshCustomElements()
+            end
+        end)
+    elseif elementType == "Slider" then
+        CustomGroupBox:AddSlider(name, {
+            Text = name,
+            Default = 1,
+            Min = 0,
+            Max = 100,
+            Rounding = 1,
+        }):OnChanged(function(value)
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in slider code: " .. err)
+            end
         end)
     end
-end
 
--- Function to add a new element to the Custom GroupBox and CustomElements table
-local function AddCustomElement(name, elementType, luaCode)
+    -- Add a "Remove" button for the element
+    CustomGroupBox:AddButton('Remove ' .. name, function()
+        -- Find the index of the element in the CustomElements table
+        for i, element in ipairs(CustomElements) do
+            if element.Name == name then
+                table.remove(CustomElements, i) -- Remove the element from the table
+                break
+            end
+        end
+        -- Optionally, you can print or log the removal for testing purposes
+        print("Removed element: " .. name)
+    end)
+
+    -- Save the custom element to the table
     table.insert(CustomElements, { Name = name, Type = elementType, Code = luaCode })
-    RefreshCustomElements() -- Refresh the UI to include the new element
 end
 
 -- Function to hide/clear the UI when saved
@@ -5289,6 +5287,7 @@ end
 
 -- Open the element creation UI when the script runs
 OpenElementCreationUI()
+
 
 
 --// Script Load \\--
