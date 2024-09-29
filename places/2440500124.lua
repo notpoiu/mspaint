@@ -734,9 +734,15 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     local wardrobeEntityIndex = index or #Script.Temp.AutoWardrobeEntities + 1
     if not index then Script.Temp.AutoWardrobeEntities[wardrobeEntityIndex] = child end
 
-    repeat task.wait()
-        fireproximityprompt(targetWardrobePrompt)
-    until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+    if ExecutorSupport["fireproximityprompt"] then
+        repeat task.wait()
+            fireproximityprompt(targetWardrobePrompt)
+        until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+    else
+        repeat task.wait()
+            fireproximityprompt(targetWardrobePrompt, true)
+        until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+    end
 
     local conn; conn = character:GetAttributeChangedSignal("Hiding"):Connect(function()
         if not child:IsDescendantOf(workspace) then
@@ -746,9 +752,15 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         end
 
         if not character:GetAttribute("Hiding") then
-            repeat task.wait()
-                fireproximityprompt(targetWardrobePrompt)
-            until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+            if ExecutorSupport["fireproximityprompt"] then
+                repeat task.wait()
+                    fireproximityprompt(targetWardrobePrompt)
+                until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+            else
+                repeat task.wait()
+                    fireproximityprompt(targetWardrobePrompt, true)
+                until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+            end
         end
     end)
 
