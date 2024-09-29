@@ -818,7 +818,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
 
     repeat task.wait() until not child:IsDescendantOf(Workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion))
     
-    if child.Name ~= "A120" or child.Name ~= "AmbushMoving" then
+    if child.Name ~= "A120" and child.Name ~= "AmbushMoving" then
         task.delay(0.75, function()
             conn:Disconnect()
             table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
