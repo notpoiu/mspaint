@@ -358,13 +358,17 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: Instance | nil)
+function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: table | nil)
     if not instance then return false end
     if not collision then return false end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    raycastParams.FilterDescendantsInstances = {character, exclude}
+
+    local filter = exclude or {}
+    table.insert(filter, character)
+
+    raycastParams.FilterDescendantsInstances = filter
 
     local direction = (instance:GetPivot().Position - collision.Position).unit * (range or 9e9)
     local raycast = workspace:Raycast(collision.Position, direction, raycastParams)
@@ -702,6 +706,20 @@ function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
 
+function Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt: ProximityPrompt)
+    if not workspace.CurrentRooms:FindFirstChild(currentRoom) then return {targetWardrobePrompt.Parent} end
+
+    local ignore = { targetWardrobePrompt.Parent }
+
+    if workspace.CurrentRooms[currentRoom]:FindFirstChild("Assets") then
+        for _, asset in pairs(workspace.CurrentRooms[currentRoom].Assets:GetChildren()) do
+            if asset.Name == "Pillar" then table.insert(ignore, asset) end
+        end
+    end
+
+    return ignore
+end
+
 function Script.Functions.AutoWardrobe(child, index: number | nil)
     local distance = EntityTable.AutoWardrobe.Distance[child.Name]
     if not child or not alive or not Toggles.AutoWardrobe.Value or not child:IsDescendantOf(workspace) then
@@ -767,17 +785,18 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     Library:GiveSignal(conn)
 
     local didPlayerSeeEntity = false
+    local exclusion = Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt)
     task.spawn(function()
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
         if alive and character:GetAttribute("Hiding") and child:IsDescendantOf(workspace) then
             didPlayerSeeEntity = true
         end
     end)
 
-    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent))
+    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion))
     
     if child.Name ~= "A120" or child.Name ~= "AmbushMoving" then
-        task.delay(0.5, function()
+        task.delay(0.75, function()
             conn:Disconnect()
             table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
     
@@ -786,13 +805,13 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
             end
         end)
     elseif child.Name == "AmbushMoving" then
-        task.wait(0.15)
+        task.wait(0.5)
         conn:Disconnect()
 
         -- wait for rebound
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
         if alive and character:GetAttribute("Hiding") then
-            task.wait(0.25)
+            task.wait(0.5)
 
             remotesFolder.CamLock:FireServer()
             
@@ -801,7 +820,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         end
 
     elseif child.Name == "A120" then
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10)
         
         if alive and character:GetAttribute("Hiding") and not child:IsDescendantOf(workspace) then
             remotesFolder.CamLock:FireServer()
