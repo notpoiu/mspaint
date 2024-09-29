@@ -116,7 +116,7 @@ local EntityTable = {
             ["RushMoving"] = 125,
             ["BackdoorRush"] = 125,
     
-            ["AmbushMoving"] = 200,
+            ["AmbushMoving"] = 160,
             ["A60"] = 200,
             ["A120"] = 200,
         }
