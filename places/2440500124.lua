@@ -5109,7 +5109,6 @@ SaveManager:SetLibrary(Library)
 
 SaveManager:IgnoreThemeSettings()
 
-ThemeManager:SetFolder("mspaint")
 SaveManager:SetFolder("mspaint/doors")
 
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
