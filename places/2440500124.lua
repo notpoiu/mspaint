@@ -416,10 +416,6 @@ function Script.Functions.UpdateRPC()
     local roomNumberPrefix = "Room "
     local prettifiedRoomNumber = currentRoom
 
-    if isRooms then
-        roomNumberPrefix = "A-"
-    end
-
     if isBackdoor then
         prettifiedRoomNumber = -50 + currentRoom
     end
@@ -431,6 +427,7 @@ function Script.Functions.UpdateRPC()
     prettifiedRoomNumber = tostring(prettifiedRoomNumber)
 
     if isRooms then
+        roomNumberPrefix = "A-"
         prettifiedRoomNumber = string.format("%03d", prettifiedRoomNumber)
     end
 
