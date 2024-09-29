@@ -5190,6 +5190,122 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
     end)
 end))
 
+-- Initialize CustomElements table to store custom elements
+local CustomElements = {}
+
+-- Add a GroupBox for custom elements in the Custom Tab (left side)
+local CustomGroupBox = Tabs.CustomTab:AddLeftGroupbox('Custom Elements')
+
+-- Function to add a new element to the Custom GroupBox
+local function AddCustomElement(name, elementType, luaCode)
+    if elementType == "Button" then
+        CustomGroupBox:AddButton(name, function()
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in button code: " .. err)
+            end
+        end)
+    elseif elementType == "Toggle" then
+        CustomGroupBox:AddToggle(name, {
+            Text = name,
+            Default = false,
+        }):OnChanged(function(state)
+            if state then
+                local success, err = pcall(function() loadstring(luaCode)() end)
+                if not success then
+                    print("Error in toggle code: " .. err)
+                end
+            end
+        end)
+    elseif elementType == "Slider" then
+        CustomGroupBox:AddSlider(name, {
+            Text = name,
+            Default = 1,
+            Min = 0,
+            Max = 100,
+            Rounding = 1,
+        }):OnChanged(function(value)
+            local success, err = pcall(function() loadstring(luaCode)() end)
+            if not success then
+                print("Error in slider code: " .. err)
+            end
+        end)
+    end
+end
+
+-- Function to hide/clear the UI when saved
+local function HideElementCreationUI()
+    -- No longer necessary, but keeping in case we want to hide in future
+end
+
+-- Function to open a UI section to input new element details
+local function OpenElementCreationUI()
+    -- Create the element creation GroupBox on the right side
+    local CreationGroupBox = Tabs.CustomTab:AddRightGroupbox('Create New Element')
+    CreationGroupBox.Container.Size = UDim2.new(1, 0, 0, 500) -- Full width, 500px height to expand the UI
+
+    local elementName = nil
+    local elementType = nil
+    local luaCode = nil
+
+    -- Input for the element name
+    local ElementNameInput = CreationGroupBox:AddInput('ElementNameInput', {
+        Text = 'Element Name',
+        Placeholder = 'Enter the name of the element...',
+        OnChanged = function(text)
+            elementName = text
+        end
+    })
+
+    -- Dropdown to select the element type
+    local ElementTypeDropdown = CreationGroupBox:AddDropdown('ElementTypeDropdown', {
+        Values = { 'Button', 'Toggle', 'Slider' },
+        Text = 'Element Type',
+        Default = 1, -- Default to 'Button'
+        OnChanged = function(selected)
+            elementType = selected
+        end
+    })
+
+    -- Input for Lua code with larger size
+    local LuaCodeInput = CreationGroupBox:AddInput('LuaCodeInput', {
+        Text = 'Lua Code',
+        Placeholder = 'Enter Lua code...',
+        OnChanged = function(text)
+            luaCode = text
+        end,
+        Size = UDim2.new(1, 0, 0, 300), -- Full width, larger 300px height for Lua box
+        TextSize = 12, -- Slightly larger text for better readability
+        MultiLine = true, -- Enable multi-line input
+    })
+
+    -- Save button to create the custom element
+    CreationGroupBox:AddButton('Save', function()
+        -- Ensure elementName, elementType, and luaCode are valid
+        elementName = ElementNameInput.Value
+        elementType = ElementTypeDropdown.Value
+        luaCode = LuaCodeInput.Value
+
+        if elementName == nil or elementName == "" then
+            warn("Please enter an element name.")
+            return
+        elseif elementType == nil or elementType == "" then
+            warn("Please select an element type.")
+            return
+        elseif luaCode == nil or luaCode == "" then
+            warn("Please enter Lua code.")
+            return
+        end
+
+        -- Save the custom element
+        AddCustomElement(elementName, elementType, luaCode)
+        table.insert(CustomElements, { Name = elementName, Type = elementType, Code = luaCode })
+    end)
+end
+
+-- Open the element creation UI when script runs
+OpenElementCreationUI()
+
 --// Script Load \\--
 
 task.spawn(Script.Functions.SetupCharacterConnection, character)
@@ -5342,6 +5458,7 @@ CreditsGroup:AddLabel("upio - owner")
 CreditsGroup:AddLabel("deividcomsono - main script dev")
 CreditsGroup:AddLabel("mstudio45")
 CreditsGroup:AddLabel("bacalhauz")
+CreditsGroup:AddLabel("RobloxEmployee_YT")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
