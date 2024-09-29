@@ -49,4 +49,4 @@ if not getgenv().BloxstrapRPC then
     getgenv().BloxstrapRPC = BloxstrapRPC
 end
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/places/" .. game.GameId .. ".lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/places/2440500124.lua"))()
