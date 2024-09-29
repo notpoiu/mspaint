@@ -1616,11 +1616,11 @@ function Script.Functions.AvoidEntity(value: boolean, oldNoclip: boolean)
     task.wait()
     if value then
         Toggles.Noclip:SetValue(true)
-        collision.Position += Vector3.new(0, 28, 0)
+        collision.Position += Vector3.new(0, 24, 0)
         task.wait()
         character:PivotTo(lastCFrame)
     else
-        collision.Position -= Vector3.new(0, 28, 0)
+        collision.Position -= Vector3.new(0, 24, 0)
         task.wait()
         character:PivotTo(lastCFrame)
         Toggles.Noclip:SetValue(oldNoclip or false)
