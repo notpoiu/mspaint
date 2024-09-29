@@ -1,12 +1,16 @@
+local HttpService = game:GetService("HttpService")
+local baseURL = "https://github.com/Fuydutdtu/mspaintv3omg"
+
+export type gameMapping = {
+    exclusions: table?,
+    main: string
+}
+
 if not getgenv().ExecutorSupport then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/executorTest.lua"))()
+    loadstring(game:HttpGet(baseURL .. "/executorTest.lua"))()
 end
 
-
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/places/2440500124.lua"))()
 if not getgenv().BloxstrapRPC then
-    local HttpService = game:GetService("HttpService")
-
     local BloxstrapRPC = {}
 
     export type RichPresence = {
@@ -49,4 +53,11 @@ if not getgenv().BloxstrapRPC then
     getgenv().BloxstrapRPC = BloxstrapRPC
 end
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main/places/2440500124.lua"))()
+local mapping: gameMapping = HttpService:JSONDecode(game:HttpGet(baseURL .. "/mappings/" .. game.GameId .. ".json"))
+local scriptPath = mapping.main
+
+if mapping.exclusions and mapping.exclusions[tostring(game.PlaceId)] then
+    scriptPath = mapping.exclusions[tostring(game.PlaceId)]
+end
+
+loadstring(game:HttpGet(baseURL .. scriptPath))()
