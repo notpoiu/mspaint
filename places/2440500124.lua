@@ -29,9 +29,12 @@ local Script = {
     Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     FeatureConnections = {
+        Character = {},
         Clip = {},
         Door = {},
+        Humanoid = {},
         Player = {},
+        RootPart = {},
     },
     ESPTable = {
         Chest = {},
@@ -48,6 +51,13 @@ local Script = {
     },
     Functions = {
         Minecart = {}
+    },
+    Lagback = {
+        Detected = false,
+        Threshold = 1,
+        Anchors = 0,
+        LastAnchored = 0,
+        LastSpeed = 0
     },
     Temp = {
         AnchorFinished = {},
@@ -95,6 +105,7 @@ local EntityTable = {
     ["AutoWardrobe"] = {
         ["Entities"] = {
             "RushMoving",
+            "AmbushMoving",
             "BackdoorRush",
             "A60",
             "A120",
@@ -231,6 +242,7 @@ local speedBypassing = false
 local fakeReviveDebounce = false
 local fakeReviveEnabled = false
 local fakeReviveConnections = {}
+
 local lastSpeed = 0
 local bypassed = false
 
@@ -359,13 +371,17 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: Instance | nil)
+function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: table | nil)
     if not instance then return false end
     if not collision then return false end
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-    raycastParams.FilterDescendantsInstances = {character, exclude}
+
+    local filter = exclude or {}
+    table.insert(filter, character)
+
+    raycastParams.FilterDescendantsInstances = filter
 
     local direction = (instance:GetPivot().Position - collision.Position).unit * (range or 9e9)
     local raycast = workspace:Raycast(collision.Position, direction, raycastParams)
@@ -703,6 +719,20 @@ function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
 
+function Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt: ProximityPrompt)
+    if not workspace.CurrentRooms:FindFirstChild(currentRoom) then return {targetWardrobePrompt.Parent} end
+
+    local ignore = { targetWardrobePrompt.Parent }
+
+    if workspace.CurrentRooms[currentRoom]:FindFirstChild("Assets") then
+        for _, asset in pairs(workspace.CurrentRooms[currentRoom].Assets:GetChildren()) do
+            if asset.Name == "Pillar" then table.insert(ignore, asset) end
+        end
+    end
+
+    return ignore
+end
+
 function Script.Functions.AutoWardrobe(child, index: number | nil)
     local distance = EntityTable.AutoWardrobe.Distance[child.Name]
     if not child or not alive or not Toggles.AutoWardrobe.Value or not child:IsDescendantOf(workspace) then
@@ -730,14 +760,24 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     until targetWardrobePrompt or not alive or not Toggles.AutoWardrobe.Value or character:GetAttribute("Hiding") or not Library.Unloaded
 
     if character:GetAttribute("Hiding") then return end
-    if not alive or not Toggles.AutoWardrobe.Value or Library.Unloaded then return end
+    if not Toggles.AutoWardrobe.Value or not alive or Library.Unloaded then return end
 
     local wardrobeEntityIndex = index or #Script.Temp.AutoWardrobeEntities + 1
     if not index then Script.Temp.AutoWardrobeEntities[wardrobeEntityIndex] = child end
 
-    repeat task.wait()
-        fireproximityprompt(targetWardrobePrompt)
-    until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+
+    local atempts, maxAtempts = 0, 60
+    if ExecutorSupport["fireproximityprompt"] then
+        repeat task.wait()
+            atempts += 1
+            fireproximityprompt(targetWardrobePrompt)
+        until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive or atempts > maxAtempts
+    else
+        repeat task.wait()
+            atempts += 1
+            fireproximityprompt(targetWardrobePrompt, true)
+        until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive or atempts > maxAtempts
+    end
 
     local conn; conn = character:GetAttributeChangedSignal("Hiding"):Connect(function()
         if not child:IsDescendantOf(workspace) then
@@ -747,26 +787,36 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         end
 
         if not character:GetAttribute("Hiding") then
-            repeat task.wait()
-                fireproximityprompt(targetWardrobePrompt)
-            until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive
+            local atempts = 0
+            if ExecutorSupport["fireproximityprompt"] then
+                repeat task.wait()
+                    atempts += 1
+                    fireproximityprompt(targetWardrobePrompt)
+                until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive or atempts > maxAtempts
+            else
+                repeat task.wait()
+                    atempts += 1
+                    fireproximityprompt(targetWardrobePrompt, true)
+                until (character:GetAttribute("Hiding") and rootPart.Anchored) or not alive or atempts > maxAtempts
+            end
         end
     end)
 
     Library:GiveSignal(conn)
 
     local didPlayerSeeEntity = false
+    local exclusion = Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt)
     task.spawn(function()
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
         if alive and character:GetAttribute("Hiding") and child:IsDescendantOf(workspace) then
             didPlayerSeeEntity = true
         end
     end)
 
-    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent))
+    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion))
     
     if child.Name ~= "A120" or child.Name ~= "AmbushMoving" then
-        task.delay(0.5, function()
+        task.delay(0.75, function()
             conn:Disconnect()
             table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
     
@@ -775,13 +825,13 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
             end
         end)
     elseif child.Name == "AmbushMoving" then
-        task.wait(0.15)
+        task.wait(0.5)
         conn:Disconnect()
 
         -- wait for rebound
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, targetWardrobePrompt.Parent)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
         if alive and character:GetAttribute("Hiding") then
-            task.wait(0.25)
+            task.wait(0.5)
 
             remotesFolder.CamLock:FireServer()
             
@@ -790,7 +840,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         end
 
     elseif child.Name == "A120" then
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10)
         
         if alive and character:GetAttribute("Hiding") and not child:IsDescendantOf(workspace) then
             remotesFolder.CamLock:FireServer()
@@ -1291,7 +1341,11 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     character = newCharacter
     if character then
-        Script.Connections["ChildAdded"] = character.ChildAdded:Connect(function(child)
+        for _, oldConnection in pairs(Script.FeatureConnections.Character) do
+            oldConnection:Disconnect()
+        end
+
+        Script.FeatureConnections.Character["ChildAdded"] = character.ChildAdded:Connect(function(child)
             if child:IsA("Tool") and child.Name:match("LibraryHintPaper") then
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
@@ -1312,19 +1366,19 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["CanJump"] = character:GetAttributeChangedSignal("CanJump"):Connect(function()
+        Script.FeatureConnections.Character["CanJump"] = character:GetAttributeChangedSignal("CanJump"):Connect(function()
             if not character:GetAttribute("CanJump") and Toggles.EnableJump.Value then
                 character:SetAttribute("CanJump", true)
             end
         end)
 
-        Script.Connections["Crouching"] = character:GetAttributeChangedSignal("Crouching"):Connect(function()
+        Script.FeatureConnections.Character["Crouching"] = character:GetAttributeChangedSignal("Crouching"):Connect(function()
             if not character:GetAttribute("Crouching") and Toggles.AntiHearing.Value then
                 remotesFolder.Crouch:FireServer(true)
             end
         end)
 
-        Script.Connections["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
+        Script.FeatureConnections.Character["Hiding"] = character:GetAttributeChangedSignal("Hiding"):Connect(function()
             if not character:GetAttribute("Hiding") then return end
     
             if Toggles.TranslucentHidingSpot.Value then
@@ -1359,7 +1413,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
+        Script.FeatureConnections.Character["Oxygen"] = character:GetAttributeChangedSignal("Oxygen"):Connect(function()
             if character:GetAttribute("Oxygen") < 100 and Toggles.NotifyOxygen.Value then
                 if ExecutorSupport["firesignal"] then
                     firesignal(remotesFolder.Caption.OnClientEvent, string.format("Oxygen: %.1f", character:GetAttribute("Oxygen")))
@@ -1372,13 +1426,17 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     humanoid = character:WaitForChild("Humanoid")
     if humanoid then
-        Script.Connections["Move"] = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
+        for _, oldConnection in pairs(Script.FeatureConnections.Humanoid) do
+            oldConnection:Disconnect()
+        end
+
+        Script.FeatureConnections.Humanoid["Move"] = humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if Toggles.FastClosetExit.Value and humanoid.MoveDirection.Magnitude > 0 and character:GetAttribute("Hiding") then
                 remotesFolder.CamLock:FireServer()
             end
         end)
 
-        Script.Connections["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
+        Script.FeatureConnections.Humanoid["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
             if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not fakeReviveEnabled then
                 if humanoid.JumpHeight > 0 then
                     lastSpeed = Options.SpeedSlider.Value
@@ -1391,7 +1449,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
 
-        Script.Connections["Died"] = humanoid.Died:Connect(function()
+        Script.FeatureConnections.Humanoid["Died"] = humanoid.Died:Connect(function()
             if collisionClone then
                 collisionClone:Destroy()
             end
@@ -1435,6 +1493,33 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
         velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
         velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
+
+        Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
+            local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
+
+            if rootPart.Anchored and Toggles.LagbackDetection and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
+                Script.Lagback.Anchors += 1
+                Script.Lagback.LastAnchored = os.time()
+
+                if Script.Lagback.Anchors >= 2 and lastAnchoredDelta <= Script.Lagback.Threshold then
+                    Script.Lagback.Detected = true
+                    Script.Lagback.Anchors = 0
+                    Script.Lagback.LastSpeed = Options.SpeedSlider.Value
+
+                    Script.Functions.Alert("Fixing Lagback")
+                    Toggles.SpeedBypass:SetValue(false)
+
+                    if rootPart.Anchored then rootPart:GetPropertyChangedSignal("Anchored"):Wait() end
+                    rootPart:GetPropertyChangedSignal("CFrame"):Wait()
+                    if rootPart.Anchored then rootPart:GetPropertyChangedSignal("Anchored"):Wait() end
+
+                    Toggles.SpeedBypass:SetValue(true)
+                    Options.SpeedSlider:SetValue(Script.Lagback.LastSpeed)
+                    Script.Lagback.Detected = false
+                    Script.Functions.Alert("Fixed Lagback")
+                end
+            end
+        end)
     end
 
     collision = character:WaitForChild("Collision")
@@ -2031,6 +2116,11 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
 
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
+        Default = false
+    })
+
+    BypassGroupBox:AddToggle("LagbackDetection", {
+        Text = "Lagback Detection",
         Default = false
     })
 
@@ -3168,23 +3258,25 @@ function Script.Functions.SpeedBypass()
         end
     end
 
-    if SpeedBypassMethod == "Massless" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
-            collisionClone.Massless = not collisionClone.Massless
-            task.wait(Options.SpeedBypassDelay.Value)
+    task.spawn(function()
+        if SpeedBypassMethod == "Massless" then
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+                collisionClone.Massless = not collisionClone.Massless
+                task.wait(Options.SpeedBypassDelay.Value)
+            end
+    
+            cleanup()
+        elseif SpeedBypassMethod == "Size" then
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+                collisionClone.Size = Vector3.new(3, 5.5, 3)
+                task.wait(Options.SpeedBypassDelay.Value)
+                collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
+                task.wait(Options.SpeedBypassDelay.Value)
+            end
+    
+            cleanup()
         end
-
-        cleanup()
-    elseif SpeedBypassMethod == "Size" then
-        while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
-            collisionClone.Size = Vector3.new(3, 5.5, 3)
-            task.wait(Options.SpeedBypassDelay.Value)
-            collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
-            task.wait(Options.SpeedBypassDelay.Value)
-        end
-
-        cleanup()
-    end
+    end)
 end
 
 Toggles.SpeedBypass:OnChanged(function(value)
@@ -4275,7 +4367,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         end)
                     end
 
-                    if Toggles.AutoWardrobe.Value and table.find(EntityTable.AutoWardrobe.Entities, child.Name) then
+                    if table.find(EntityTable.AutoWardrobe.Entities, child.Name) then
                         local distance = EntityTable.AutoWardrobe.Distance[child.Name]
 
                         task.spawn(function()
