@@ -14,6 +14,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local Workspace = game:GetService("Workspace") :: Workspace & {}
 
 --// Loading Wait \\--
 if not game:IsLoaded() then game.Loaded:Wait() end
@@ -66,6 +67,7 @@ local Script = {
         Guidance = {},
         PaintingDebounce = false,
         UsedBreakers = {},
+        HoldingItem = nil
     }
 }
 
@@ -207,7 +209,7 @@ local liveModifiers = ReplicatedStorage:WaitForChild("LiveModifiers")
 local floorReplicated
 local remotesFolder
 
-local camera = workspace.CurrentCamera
+local camera = Workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
 
 local playerGui = localPlayer.PlayerGui
@@ -220,7 +222,7 @@ local controlModule = if ExecutorSupport["require"] then require(playerScripts:W
 
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local alive = localPlayer:GetAttribute("Alive")
-local humanoid: Humanoid
+local humanoid: Humanoid & {Animator: Animator}
 local rootPart: BasePart
 local collision
 local collisionClone
@@ -270,27 +272,29 @@ else
     remotesFolder = ReplicatedStorage:WaitForChild("EntityInfo")
 end
 
+type Table = {[any]: any}
+
 type ESP = {
-    Color: Color3,
-    IsEntity: boolean,
-    IsDoubleDoor: boolean,
+    Color: Color3?,
+    IsEntity: boolean?,
+    IsDoubleDoor: boolean?,
     Object: Instance,
-    Offset: Vector3,
-    Text: string,
-    TextParent: Instance,
-    Type: string,
+    Offset: Vector3?,
+    Text: string?,
+    TextParent: Instance?,
+    Type: string?,
 }
 
 type tPathfind = {
     esp: boolean,
     room_number: number, -- the room number
-    real: table,
-    fake: table,
+    real: Table,
+    fake: Table,
     destroyed: boolean -- if the pathfind was destroyed for the Teleport
 }
 
 type tGroupTrack = {
-    nodes: table,
+    nodes: Table,
     hasStart: boolean,
     hasEnd: boolean,
 }
@@ -298,13 +302,13 @@ type tGroupTrack = {
 --// Library \\--
 local repo = "https://raw.githubusercontent.com/deividcomsono/LinoriaLib/refs/heads/main/"
 
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+local Library = (loadstring(game:HttpGet(repo .. "Library.lua")) :: () -> any)()
+local ThemeManager = (loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))  :: () -> any)()
+local SaveManager = (loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))  :: () -> any)()
 local Options = getgenv().Linoria.Options
 local Toggles = getgenv().Linoria.Toggles
 
-local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/MS-ESP/refs/heads/main/source.lua"))()
+local ESPLibrary = (loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/MS-ESP/refs/heads/main/source.lua"))  :: () -> any)()
 
 local Window = Library:CreateWindow({
 	Title = "mspaint v2",
@@ -370,7 +374,7 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | nil, exclude: table | nil)
+function Script.Functions.IsInViewOfPlayer(instance: PVInstance, range: number | nil, exclude: Table | nil)
     if not instance then return false end
     if not collision then return false end
 
@@ -383,7 +387,7 @@ function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | n
     raycastParams.FilterDescendantsInstances = filter
 
     local direction = (instance:GetPivot().Position - collision.Position).unit * (range or 9e9)
-    local raycast = workspace:Raycast(collision.Position, direction, raycastParams)
+    local raycast = Workspace:Raycast(collision.Position, direction, raycastParams)
 
     if raycast and raycast.Instance then
         if raycast.Instance:IsDescendantOf(instance) or raycast.Instance == instance then
@@ -400,10 +404,10 @@ function Script.Functions.IsPromptInRange(prompt: ProximityPrompt)
     return Script.Functions.DistanceFromCharacter(prompt:FindFirstAncestorWhichIsA("BasePart") or prompt:FindFirstAncestorWhichIsA("Model") or prompt.Parent) <= prompt.MaxActivationDistance
 end
 
-function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
+function Script.Functions.GetNearestAssetWithCondition(condition: (Instance: Instance) -> ())
     local nearestDistance = math.huge
     local nearest
-    for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+    for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
         if not room:FindFirstChild("Assets") then continue end
 
         for i, v in pairs(room.Assets:GetChildren()) do
@@ -417,12 +421,12 @@ function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
     return nearest
 end
 
-local function changeNodeColor(node: Model, color: Color3): Model
+local function changeNodeColor(node: Part, color: Color3): Part
     if color == nil then
         node.Color = MinecartPathNodeColor.Yellow
         node.Transparency = 1
         node.Size = Vector3.new(1.0, 1.0, 1.0)
-        return
+        return node
     end
     node.Color = color
     node.Material = Enum.Material.Neon
@@ -559,7 +563,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
         _dbgprint()
         for _gpI, v: tGroupTrack in ipairs(stackNode) do
             _closestNodes[_gpI] = {}
-            _dbgprint(string.format("[TrackGroup] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+            _dbgprint(string.format("[TrackGroup] Group %s has %d nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
 
             if _gpI <= 1 then continue end
             _dbgprint(string.format("[TrackGroup] Group %s was selected to deep pathfinding", _gpI))
@@ -627,7 +631,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
         end
 
         for _gpI, v: tGroupTrack in ipairs(stackNode) do
-            _dbgprint(string.format("[TrackGroup -- VERIFY] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
+            _dbgprint(string.format("[TrackGroup -- VERIFY] Group %s has %d nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
         end
 
         --table.remove(stackNode, 1) --remove the fake 
@@ -719,12 +723,12 @@ function Script.Functions.Warn(message: string)
 end
 
 function Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt: ProximityPrompt)
-    if not workspace.CurrentRooms:FindFirstChild(currentRoom) then return {targetWardrobePrompt.Parent} end
+    if not Workspace.CurrentRooms:FindFirstChild(currentRoom) then return {targetWardrobePrompt.Parent} end
 
     local ignore = { targetWardrobePrompt.Parent }
 
-    if workspace.CurrentRooms[currentRoom]:FindFirstChild("Assets") then
-        for _, asset in pairs(workspace.CurrentRooms[currentRoom].Assets:GetChildren()) do
+    if Workspace.CurrentRooms[currentRoom]:FindFirstChild("Assets") then
+        for _, asset in pairs(Workspace.CurrentRooms[currentRoom].Assets:GetChildren()) do
             if asset.Name == "Pillar" then table.insert(ignore, asset) end
         end
     end
@@ -734,7 +738,7 @@ end
 
 function Script.Functions.AutoWardrobe(child, index: number | nil)
     local distance = EntityTable.AutoWardrobe.Distance[child.Name]
-    if not child or not alive or not Toggles.AutoWardrobe.Value or not child:IsDescendantOf(workspace) then
+    if not child or not alive or not Toggles.AutoWardrobe.Value or not child:IsDescendantOf(Workspace) then
         if index then
             table.remove(Script.Temp.AutoWardrobeEntities, index)
         end
@@ -779,7 +783,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     end
 
     local conn; conn = character:GetAttributeChangedSignal("Hiding"):Connect(function()
-        if not child:IsDescendantOf(workspace) then
+        if not child:IsDescendantOf(Workspace) then
             conn:Disconnect()
             table.remove(Script.Temp.AutoWardrobeEntities, wardrobeEntityIndex)
             return
@@ -806,13 +810,13 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
     local didPlayerSeeEntity = false
     local exclusion = Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt)
     task.spawn(function()
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
-        if alive and character:GetAttribute("Hiding") and child:IsDescendantOf(workspace) then
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(Workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
+        if alive and character:GetAttribute("Hiding") and child:IsDescendantOf(Workspace) then
             didPlayerSeeEntity = true
         end
     end)
 
-    repeat task.wait() until not child:IsDescendantOf(workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion))
+    repeat task.wait() until not child:IsDescendantOf(Workspace) or not alive or (didPlayerSeeEntity and not Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion))
     
     if child.Name ~= "A120" or child.Name ~= "AmbushMoving" then
         task.delay(0.75, function()
@@ -828,7 +832,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         conn:Disconnect()
 
         -- wait for rebound
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(Workspace) or Script.Functions.IsInViewOfPlayer(child.PrimaryPart, distance, exclusion)
         if alive and character:GetAttribute("Hiding") then
             task.wait(0.5)
 
@@ -839,9 +843,9 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
         end
 
     elseif child.Name == "A120" then
-        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10)
+        repeat task.wait() until not alive or not character:GetAttribute("Hiding") or not child:IsDescendantOf(Workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10)
         
-        if alive and character:GetAttribute("Hiding") and not child:IsDescendantOf(workspace) then
+        if alive and character:GetAttribute("Hiding") and not child:IsDescendantOf(Workspace) then
             remotesFolder.CamLock:FireServer()
         end
     end
@@ -870,7 +874,7 @@ function Script.Functions.ESP(args: ESP)
             ESPManager.Object.PrimaryPart.Transparency = 0.99
         end
 
-        local humanoid = ESPManager.Object:FindFirstChildOfClass("Humanoid")
+        local humanoid = ESPManager.Object:FindFirstChildOfClass("Humanoid") :: Humanoid & {Animator: Animator}
         if not humanoid then humanoid = Instance.new("Humanoid", ESPManager.Object) end
         ESPManager.Humanoid = humanoid
     end
@@ -906,7 +910,7 @@ function Script.Functions.DoorESP(room)
     local door = room:WaitForChild("Door", 5)
 
     if door then
-        local doorNumber = tonumber(room.Name) + 1
+        local doorNumber = tonumber(room.Name) :: number + 1
         if isMines then
             doorNumber += 100
         end
@@ -918,7 +922,7 @@ function Script.Functions.DoorESP(room)
         local doorEsp = Script.Functions.ESP({
             Type = "Door",
             Object = door:WaitForChild("Door"),
-            Text = string.format("Door %s %s", doorNumber, doorState),
+            Text = string.format("Door %d %s", doorNumber, doorState),
             Color = Options.DoorEspColor.Value
         })
 
@@ -1064,7 +1068,7 @@ function Script.Functions.ChestESP(chest)
     })
 end
 
-function Script.Functions.PlayerESP(player: Player)
+function Script.Functions.PlayerESP(player: Player & {Character: Model & {Humanoid: Humanoid}})
     if not (player.Character and player.Character.PrimaryPart and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0) then return end
 
     local playerEsp = Script.Functions.ESP({
@@ -1111,7 +1115,7 @@ function Script.Functions.GuidingLightEsp(guidance)
     part.Name = "_Guidance"
 
     part:ClearAllChildren()
-    part.Parent = workspace
+    part.Parent = Workspace
 
     Script.Temp.Guidance[guidance] = part
 
@@ -1123,7 +1127,7 @@ function Script.Functions.GuidingLightEsp(guidance)
     })
 
     guidance.AncestryChanged:Connect(function()
-        if not guidance:IsDescendantOf(workspace) then
+        if not guidance:IsDescendantOf(Workspace) then
             if Script.Temp.Guidance[guidance] then Script.Temp.Guidance[guidance] = nil end
             if part then part:Destroy() end
             if guidanceEsp then guidanceEsp.Destroy() end
@@ -1136,7 +1140,7 @@ function Script.Functions.GetAllPromptsWithCondition(condition)
     
     local validPrompts = {}
     for _, prompt in pairs(PromptTable.GamePrompts) do
-        if not prompt or not prompt:IsDescendantOf(workspace) then continue end
+        if not prompt or not prompt:IsDescendantOf(Workspace) then continue end
 
         local success, returnData = pcall(function()
             return condition(prompt)
@@ -1349,7 +1353,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
                 local output, count = string.gsub(code, "_", "x")
-                local padlock = workspace:FindFirstChild("Padlock", true)
+                local padlock = Workspace:FindFirstChild("Padlock", true)
 
                 if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
                     remotesFolder.PL:FireServer(code)
@@ -1381,7 +1385,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             if not character:GetAttribute("Hiding") then return end
     
             if Toggles.TranslucentHidingSpot.Value then
-                for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
+                for _, obj in pairs(Workspace.CurrentRooms:GetDescendants()) do
                     if not obj:IsA("ObjectValue") and obj.Name ~= "HiddenPlayer" then continue end
     
                     if obj.Value == character then
@@ -1550,7 +1554,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     Options.FlySpeed:SetMax(75)
 
                     Script.Functions.Alert("Bypassed the anticheat successfully, this will only last until the next cutscene!", 7)
-                    if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
+                    if Workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then Workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
                 end
             end)
         end
@@ -1561,7 +1565,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     end
 end
 
-function Script.Functions.SetupOtherPlayerConnection(player: Player)
+function Script.Functions.SetupOtherPlayerConnection(player: Player & {Character: Model & {Humanoid: Humanoid}})
     if player.Character then
         if Toggles.PlayerESP.Value then
             Script.Functions.PlayerESP(player)
@@ -1580,7 +1584,7 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
                 task.wait(0.1)
                 local code = Script.Functions.GetPadlockCode(child)
                 local output, count = string.gsub(code, "_", "x")
-                local padlock = workspace:FindFirstChild("Padlock", true)
+                local padlock = Workspace:FindFirstChild("Padlock", true)
 
                 if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
                     remotesFolder.PL:FireServer(code)
@@ -1623,14 +1627,18 @@ function Script.Functions.GetShortName(entityName: string)
     return entityName
 end
 
-function Script.Functions.DistanceFromCharacter(position: Instance | Vector3, getPositionFromCamera: boolean | nil)
+function Script.Functions.DistanceFromCharacter(position: PVInstance | Vector3, getPositionFromCamera: boolean | nil)
     if not position then return 9e9 end
-    if typeof(position) == "Instance" then
+    if typeof(position) == "Instance" and position:IsA("PVInstance") then
         position = position:GetPivot().Position
     end
 
-    if getPositionFromCamera and (camera or workspace.CurrentCamera) then
-        local cameraPosition = camera and camera.CFrame.Position or workspace.CurrentCamera.CFrame.Position
+    if typeof(position) ~= "Vector3" then
+        return 9e9
+    end
+
+    if getPositionFromCamera and (camera or Workspace.CurrentCamera) then
+        local cameraPosition = camera and camera.CFrame.Position or Workspace.CurrentCamera.CFrame.Position
 
         return (cameraPosition - position).Magnitude
     end
@@ -1666,17 +1674,17 @@ function Script.Functions.DisableDupe(dupeRoom, value, isSpaceRoom)
     end
 end
 
-function Script.Functions.GetPadlockCode(paper: Tool)
+function Script.Functions.GetPadlockCode(paper: Tool & {UI: Instance})
     if paper:FindFirstChild("UI") then
         local code = {}
 
-        for _, image: ImageLabel in pairs(paper.UI:GetChildren()) do
+        for _, image in pairs(paper.UI:GetChildren()) do
             if image:IsA("ImageLabel") and tonumber(image.Name) then
                 code[image.ImageRectOffset.X .. image.ImageRectOffset.Y] = {tonumber(image.Name), "_"}
             end
         end
 
-        for _, image: ImageLabel in pairs(playerGui.PermUI.Hints:GetChildren()) do
+        for _, image: ImageLabel & {TextLabel: TextLabel} in pairs(playerGui.PermUI.Hints:GetChildren()) do
             if image.Name == "Icon" then
                 if code[image.ImageRectOffset.X .. image.ImageRectOffset.Y] then
                     code[image.ImageRectOffset.X .. image.ImageRectOffset.Y][2] = image.TextLabel.Text
@@ -1719,35 +1727,35 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         local attemps = 0
         repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
         
-        if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
+        if collision:IsDescendantOf(Workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
             task.delay(4, function()
-                if collision:IsDescendantOf(workspace) then
+                if collision:IsDescendantOf(Workspace) then
                     Script.Functions.Alert("Failed to delete Seek trigger!")
                 end
             end)
             
             if fireTouch then
                 repeat
-                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 1) end
+                    if collision:IsDescendantOf(Workspace) then fireTouch(collision, rootPart, 1) end
                     task.wait()
-                    if collision:IsDescendantOf(workspace) then fireTouch(collision, rootPart, 0) end
+                    if collision:IsDescendantOf(Workspace) then fireTouch(collision, rootPart, 0) end
                     task.wait()
-                until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+                until not collision:IsDescendantOf(Workspace) or not Toggles.DeleteSeek.Value
             else
                 collision:PivotTo(CFrame.new(rootPart.Position))
                 rootPart.Anchored = true
 
-                repeat task.wait() until not collision:IsDescendantOf(workspace) or not Toggles.DeleteSeek.Value
+                repeat task.wait() until not collision:IsDescendantOf(Workspace) or not Toggles.DeleteSeek.Value
             end
             
-            if not collision:IsDescendantOf(workspace) then
+            if not collision:IsDescendantOf(Workspace) then
                 Script.Functions.Log("Deleted Seek trigger successfully!")
             end
         end
     end)
 end
 
-function Script.Functions.AvoidEntity(value: boolean, oldNoclip: boolean)
+function Script.Functions.AvoidEntity(value: boolean, oldNoclip: boolean?)
     if not rootPart or not collision then return end
 
     local lastCFrame = rootPart.CFrame
@@ -1771,8 +1779,8 @@ function Script.Functions.SolveBreakerBox(breakerBox)
     local code = breakerBox:FindFirstChild("Code", true)
     local correct = breakerBox:FindFirstChild("Correct", true)
 
-    repeat task.wait() until code.Text ~= "..." or not breakerBox:IsDescendantOf(workspace)
-    if not breakerBox:IsDescendantOf(workspace) then return end
+    repeat task.wait() until code.Text ~= "..." or not breakerBox:IsDescendantOf(Workspace)
+    if not breakerBox:IsDescendantOf(Workspace) then return end
 
     Script.Temp.UsedBreakers = {}
     if Script.Connections["Reset"] then Script.Connections["Reset"]:Disconnect() end
@@ -1829,7 +1837,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", workspace) do
+        local sound = Instance.new("Sound", Workspace) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
@@ -1838,7 +1846,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     end
 end
 
-function Script.Functions.Log(message: string, duration: number | Instance, condition: boolean | nil)
+function Script.Functions.Log(message: string, duration: (number | Instance)?, condition: (boolean | nil)?)
     if condition ~= nil and not condition then return end
     Library:Notify(message, duration or 5)
 end
@@ -1990,7 +1998,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
                     if tool and tool.Name:match("LibraryHintPaper") then
                         local code = Script.Functions.GetPadlockCode(tool)
-                        local padlock = workspace:FindFirstChild("Padlock", true)
+                        local padlock = Workspace:FindFirstChild("Padlock", true)
 
                         if tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
                             remotesFolder.PL:FireServer(code)
@@ -2002,7 +2010,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
         Toggles.AutoBreakerSolver:OnChanged(function(value)
             if value then
-                local elevatorBreaker = workspace.CurrentRooms:FindFirstChild("ElevatorBreaker", true)
+                local elevatorBreaker = Workspace.CurrentRooms:FindFirstChild("ElevatorBreaker", true)
                 if not elevatorBreaker then return end
     
                 Script.Functions.SolveBreakerBox(elevatorBreaker)
@@ -2409,7 +2417,7 @@ task.spawn(function()
         end
 
         Toggles.AntiSeekObstructions:OnChanged(function(value)
-            for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+            for _, v in pairs(Workspace.CurrentRooms:GetDescendants()) do
                 if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
                     for _, obj in pairs(v:GetDescendants()) do
                         if v:IsA("BasePart") then v.CanTouch = not value end
@@ -2477,7 +2485,7 @@ task.spawn(function()
 
                     Toggles.SpeedBypass:SetValue(false)
 
-                    local damHandler = workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("_DamHandler")
+                    local damHandler = Workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("_DamHandler")
 
                     if damHandler then
                         if damHandler:FindFirstChild("PlayerBarriers1") then
@@ -2514,7 +2522,7 @@ task.spawn(function()
                         end
                     end
 
-                    local generator = workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("MinesGenerator", true)
+                    local generator = Workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("MinesGenerator", true)
 
                     if generator then
                         character:PivotTo(generator.PrimaryPart.CFrame)
@@ -2544,7 +2552,7 @@ task.spawn(function()
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
-                local progressPart = Instance.new("Part", workspace) do
+                local progressPart = Instance.new("Part", Workspace) do
                     progressPart.Anchored = true
                     progressPart.CanCollide = false
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
@@ -2559,7 +2567,7 @@ task.spawn(function()
                 
 
                 -- Ladder ESP
-                for _, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+                for _, v in pairs(Workspace.CurrentRooms:GetDescendants()) do
                     if v:IsA("Model") and v.Name == "Ladder" then
                         Script.Functions.ESP({
                             Type = "None",
@@ -2570,7 +2578,7 @@ task.spawn(function()
                     end
                 end
             else
-                if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
+                if Workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then Workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
 
                 for _, ladderEsp in pairs(Script.ESPTable.None) do
                     ladderEsp.Destroy()
@@ -2593,7 +2601,7 @@ task.spawn(function()
         end)
 
         Toggles.AntiGiggle:OnChanged(function(value)
-            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
                 for _, giggle in pairs(room:GetChildren()) do
                     if giggle.Name == "GiggleCeiling" then
                         giggle:WaitForChild("Hitbox", 5).CanTouch = not value
@@ -2604,7 +2612,7 @@ task.spawn(function()
 
         -- this shits bad, but it doesnt go through all parts, so its optimized :cold_face:
         Toggles.AntiGloomEgg:OnChanged(function(value)
-            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
                 for _, gloomPile in pairs(room:GetChildren()) do
                     if gloomPile.Name == "GloomPile" then
                         for _, gloomEgg in pairs(gloomPile:GetDescendants()) do
@@ -2716,7 +2724,7 @@ task.spawn(function()
         end)
 
         function Script.Functions.GetAutoRoomsPathfindingGoal(): BasePart
-            local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
+            local entity = (Workspace:FindFirstChild("A60") or Workspace:FindFirstChild("A120"))
             if entity and entity.PrimaryPart.Position.Y > -10 then
                 local GoalLocker = Script.Functions.GetNearestAssetWithCondition(function(asset)
                     return asset.Name == "Rooms_Locker" and not asset.HiddenPlayer.Value and asset.PrimaryPart.Position.Y > -10
@@ -2725,10 +2733,10 @@ task.spawn(function()
                 return GoalLocker.PrimaryPart
             end
 
-            return workspace.CurrentRooms[latestRoom.Value].Door.Door
+            return Workspace.CurrentRooms[latestRoom.Value].Door.Door
         end
 
-        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", workspace) do
+        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
             _internal_mspaint_pathfinding_nodes.Name = "_internal_mspaint_pathfinding_nodes"
         end
 
@@ -2741,7 +2749,7 @@ task.spawn(function()
         Library:GiveSignal(RunService.RenderStepped:Connect(function()
             if not Toggles.AutoRooms.Value then return end
 
-            local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
+            local entity = (Workspace:FindFirstChild("A60") or Workspace:FindFirstChild("A120"))
             local isEntitySpawned = (entity and entity.PrimaryPart.Position.Y > -10)
             
             if isEntitySpawned and not rootPart.Anchored then
@@ -2891,34 +2899,40 @@ task.spawn(function()
             function Script.Functions.ThrowBananaJeff()
                 local target = Script.Temp.HoldingItem
 
-                Script.Temp.ItemHoldTrack:Stop()
-                Script.Temp.ItemThrowTrack:Play()
+                if typeof(target) == "Instance" and target:IsA("Part") then
+                    Script.Temp.ItemHoldTrack:Stop()
+                    Script.Temp.ItemThrowTrack:Play()
 
-                task.wait(0.35)
+                    task.wait(0.35)
 
-                if target:FindFirstChildWhichIsA("BodyGyro") then
-                    target:FindFirstChildWhichIsA("BodyGyro"):Destroy()
-                end
+                    local JeffGyro = target:FindFirstChildWhichIsA("BodyGyro")
 
-                local velocity = localPlayer:GetMouse().Hit.LookVector * 0.5 * 200 * Options.ThrowStrength.Value
-                local spawnPos = camera.CFrame:ToWorldSpace(CFrame.new(0,0,-3) * CFrame.lookAt(Vector3.new(0, 0, 0), camera.CFrame.LookVector))
-                
-                target.CFrame = spawnPos
-                target.Velocity = velocity
-
-                if target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
-                    for _,i in ipairs(target:FindFirstAncestorWhichIsA("Model"):GetDescendants()) do
-                        if i:IsA("BasePart") then
-                            i.CanTouch = not Toggles.AntiJeffClient.Value
-                            i.CanCollide = i:GetAttribute("Clip") or true
-                        end
+                    if JeffGyro then
+                        JeffGyro:Destroy()
                     end
-                else
-                    target.CanTouch = not Toggles.AntiBananaPeel.Value
-                    target.CanCollide = target:GetAttribute("Clip") or true
-                end
 
-                Script.Temp.HoldingItem = nil
+                    local velocity = localPlayer:GetMouse().Hit.LookVector * 0.5 * 200 * Options.ThrowStrength.Value
+                    local spawnPos = camera.CFrame:ToWorldSpace(CFrame.new(0,0,-3) * CFrame.lookAt(Vector3.new(0, 0, 0), camera.CFrame.LookVector))
+                    
+                    target.CFrame = spawnPos
+                    target.Velocity = velocity
+
+                    local JeffModel = target:FindFirstAncestorWhichIsA("Model")
+
+                    if JeffModel and JeffModel.Name == "JeffTheKiller" then
+                        for _,i in ipairs(JeffModel:GetDescendants()) do
+                            if i:IsA("BasePart") then
+                                i.CanTouch = not Toggles.AntiJeffClient.Value
+                                i.CanCollide = i:GetAttribute("Clip") or true
+                            end
+                        end
+                    else
+                        target.CanTouch = not Toggles.AntiBananaPeel.Value
+                        target.CanCollide = target:GetAttribute("Clip") or true
+                    end
+
+                    Script.Temp.HoldingItem = nil
+                end
             end
         end
 
@@ -2964,7 +2978,7 @@ task.spawn(function()
         end
 
         Toggles.AntiSeekObstructions:OnChanged(function(value)
-            for i, v in pairs(workspace.CurrentRooms:GetDescendants()) do
+            for i, v in pairs(Workspace.CurrentRooms:GetDescendants()) do
                 if v.Name == "ChandelierObstruction" or v.Name == "Seek_Arm" then
                     for _, obj in pairs(v:GetDescendants()) do
                         if v:IsA("BasePart") then v.CanTouch = not value end
@@ -2974,7 +2988,7 @@ task.spawn(function()
         end)
         
         Toggles.AntiBananaPeel:OnChanged(function(value)
-            for _, peel in pairs(workspace:GetChildren()) do
+            for _, peel in pairs(Workspace:GetChildren()) do
                 if peel.Name == "BananaPeel" then
                     peel.CanTouch = not value
                 end
@@ -2982,7 +2996,7 @@ task.spawn(function()
         end)
 
         Toggles.AntiJeffClient:OnChanged(function(value)
-            for _, jeff in pairs(workspace:GetChildren()) do
+            for _, jeff in pairs(Workspace:GetChildren()) do
                 if jeff:IsA("Model") and jeff.Name == "JeffTheKiller" then
                     for i, v in pairs(jeff:GetDescendants()) do
                         if v:IsA("BasePart") then
@@ -2995,7 +3009,7 @@ task.spawn(function()
 
         Toggles.AntiJeffServer:OnChanged(function(value)
             if value then
-                for _, jeff in pairs(workspace:GetChildren()) do
+                for _, jeff in pairs(Workspace:GetChildren()) do
                     if jeff:IsA("Model") and jeff.Name == "JeffTheKiller" then
                         task.spawn(function()
                             repeat task.wait() until isnetworkowner(jeff.PrimaryPart)
@@ -3037,7 +3051,7 @@ task.spawn(function()
             if value and not Toggles.GodmodeNoclipBypassFools.Value then Toggles.GodmodeNoclipBypassFools:SetValue(true); Script.Functions.Alert("Godmode/Noclip Bypass is required to use figure godmode") end
             if latestRoom.Value ~= 50 or latestRoom.Value ~= 100 then return end
 
-            for _, figure in pairs(workspace.CurrentRooms:GetDescendants()) do
+            for _, figure in pairs(Workspace.CurrentRooms:GetDescendants()) do
                 if figure:IsA("Model") and figure.Name == "FigureRagdoll" then
                     for i, v in pairs(figure:GetDescendants()) do
                         if v:IsA("BasePart") then
@@ -3055,7 +3069,7 @@ end)
 
 --// Features Callback \\--
 Toggles.InstaInteract:OnChanged(function(value)
-    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
+    for _, prompt in pairs(Workspace.CurrentRooms:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") then
             if value then
                 if not prompt:GetAttribute("Hold") then prompt:SetAttribute("Hold", prompt.HoldDuration) end
@@ -3129,7 +3143,7 @@ Toggles.Fly:OnChanged(function(value)
 end)
 
 Toggles.PromptClip:OnChanged(function(value)
-    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
+    for _, prompt in pairs(Workspace.CurrentRooms:GetDescendants()) do        
         if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
             if value then
                 prompt.RequiresLineOfSight = false
@@ -3155,7 +3169,7 @@ Toggles.PromptClip:OnChanged(function(value)
 end)
 
 Options.PromptReachMultiplier:OnChanged(function(value)
-    for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
+    for _, prompt in pairs(Workspace.CurrentRooms:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) then
             if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
 
@@ -3183,7 +3197,7 @@ Toggles.AntiScreech:OnChanged(function(value)
 end)
 
 Toggles.AntiDupe:OnChanged(function(value)
-    for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+    for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
         for _, dupeRoom in pairs(room:GetChildren()) do
             if dupeRoom:GetAttribute("LoadModule") == "DupeRoom" or dupeRoom:GetAttribute("LoadModule") == "SpaceSideroom" then
                 task.spawn(function() Script.Functions.DisableDupe(dupeRoom, value, dupeRoom:GetAttribute("LoadModule") == "SpaceSideroom") end)
@@ -3193,7 +3207,7 @@ Toggles.AntiDupe:OnChanged(function(value)
 end)
 
 Toggles.AntiSnare:OnChanged(function(value)
-    for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+    for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
         if not room:FindFirstChild("Assets") then continue end
 
         for _, snare in pairs(room.Assets:GetChildren()) do
@@ -3330,7 +3344,7 @@ Toggles.FakeRevive:OnChanged(function(value)
         Options.FlySpeed:SetMax(75)
 
         fakeReviveEnabled = true
-        workspace.Gravity = 0
+        Workspace.Gravity = 0
 
         if cameraModule then
             cameraModule.Enabled = false
@@ -3386,20 +3400,20 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         camera:Destroy()
         task.wait(.1)
-        workspace.CurrentCamera.CameraSubject = character:FindFirstChildWhichIsA('Humanoid')
-		workspace.CurrentCamera.CameraType = "Custom"
+        Workspace.CurrentCamera.CameraSubject = character:FindFirstChildWhichIsA('Humanoid')
+		Workspace.CurrentCamera.CameraType = "Custom"
 	    localPlayer.CameraMinZoomDistance = 0.5
 		localPlayer.CameraMaxZoomDistance = 400
 		localPlayer.CameraMode = "Classic"
 		character.Head.Anchored = false
-		camera = workspace.CurrentCamera
+		camera = Workspace.CurrentCamera
 
         -- setup fake char
 		local humanoidDescription = Players:GetHumanoidDescriptionFromUserId(localPlayer.UserId)
 		humanoidDescription.HeightScale = 1.2
 
 		local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
-			previewCharacter.Parent = workspace
+			previewCharacter.Parent = Workspace
 			previewCharacter.Name = "PreviewCharacter"
 
 			previewCharacter.HumanoidRootPart.Anchored = true
@@ -3664,7 +3678,7 @@ Toggles.FakeRevive:OnChanged(function(value)
             
 
             if rootPart and rootPart.Position.Y < -150 then
-                rootPart.Position = workspace.SpawnLocation.Position
+                rootPart.Position = Workspace.SpawnLocation.Position
             end
 
 			if character:FindFirstChild("UpperTorso") then
@@ -3785,10 +3799,10 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         Library:GiveSignal(fakeReviveConnections["ProximityPromptEnabler"])
 
-		workspace.Gravity = 90
+		Workspace.Gravity = 90
 
         -- ESP Fix :smartindividual:
-        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+        for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
             task.spawn(function()
                 local roomDetectPart = room:WaitForChild(room.Name, math.huge)
                 if roomDetectPart then
@@ -3810,7 +3824,7 @@ Toggles.FakeRevive:OnChanged(function(value)
             end)
         end
 
-        fakeReviveConnections["CurrentRoomFix"] = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+        fakeReviveConnections["CurrentRoomFix"] = Workspace.CurrentRooms.ChildAdded:Connect(function(room)
             local roomDetectPart = room:WaitForChild(room.Name, math.huge)
 
             if roomDetectPart then
@@ -3839,12 +3853,12 @@ end)
 
 Toggles.DoorESP:OnChanged(function(value)
     if value then
-        if workspace.CurrentRooms[currentRoom]:FindFirstChild("Door") then
-            Script.Functions.DoorESP(workspace.CurrentRooms[currentRoom])
+        if Workspace.CurrentRooms[currentRoom]:FindFirstChild("Door") then
+            Script.Functions.DoorESP(Workspace.CurrentRooms[currentRoom])
         end
 
-        if workspace.CurrentRooms[nextRoom]:FindFirstChild("Door") then
-            Script.Functions.DoorESP(workspace.CurrentRooms[nextRoom])
+        if Workspace.CurrentRooms[nextRoom]:FindFirstChild("Door") then
+            Script.Functions.DoorESP(Workspace.CurrentRooms[nextRoom])
         end
     else
         for _, connection in pairs(Script.FeatureConnections.Door) do
@@ -3869,7 +3883,7 @@ end)
 
 Toggles.ObjectiveESP:OnChanged(function(value)
     if value then
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, asset in pairs(currentRoomModel:GetDescendants()) do
                 task.spawn(Script.Functions.ObjectiveESP, asset)
@@ -3894,13 +3908,13 @@ end)
 
 Toggles.EntityESP:OnChanged(function(value)
     if value then
-        for _, entity in pairs(workspace:GetChildren()) do
+        for _, entity in pairs(Workspace:GetChildren()) do
             if table.find(EntityTable.Names, entity.Name) then
                 Script.Functions.EntityESP(entity)
             end
         end
 
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, entity in pairs(currentRoomModel:GetDescendants()) do
                 if table.find(EntityTable.SideNames, entity.Name) then
@@ -3930,13 +3944,13 @@ end)
 
 Toggles.ItemESP:OnChanged(function(value)
     if value then
-        for _, item in pairs(workspace.Drops:GetChildren()) do
+        for _, item in pairs(Workspace.Drops:GetChildren()) do
             if Script.Functions.ItemCondition(item) then
                 Script.Functions.ItemESP(item)
             end
         end
 
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, item in pairs(currentRoomModel:GetDescendants()) do
                 if Script.Functions.ItemCondition(item) then
@@ -3963,7 +3977,7 @@ end)
 
 Toggles.ChestESP:OnChanged(function(value)
     if value then
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, chest in pairs(currentRoomModel:GetDescendants()) do
                 if chest:GetAttribute("Storage") == "ChestBox" then
@@ -4017,7 +4031,7 @@ end)
 
 Toggles.HidingSpotESP:OnChanged(function(value)
     if value then
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, wardrobe in pairs(currentRoomModel:GetDescendants()) do
                 if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" then
@@ -4044,7 +4058,7 @@ end)
 
 Toggles.GoldESP:OnChanged(function(value)
     if value then
-        local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
+        local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, gold in pairs(currentRoomModel:GetDescendants()) do
                 if gold.Name == "GoldPile" then
@@ -4148,7 +4162,7 @@ Toggles.Fullbright:OnChanged(function(value)
         Lighting.Ambient = Color3.new(1, 1, 1)
     else
         if alive then
-            Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+            Lighting.Ambient = Workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
         else
             Lighting.Ambient = Color3.new(0, 0, 0)
         end
@@ -4171,7 +4185,7 @@ Toggles.NoFog:OnChanged(function(value)
 end)
 
 Toggles.AntiLag:OnChanged(function(value)
-    for _, object in pairs(workspace.CurrentRooms:GetDescendants()) do
+    for _, object in pairs(Workspace.CurrentRooms:GetDescendants()) do
         if object:IsA("BasePart") then
             if not object:GetAttribute("Material") then object:SetAttribute("Material", object.Material) end
             if not object:GetAttribute("Reflectance") then object:SetAttribute("Reflectance", object.Reflectance) end
@@ -4187,10 +4201,10 @@ Toggles.AntiLag:OnChanged(function(value)
         end
     end
 
-    workspace.Terrain.WaterReflectance = value and 0 or 1
-    workspace.Terrain.WaterTransparency = value and 0 or 1
-    workspace.Terrain.WaterWaveSize = value and 0 or 0.05
-    workspace.Terrain.WaterWaveSpeed = value and 0 or 8
+    Workspace.Terrain.WaterReflectance = value and 0 or 1
+    Workspace.Terrain.WaterTransparency = value and 0 or 1
+    Workspace.Terrain.WaterWaveSize = value and 0 or 0.05
+    Workspace.Terrain.WaterWaveSpeed = value and 0 or 8
     Lighting.GlobalShadows = not value
 end)
 
@@ -4223,7 +4237,7 @@ end)
 
 Toggles.TranslucentHidingSpot:OnChanged(function(value)
     if value and character:GetAttribute("Hiding") then
-        for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
+        for _, obj in pairs(Workspace.CurrentRooms:GetDescendants()) do
             if not obj:IsA("ObjectValue") and obj.Name ~= "HiddenPlayer" then continue end
 
             if obj.Value == character then
@@ -4282,7 +4296,7 @@ if isBackdoor then
 
     Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", workspace) do
+            haste_incoming_progress = Instance.new("Part", Workspace) do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
@@ -4332,7 +4346,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
     end
 end))
 
-Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
+Library:GiveSignal(Workspace.ChildAdded:Connect(function(child)
     task.delay(0.1, function()
         local shortName = Script.Functions.GetShortName(child.Name)
 
@@ -4340,9 +4354,9 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
             task.spawn(function()
                 repeat
                     task.wait()
-                until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(workspace)
+                until Script.Functions.DistanceFromCharacter(child) < 750 or not child:IsDescendantOf(Workspace)
 
-                if child:IsDescendantOf(workspace) then
+                if child:IsDescendantOf(Workspace) then
                     if isHotel and Toggles.AvoidRushAmbush.Value and table.find(EntityTable.Avoid, child.Name) then
                         local oldNoclip = Toggles.Noclip.Value
                         local distance = Script.Functions.DistanceFromCharacter(child)
@@ -4351,11 +4365,11 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                             repeat 
                                 RunService.Heartbeat:Wait()
                                 distance = Script.Functions.DistanceFromCharacter(child)
-                            until distance <= 150 or not child:IsDescendantOf(workspace)
+                            until distance <= 150 or not child:IsDescendantOf(Workspace)
 
-                            if child:IsDescendantOf(workspace) then
+                            if child:IsDescendantOf(Workspace) then
                                 Script.Functions.AvoidEntity(true)
-                                repeat task.wait() until not child:IsDescendantOf(workspace)
+                                repeat task.wait() until not child:IsDescendantOf(Workspace)
                                 Script.Functions.AvoidEntity(false, oldNoclip)
                             end
                         end)
@@ -4365,9 +4379,9 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         local distance = EntityTable.AutoWardrobe.Distance[child.Name]
 
                         task.spawn(function()
-                            repeat RunService.Heartbeat:Wait() until not child:IsDescendantOf(workspace) or Script.Functions.DistanceFromCharacter(child) <= distance
+                            repeat RunService.Heartbeat:Wait() until not child:IsDescendantOf(Workspace) or Script.Functions.DistanceFromCharacter(child) <= distance
 
-                            if child:IsDescendantOf(workspace) and Toggles.AutoWardrobe.Value then
+                            if child:IsDescendantOf(Workspace) and Toggles.AutoWardrobe.Value then
                                 Script.Functions.AutoWardrobe(child)
                             end
                         end)
@@ -4504,12 +4518,12 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     end
 
                     if character:FindFirstChild("Crucifix") then
-                        workspace.Drops.ChildAdded:Once(function(droppedItem)
+                        Workspace.Drops.ChildAdded:Once(function(droppedItem)
                             if droppedItem.Name == "Crucifix" then
                                 local targetProximityPrompt = droppedItem:WaitForChild("ModulePrompt", 3) or droppedItem:FindFirstChildOfClass("ProximityPrompt")
                                 repeat task.wait()
                                     fireproximityprompt(targetProximityPrompt)
-                                until not droppedItem:IsDescendantOf(workspace)
+                                until not droppedItem:IsDescendantOf(Workspace)
                             end
                         end)
 
@@ -4526,7 +4540,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 end
             end)
             
-            local childRemovedConnection; childRemovedConnection = workspace.ChildRemoved:Connect(function(model: Model)
+            local childRemovedConnection; childRemovedConnection = Workspace.ChildRemoved:Connect(function(model: Model)
                 if model ~= child then return end
 
                 crucifixConnection:Disconnect()
@@ -4540,29 +4554,29 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
     end)
 end))
 
-for _, drop in pairs(workspace.Drops:GetChildren()) do
+for _, drop in pairs(Workspace.Drops:GetChildren()) do
     task.spawn(Script.Functions.SetupDropConnection, drop)
 end
-Library:GiveSignal(workspace.Drops.ChildAdded:Connect(function(child)
+Library:GiveSignal(Workspace.Drops.ChildAdded:Connect(function(child)
     task.spawn(Script.Functions.SetupDropConnection, child)
 end))
 
-for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+for _, room in pairs(Workspace.CurrentRooms:GetChildren()) do
     task.spawn(Script.Functions.SetupRoomConnection, room)
 end
-Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
+Library:GiveSignal(Workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
     
     if isMines then
-        task.delay(0.5, Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+        task.delay(0.5, Script.Functions.Minecart.Pathfind, room, tonumber(room.Name) :: number)
     end
 end))
 
 
 if camera then task.spawn(Script.Functions.SetupCameraConnection, camera) end
-Library:GiveSignal(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-    if workspace.CurrentCamera then
-        camera = workspace.CurrentCamera
+Library:GiveSignal(Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    if Workspace.CurrentCamera then
+        camera = Workspace.CurrentCamera
         task.spawn(Script.Functions.SetupCameraConnection, camera)
     end
 end))
@@ -4612,15 +4626,15 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(functi
     end
 end))
 
-if workspace.CurrentRooms:FindFirstChild(currentRoom) then
-    task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
+if Workspace.CurrentRooms:FindFirstChild(currentRoom) then
+    task.spawn(Script.Functions.SetupCurrentRoomConnection, Workspace.CurrentRooms[currentRoom])
 end
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
 
-    local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
-    local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
+    local currentRoomModel = Workspace.CurrentRooms:FindFirstChild(currentRoom)
+    local nextRoomModel = Workspace.CurrentRooms:FindFirstChild(nextRoom)
 
     if Toggles.DoorESP.Value then
         for _, doorEsp in pairs(Script.ESPTable.Door) do
@@ -4765,8 +4779,8 @@ Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProce
         end
 
         local touchPos = input.Position
-        local ray = workspace.CurrentCamera:ViewportPointToRay(touchPos.X, touchPos.Y)
-        local result = workspace:Raycast(ray.Origin, ray.Direction * 500, RaycastParams.new())
+        local ray = Workspace.CurrentCamera:ViewportPointToRay(touchPos.X, touchPos.Y)
+        local result = Workspace:Raycast(ray.Origin, ray.Direction * 500, RaycastParams.new())
         
         local target = result and result.Instance
 
@@ -4806,6 +4820,7 @@ Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProce
             end
         end
     end
+    return
 end))
 
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
@@ -4871,8 +4886,8 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             character.LowerTorso.CanCollide = not Toggles.Noclip.Value
         end
 
-        if Toggles.DoorReach.Value and workspace.CurrentRooms:FindFirstChild(latestRoom.Value) then
-            local door = workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("Door")
+        if Toggles.DoorReach.Value and Workspace.CurrentRooms:FindFirstChild(latestRoom.Value) then
+            local door = Workspace.CurrentRooms[latestRoom.Value]:FindFirstChild("Door")
 
             if door and door:FindFirstChild("ClientOpen") then
                 door.ClientOpen:FireServer()
@@ -4889,22 +4904,24 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
-                if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
+                local Door = prompt:FindFirstAncestorOfClass("Model")
+                if Door and Door.Name == "DoorFake" then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
-                    if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
+                    if Script.Functions.DistanceFromCharacter(prompt.Parent :: PVInstance) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
                         -- painting checks
                         if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") and character then
                             if Script.Temp.PaintingDebounce then return end
                             
                             local currentPainting = character:FindFirstChild("Prop")
-                            if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
+                            local targetPainting = prompt.Parent:FindFirstChild("Prop")
+                            if not currentPainting and targetPainting and prompt.Parent:GetAttribute("Hint") ~= targetPainting:GetAttribute("Hint") then
                                 return fireproximityprompt(prompt)
                             end
 
-                            if prompt.Parent:FindFirstChild("Prop") then 
-                                if prompt.Parent:GetAttribute("Hint") == prompt.Parent.Prop:GetAttribute("Hint") then
+                            if targetPainting then 
+                                if prompt.Parent:GetAttribute("Hint") == targetPainting:GetAttribute("Hint") then
                                     return
                                 end
                             end
@@ -4926,6 +4943,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                         
                         fireproximityprompt(prompt)
                     end
+                    return
                 end)
             end
         end
@@ -5036,7 +5054,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             end
         end
 
-        if Toggles.AntiEyes.Value and (workspace:FindFirstChild("Eyes") or workspace:FindFirstChild("BackdoorLookman")) then
+        if Toggles.AntiEyes.Value and (Workspace:FindFirstChild("Eyes") or Workspace:FindFirstChild("BackdoorLookman")) then
             if not isFools then
                 -- lsplash meanie for removing other args in motorreplication
                 remotesFolder.MotorReplication:FireServer(-649)
@@ -5048,7 +5066,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
     task.spawn(function()
         for guidance, part in pairs(Script.Temp.Guidance) do
-            if not guidance:IsDescendantOf(workspace) then continue end
+            if not guidance:IsDescendantOf(Workspace) then continue end
             part.CFrame = guidance.CFrame
         end
     end)
@@ -5085,7 +5103,7 @@ Library:OnUnload(function()
     end
 
     if alive then
-        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+        Lighting.Ambient = Workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
     else
         Lighting.Ambient = Color3.new(0, 0, 0)
     end
@@ -5131,8 +5149,8 @@ Library:OnUnload(function()
     end
 
     if isRooms then
-        if workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
-            workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
+        if Workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
+            Workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
         end
     end
 
@@ -5179,7 +5197,7 @@ MenuGroup:AddToggle("ShowCustomCursor", {Text = "Custom Cursor", Default = true,
 MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
 MenuGroup:AddButton("Join Discord Server", function()
-    local Inviter = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Discord%20Inviter/Source.lua"))()
+    local Inviter = (loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Discord%20Inviter/Source.lua")) :: () -> any)()
 	Inviter.Join("https://discord.com/invite/cfyMptntHr")
 	Inviter.Prompt({
 		name = "mspaint",
