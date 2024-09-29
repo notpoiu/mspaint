@@ -15,19 +15,22 @@ test("require", function()
     assert(table.find(noRequire, executorName) == nil, "garbage executor")
     require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
 end)
+
 test("hookmetamethod", function()
     local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
     local ref = hookmetamethod(object, "__index", function() return true end)
     assert(object.test == true, "Failed to hook a metamethod and change the return value")
     assert(ref() == false, "Did not return the original function")
 end)
+
 test("getnamecallmethod", function()
     pcall(function()
-        game:NAMECALL_METHODS_ARE_IMPORTANT()
+        game:IsContentLoaded()
     end)
 
-    assert(getnamecallmethod() == "NAMECALL_METHODS_ARE_IMPORTANT", "getnamecallmethod did not return the real namecall method")
+    assert(getnamecallmethod() == "IsContentLoaded", "getnamecallmethod did not return the real namecall method")
 end)
+
 test("firesignal", function()
     local event = Instance.new("BindableEvent")
     local fired = false
@@ -43,6 +46,7 @@ test("firesignal", function()
 
     assert(fired, "Failed to fire a BindableEvent")
 end)
+
 local canFirePrompt = test("fireproximityprompt", function()
     local prompt = Instance.new("ProximityPrompt", Instance.new("Part", Workspace))
     local triggered = false
@@ -97,6 +101,7 @@ if not canFirePrompt then
         prompt.HoldDuration = originalHold
         prompt.RequiresLineOfSight = originalLineOfSight
         workspace.CurrentCamera.CFrame = originalCamCFrame
+        return
     end
 end
 

@@ -587,7 +587,9 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
                 local distance = (nodeA:GetPivot().Position - nodeB:GetPivot().Position).Magnitude
 
                 hasNodeJump = (distance >= _longW)
-                if not hasNodeJump then _gplast = _gpS continue end
+                if not hasNodeJump then _gplast = _gpS 
+                    continue 
+                end
                 _dbgprint(string.format("[%s] Distance between %s <--> %s ==> %.2f", _gpI, nodeA.Name, nodeB.Name, distance))
 
                 --Ok, we found a node jump, now we need to know what should be the closest node
@@ -663,7 +665,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
             table.insert(fakeNodes, nfinal)
         end
     end
-    local roomNum = tonumber(room.Name)
+
     --local success = string.format("Correct path was generated for the ROOM %d", roomNum)
     --Script.Functions.Alert("[Minecart-Pathfind] " .. success, 2); _dbgprint(success)
 
@@ -1727,7 +1729,7 @@ function Script.Functions.DeleteSeek(collision: BasePart)
 
     task.spawn(function()
         local attemps = 0
-        repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
+        repeat task.wait(); attemps += 1 until collision.Parent or attemps > 200
         
         if collision:IsDescendantOf(Workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
             task.delay(4, function()
@@ -2834,6 +2836,7 @@ task.spawn(function()
 
                                     Script.Functions.Alert("Seems like you are stuck, trying to recalculate path...", 5)
                                     recalculate = true
+                                    return
                                 end)
                             end
 
@@ -3441,9 +3444,9 @@ Toggles.FakeRevive:OnChanged(function(value)
         -- animation setup
 		task.spawn(function()
 			local anims = character:WaitForChild("Animations", 10) or previewCharacter:WaitForChild("Animations", 10);
-			local crouch, oldCrouchSpeed = previewCharacter.Humanoid:LoadAnimation(anims.Crouch), 0;
-			local walk, idle = previewCharacter.Humanoid:LoadAnimation(anims.Forward), previewCharacter.Humanoid:LoadAnimation(anims.Idle);
-			local interact = previewCharacter.Humanoid:LoadAnimation(anims.Interact);
+			local crouch, oldCrouchSpeed = previewCharacter.Humanoid.Animator:LoadAnimation(anims.Crouch), 0;
+			local walk, idle = previewCharacter.Humanoid.Animator:LoadAnimation(anims.Forward), previewCharacter.Humanoid.Animator:LoadAnimation(anims.Idle);
+			previewCharacter.Humanoid.Animator:LoadAnimation(anims.Interact);
 			oldCrouchSpeed = crouch.Speed;
 
 			local function playWalkingAnim(key)
@@ -3451,7 +3454,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 					if idle.isPlaying then idle:Stop() end
 
 					if character:GetAttribute("Crouching") then
-						if not crouch.isPlaying then crouch:Play() crouch:AdjustSpeed(oldCrouchSpeed) end
+						if not crouch.isPlaying then crouch:Play(); crouch:AdjustSpeed(oldCrouchSpeed) end
 						if walk.isPlaying then walk:Stop() end
 					else
 						if crouch.isPlaying then crouch:Stop() end
@@ -3512,7 +3515,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 		
 						for i, v in pairs(anims:GetChildren()) do
 							if v:IsA("Animation") then
-								toolsAnim[v.Name] = previewCharacter.Humanoid:LoadAnimation(v)
+								toolsAnim[v.Name] = previewCharacter.Humanoid.Animator:LoadAnimation(v)
 							end
 						end
 		
@@ -4298,7 +4301,7 @@ if isBackdoor then
 
     Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", Workspace) do
+            haste_incoming_progress = Instance.new("Part", Workspace); do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
@@ -4456,7 +4459,7 @@ Library:GiveSignal(Workspace.ChildAdded:Connect(function(child)
             local entityName = child.Name
 
             local crucifixConnection; crucifixConnection = RunService.RenderStepped:Connect(function(deltaTime)
-                if not Toggles.InfItems.Value or not alive or not character then crucifixConnection:Disconnect() return end
+                if not Toggles.InfItems.Value or not alive or not character then return crucifixConnection:Disconnect() end
 
                 local currentTimer = tick()
                 frameCount += 1 
@@ -4540,6 +4543,7 @@ Library:GiveSignal(Workspace.ChildAdded:Connect(function(child)
                     --print("Entity started moving!")
                     hasStoppedMoving = false
                 end
+                return
             end)
             
             local childRemovedConnection; childRemovedConnection = Workspace.ChildRemoved:Connect(function(model: Model)
