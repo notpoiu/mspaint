@@ -835,12 +835,11 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
         for _, entity in pairs(Script.Temp.AutoWardrobeEntities) do
             if isSafe == false then break end
 
-            local entityDeleted = (not entity or not entity:IsDescendantOf(workspace))
+            local entityDeleted = (entity == nil or entity.Parent == nil)
             local inView = Script.Functions.IsInViewOfPlayer(entity.PrimaryPart, EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0), exclusion)
-            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < 70 + (addMoreDist == true and 15 or 0);
-            -- EntityTable.AutoWardrobe.Distance[entity.Name] is used for inView, isClose is to see if you can exit safely (weird rush fix) upio...
+            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0);
 
-            isSafe = entityDeleted and true or (inView == false and isClose == false);
+            isSafe = entityDeleted == true and true or (inView == false and isClose == false);
             if isSafe == false then break end
         end
 
