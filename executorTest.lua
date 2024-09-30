@@ -2,7 +2,7 @@ local Workspace = game:GetService("Workspace")
 
 local executorSupport = {}
 local executorName = string.split(identifyexecutor() or "None", " ")[1]
-local noRequire = {"Arceus", "Codex", "Vega"}
+local noRequire = {"Arceus", "Codex", "VegaX"}
 
 function test(name: string, func: () -> (), ...)
     local success, _ = pcall(func, ...)
