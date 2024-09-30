@@ -57,8 +57,10 @@ local canFirePrompt = test("fireproximityprompt", function()
     task.wait(0.1)
     fireproximityprompt(prompt)
     task.wait(0.1)
-    
-    if not triggered then
+
+    assert(triggered, "Failed to fire proximity prompt")
+        
+    --[[if not triggered then
         -- garbage fireproximityprompt test
         prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * Vector3.new(0, 0, -4)
         
@@ -70,7 +72,7 @@ local canFirePrompt = test("fireproximityprompt", function()
 
         prompt.Parent.CFrame = CFrame.new(0, 0, 0)
         assert(triggered, "Failed to fire proximity prompt")
-    end
+    end--]]
 end)
 
 --// Fixes \\--
