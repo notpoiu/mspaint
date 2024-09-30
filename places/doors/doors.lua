@@ -1442,6 +1442,10 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     character = newCharacter
     if character then
+        if Toggles.EnableJump.Value then
+            character:SetAttribute("CanJump", true)
+        end
+
         for _, oldConnection in pairs(Script.FeatureConnections.Character) do
             oldConnection:Disconnect()
         end
