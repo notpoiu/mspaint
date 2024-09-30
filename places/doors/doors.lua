@@ -24,6 +24,8 @@ end
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
+local badfireproxprompt = ExecutorSupport["fireproximityprompt"] ~= true and (typeof(custom_fireproximityprompt) == "function" and custom_fireproximityprompt) or fireproximityprompt
+local isnetowner = ExecutorSupport["isnetworkowner"] ~= true and (typeof(custom_isnetworkowner) == "function" and custom_isnetworkowner) or isnetworkowner
 local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 local Script = {
@@ -835,8 +837,9 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
 
             local entityDeleted = (not entity or not entity:IsDescendantOf(workspace))
             local inView = Script.Functions.IsInViewOfPlayer(entity.PrimaryPart, EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0), exclusion)
-            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0);
-        
+            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < 70 + (addMoreDist == true and 15 or 0);
+            -- EntityTable.AutoWardrobe.Distance[entity.Name] is used for inView, isClose is to see if you can exit safely (weird rush fix) upio...
+
             isSafe = entityDeleted and true or (inView == false and isClose == false);
             if isSafe == false then break end
         end
@@ -890,7 +893,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
             if ExecutorSupport["fireproximityprompt"] then
                 fireproximityprompt(targetWardrobePrompt)
             else
-                fireproximityprompt(targetWardrobePrompt, true)
+                badfireproxprompt(targetWardrobePrompt, true)
             end
         until atempts > maxAtempts or not alive or (character:GetAttribute("Hiding") and rootPart.Anchored)
 
@@ -2885,7 +2888,7 @@ task.spawn(function()
                     if ExecutorSupport["fireproximityprompt"] then
                         fireproximityprompt(pathfindingGoal.Parent.HidePrompt)
                     else
-                        fireproximityprompt(pathfindingGoal.Parent.HidePrompt, true)
+                        badfireproxprompt(pathfindingGoal.Parent.HidePrompt, true)
                     end
                 end
             elseif not isEntitySpawned and rootPart.Anchored then
@@ -3132,7 +3135,7 @@ task.spawn(function()
                 for _, jeff in pairs(workspace:GetChildren()) do
                     if jeff:IsA("Model") and jeff.Name == "JeffTheKiller" then
                         task.spawn(function()
-                            repeat task.wait() until isnetworkowner(jeff.PrimaryPart)
+                            repeat task.wait() until isnetowner(jeff.PrimaryPart)
                             jeff:FindFirstChildOfClass("Humanoid").Health = 0
                         end)
                     end
@@ -4547,7 +4550,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
 
             if Toggles.AntiJeffServer.Value and child.Name == "JeffTheKiller" then
                 task.spawn(function()
-                    repeat task.wait() until isnetworkowner(child.PrimaryPart)
+                    repeat task.wait() until isnetowner(child.PrimaryPart)
                     child:FindFirstChildOfClass("Humanoid").Health = 0
                 end)
             end
@@ -4906,7 +4909,7 @@ Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProce
         
         local target = result and result.Instance
 
-        if target and isnetworkowner(target) then
+        if target and isnetowner(target) then
             if target.Name == "BananaPeel" then
                 Script.Temp.ItemHoldTrack:Play()
 
@@ -5111,7 +5114,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
         if isFools then
             local HoldingItem = Script.Temp.HoldingItem
-            if HoldingItem and not isnetworkowner(HoldingItem) then
+            if HoldingItem and not isnetowner(HoldingItem) then
                 Script.Functions.Alert("You are no longer holding the item due to network owner change!", 5)
                 Script.Temp.HoldingItem = nil
             end
@@ -5127,14 +5130,14 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 local isGrabbing = Options.GrabBananaJeff:GetState() and Toggles.GrabBananaJeffToggle.Value
                 local isThrowing = Options.ThrowBananaJeff:GetState()
                 
-                if isThrowing and HoldingItem and isnetworkowner(HoldingItem) then
+                if isThrowing and HoldingItem and isnetowner(HoldingItem) then
                     Script.Functions.ThrowBananaJeff()
                 end
                 
                 local target = localPlayer:GetMouse().Target
                 
                 if not target then return end
-                if isGrabbing and isnetworkowner(target) then
+                if isGrabbing and isnetowner(target) then
                     if target.Name == "BananaPeel" then
                         Script.Temp.ItemHoldTrack:Play()
     
