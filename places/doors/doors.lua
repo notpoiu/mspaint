@@ -732,25 +732,6 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
     table.insert(MinecartPathfind, buildPathfind) --add to table
 
     Script.Functions.Minecart.DrawNodes()
-    --add the ESP ToggleCheck if enabled.
-    --if true then
-        
-    --end    
-
-    --[[
-    if (roomNum >= 45) then --Functions AFTER this, is for processing on minecart chase only.
-
-        --add the Teleport Exploit ToggleCheck if enabled.
-
-        --if [THE TOOGLE HERE] then
-            --Start destroying nodes
-            Script.Functions.Minecart.NodeDestroy(roomNum)
-
-            --Start the Teleport module if the last room added is 45. 
-            ---Meaning that if last room >= 45 you can't enable Minecart.Teleport (TODO, fix that.)
-            Script.Functions.Minecart.Teleport(roomNum)
-        --end
-    end]]
 
     if (lastRoom >= 40 and lastRoom <= 49) and Toggles.TheMinesSeekMinecartTP.Value then
         Script.Functions.Minecart.NodeDestroy(tonumber(room.Name))
@@ -4866,6 +4847,11 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
+
+    if isMines and bypassed and currentRoomModel:GetAttribute("RoomName") == "HaltHallway" then
+        bypassed = false
+        Script.Functions.Alert("Halt has broken anticheat bypass, please go on a ladder again to fix it.", 5)
+    end
 
     if Toggles.DoorESP.Value then
         for _, doorEsp in pairs(Script.ESPTable.Door) do
