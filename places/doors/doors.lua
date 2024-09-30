@@ -835,7 +835,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
 
             local entityDeleted = (not entity or not entity:IsDescendantOf(workspace))
             local inView = Script.Functions.IsInViewOfPlayer(entity.PrimaryPart, EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0), exclusion)
-            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < 45 + (addMoreDist == true and 15 or 0);
+            local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < EntityTable.AutoWardrobe.Distance[entity.Name] + (addMoreDist == true and 15 or 0);
         
             isSafe = entityDeleted and true or (inView == false and isClose == false);
             if isSafe == false then break end
