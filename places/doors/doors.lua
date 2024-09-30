@@ -1595,7 +1595,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
             local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
 
-            if rootPart.Anchored and Toggles.LagbackDetection and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
+            if rootPart.Anchored and Toggles.LagbackDetection.Value and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
                 Script.Lagback.Anchors += 1
                 Script.Lagback.LastAnchored = os.time()
 
