@@ -1,4 +1,6 @@
 local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 
 local executorSupport = {}
 local executorName = string.split(identifyexecutor() or "None", " ")[1]
@@ -44,28 +46,48 @@ test("firesignal", function()
     assert(fired, "Failed to fire a BindableEvent")
 end)
 local canFirePrompt = test("fireproximityprompt", function()
-    local prompt = Instance.new("ProximityPrompt", Instance.new("Part", Workspace))
     local triggered = false
+        
+    local prompt = Instance.new("ProximityPrompt", Instance.new("Part", Workspace))
+    prompt.Parent.Anchored = true
+    prompt.Parent.Transparency = 1
+    prompt.Triggered:Once(function() triggered = true end)
 
-    prompt.Triggered:Once(function()
-        triggered = true
-    end)
-
+    Debris:AddItem(prompt, 10)
+    task.wait(0.1)
     fireproximityprompt(prompt)
     task.wait(0.1)
+    
+    if not triggered then
+        -- garbage fireproximityprompt test
+        prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * Vector3.new(0, 0, -4)
+        
+        triggered = false
+        prompt.Triggered:Once(function() triggered = true end)
+        task.wait(0.1)
+        fireproximityprompt(prompt)
+        task.wait(0.1)
 
-    prompt.Parent:Destroy()
-    assert(triggered, "Failed to fire proximity prompt")
+        prompt.Parent.CFrame = CFrame.new(0, 0, 0)
+        assert(triggered, "Failed to fire proximity prompt")
+    end
 end)
 
 --// Fixes \\--
 
 if not canFirePrompt then
-    getgenv().fireproximityprompt = function(prompt: ProximityPrompt, lookToPrompt: boolean)
+    getgenv().fireproximityprompt = function(prompt: ProximityPrompt, lookToPrompt: boolean | number)
         if not prompt:IsA("ProximityPrompt") then
             return error("ProximityPrompt expected, got " .. typeof(prompt))
         end
 
+        local maxDist = typeof(lookToPrompt) == "number" and lookToPrompt or math.huge;
+        lookToPrompt = maxDist == lookToPrompt and false or lookToPrompt;
+
+        if (prompt.Parent:GetPivot().Position - (Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()):GetPivot().Position) > maxDist then
+            return
+        end
+        
         local connection
         local promptPosition = prompt.Parent:GetPivot().Position
     
