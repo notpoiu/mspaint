@@ -54,7 +54,6 @@ local canFirePrompt = test("fireproximityprompt", function()
     prompt.Triggered:Once(function() triggered = true end)
 
     Debris:AddItem(prompt, 10)
-    task.wait(0.1)
     fireproximityprompt(prompt)
     task.wait(0.1)
 
@@ -66,7 +65,6 @@ local canFirePrompt = test("fireproximityprompt", function()
         
         triggered = false
         prompt.Triggered:Once(function() triggered = true end)
-        task.wait(0.1)
         fireproximityprompt(prompt)
         task.wait(0.1)
 
