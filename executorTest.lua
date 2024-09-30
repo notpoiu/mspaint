@@ -84,7 +84,7 @@ if not canFirePrompt then
         local maxDist = typeof(lookToPrompt) == "number" and lookToPrompt or math.huge;
         lookToPrompt = maxDist == lookToPrompt and false or lookToPrompt;
 
-        if (prompt.Parent:GetPivot().Position - (Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()):GetPivot().Position) > maxDist then
+        if (prompt.Parent:GetPivot().Position - (Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()):GetPivot().Position).Magnitude > maxDist then
             return
         end
         
