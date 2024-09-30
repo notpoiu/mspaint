@@ -753,6 +753,7 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
     end]]
 
     if (lastRoom >= 40 and lastRoom <= 49) and Toggles.TheMinesSeekMinecartTP.Value then
+        Script.Functions.Minecart.NodeDestroy(tonumber(room.Name))
         Script.Functions.Minecart.Teleport(tonumber(room.Name))
     end
 end
