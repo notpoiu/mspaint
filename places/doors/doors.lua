@@ -60,7 +60,8 @@ local Script = {
         Threshold = 1,
         Anchors = 0,
         LastAnchored = 0,
-        LastSpeed = 0
+        LastSpeed = 0,
+        LastFlySpeed = 0,
     },
     Temp = {
         AnchorFinished = {},
@@ -1605,6 +1606,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     Script.Lagback.Detected = true
                     Script.Lagback.Anchors = 0
                     Script.Lagback.LastSpeed = Options.SpeedSlider.Value
+                    Script.Lagback.LastFlySpeed = Options.FlySpeed.Value
 
                     Script.Functions.Alert("Fixing Lagback...")
                     Toggles.SpeedBypass:SetValue(false)
@@ -1617,6 +1619,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
                     Toggles.SpeedBypass:SetValue(true)
                     Options.SpeedSlider:SetValue(Script.Lagback.LastSpeed)
+                    Options.FlySpeed:SetValue(Script.Lagback.LastFlySpeed)
                     Script.Lagback.Detected = false
                     Script.Functions.Alert("Fixed Lagback.")
                 end
