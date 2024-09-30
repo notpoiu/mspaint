@@ -4,18 +4,22 @@ local Players = game:GetService("Players")
 
 local executorSupport = {}
 local executorName = string.split(identifyexecutor() or "None", " ")[1]
-local noRequire = {"Arceus", "Codex", "VegaX"}
+local brokenFeatures = {
+    ["Arceus"] = { "require" },
+    ["Codex"] = { "require" },
+    ["VegaX"] = { "require" },
+}
 
 function test(name: string, func: () -> (), ...)
+    if typeof(brokenFeatures[executorName]) == "table" and table.find(brokenFeatures[executorName], name) then return false end -- garbage executor 🤯
+    
     local success, _ = pcall(func, ...)
     executorSupport[name] = success
-    
     return success
 end
 
 test("require", function()
-    assert(table.find(noRequire, executorName) == nil, "garbage executor")
-    require(game:GetService("ReplicatedStorage"):WaitForChild("ModuleScript"))
+    require(Players.LocalPlayer:WaitForChild("PlayerScripts", math.huge):WaitForChild("PlayerModule", 5)) -- ReplicatedStorage:WaitForChild("ModuleScript")
 end)
 test("hookmetamethod", function()
     local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
@@ -34,13 +38,10 @@ test("firesignal", function()
     local event = Instance.new("BindableEvent")
     local fired = false
 
-    event.Event:Once(function(value)
-        fired = value
-    end)
-
+    event.Event:Once(function(value) fired = value end)
+        
     firesignal(event.Event, true)
-
-    task.wait()
+    task.wait(0.1)
     event:Destroy()
 
     assert(fired, "Failed to fire a BindableEvent")
@@ -53,41 +54,36 @@ local canFirePrompt = test("fireproximityprompt", function()
     prompt.Parent.Transparency = 1
     prompt.Triggered:Once(function() triggered = true end)
 
-    Debris:AddItem(prompt, 10)
-    task.wait(0.1)
+    Debris:AddItem(prompt.Parent, 5)
     fireproximityprompt(prompt)
     task.wait(0.1)
-    
+
     if not triggered then
         -- garbage fireproximityprompt test
-        prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * Vector3.new(0, 0, -4)
+        prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * CFrame.new(0, 0, -4)
+        task.delay(0.2, function()
+            if prompt.Parent ~= nil then 
+            	prompt.Parent.CFrame = CFrame.new(0, 0, 0)
+            end            
+        end)
         
+        task.wait(0.1)
         triggered = false
         prompt.Triggered:Once(function() triggered = true end)
-        task.wait(0.1)
         fireproximityprompt(prompt)
         task.wait(0.1)
 
-        prompt.Parent.CFrame = CFrame.new(0, 0, 0)
         assert(triggered, "Failed to fire proximity prompt")
     end
 end)
 
 --// Fixes \\--
-
 if not canFirePrompt then
-    getgenv().fireproximityprompt = function(prompt: ProximityPrompt, lookToPrompt: boolean | number)
+    function customFirepp(prompt: ProximityPrompt, lookToPrompt: boolean)
         if not prompt:IsA("ProximityPrompt") then
             return error("ProximityPrompt expected, got " .. typeof(prompt))
         end
 
-        local maxDist = typeof(lookToPrompt) == "number" and lookToPrompt or math.huge;
-        lookToPrompt = maxDist == lookToPrompt and false or lookToPrompt;
-
-        if (prompt.Parent:GetPivot().Position - (Players.LocalPlayer.Character or Players.LocalPlayer.CharacterAdded:Wait()):GetPivot().Position) > maxDist then
-            return
-        end
-        
         local connection
         local promptPosition = prompt.Parent:GetPivot().Position
     
@@ -120,16 +116,22 @@ if not canFirePrompt then
         prompt.RequiresLineOfSight = originalLineOfSight
         workspace.CurrentCamera.CFrame = originalCamCFrame
     end
+    
+    getgenv().fireproximityprompt = customFirepp;
+    getgenv().custom_fireproximityprompt = customFirepp;
 end
 
 if not isnetworkowner then
-    getgenv().isnetworkowner = function(part: BasePart)
+    function isnetowner(part: BasePart)
         if not part:IsA("BasePart") then
             return error("BasePart expected, got " .. typeof(part))
         end
 
         return part.ReceiveAge == 0
     end
+    
+    getgenv().isnetworkowner = isnetowner;
+    getgenv().custom_isnetworkowner = isnetowner;
 end
 
 --// Load \\--
