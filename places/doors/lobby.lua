@@ -147,19 +147,6 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Functions.SetupVariables()
-    local badgeList = achievementsFrame:FindFirstChild("List")
-    if badgeList then
-        for _, badge in pairs(badgeList:GetChildren()) do
-            local question = badge:FindFirstChild("Question", true)
-
-            if question and question.Visible == false then
-                table.insert(Script.Achievements, badge.Name)
-            end
-        end
-    end
-end
-
 function Script.Functions.LoopAchievements()
     task.spawn(function()
         while Toggles.LoopAchievements.Value and not Library.Unloaded do
@@ -255,8 +242,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 end))
 
 --// Script Load \\--
-
-task.spawn(Script.Functions.SetupVariables)
 
 --// Library Load \\--
 
