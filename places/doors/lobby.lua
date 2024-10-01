@@ -150,11 +150,18 @@ function Script.Functions.SetupVariables()
         local badgeList = achievementsFrame:WaitForChild("List", math.huge)
 
         if badgeList then
-            repeat task.wait() until #badgeList:GetChildren() ~= 0
-    
+            repeat task.wait(.5) until #badgeList:GetChildren() ~= 0
+            
+            Library:GiveSignal(badgeList.ChildAdded:Connect(function(badge)
+                if not badge:IsA("ImageButton") then return end
+                if table.find(Script.Achievements, badge.Name) then return end
+                table.insert(Script.Achievements, badge.Name)
+            end))
+
             for _, badge in pairs(badgeList:GetChildren()) do
+                if not badge:IsA("ImageButton") then continue end
                 if table.find(Script.Achievements, badge.Name) then continue end
-                
+
                 table.insert(Script.Achievements, badge.Name)
             end
         end
