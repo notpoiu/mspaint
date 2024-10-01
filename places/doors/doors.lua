@@ -1372,7 +1372,7 @@ function Script.Functions.ChildCheck(child)
                 child.HoldDuration = 0
             end
     
-            if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.ClipObjects, child.Parent.Name)) then
+            if Toggles.PromptClip.Value and Script.Functions.PromptCondition(child) then
                 child.RequiresLineOfSight = false
             end
         end)
