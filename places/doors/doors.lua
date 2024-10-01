@@ -733,12 +733,14 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
 
     Script.Functions.Minecart.DrawNodes()
 
+    --[[
     if (lastRoom >= 40 and lastRoom <= 49) and Toggles.TheMinesSeekMinecartTP.Value then
         Script.Functions.Minecart.NodeDestroy(tonumber(room.Name))
         Script.Functions.Minecart.Teleport(tonumber(room.Name))
-    end
+    end]]
 end
 
+--[[
 function Script.Functions.Minecart.NodeDestroy(roomNum: number)
     local roomConfig = WhitelistConfig[roomNum]
     if not roomConfig then return end
@@ -818,7 +820,7 @@ function Script.Functions.Minecart.Teleport(roomNum: number)
 
         end)
     end
-end
+end]]
 
 
 --If ESP Toggle is changed, you can call this function directly.
@@ -2751,12 +2753,6 @@ task.spawn(function()
                 Text = "Anticheat Bypass",
                 Default = false
             })
-
-            Mines_AutomationGroupBox:AddToggle("TheMinesSeekMinecartTP", {
-                Text = "Seek Minecart TP",
-                Default = false
-            })
-
         end
         
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
