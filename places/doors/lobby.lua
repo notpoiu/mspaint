@@ -95,14 +95,6 @@ local Script = {
     Functions = {}
 }
 
-if ExecutorSupport["require"] then
-    for achievementName, _ in pairs(require(game:GetService("ReplicatedStorage").Achievements)) do
-        if table.find(Script.Achievements, achievementName) then continue end
-
-        table.insert(Script.Achievements, achievementName)
-    end
-end
-
 local localPlayer = Players.LocalPlayer
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 
@@ -146,6 +138,35 @@ local Tabs = {
 
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Functions.SetupVariables()
+    if ExecutorSupport["require"] then
+        for achievementName, _ in pairs(require(game:GetService("ReplicatedStorage").Achievements)) do
+            if table.find(Script.Achievements, achievementName) then continue end
+    
+            table.insert(Script.Achievements, achievementName)
+        end
+    else
+        local badgeList = achievementsFrame:WaitForChild("List", math.huge)
+
+        if badgeList then
+            repeat task.wait(.5) until #badgeList:GetChildren() ~= 0
+            
+            Library:GiveSignal(badgeList.ChildAdded:Connect(function(badge)
+                if not badge:IsA("ImageButton") then return end
+                if table.find(Script.Achievements, badge.Name) then return end
+                table.insert(Script.Achievements, badge.Name)
+            end))
+
+            for _, badge in pairs(badgeList:GetChildren()) do
+                if not badge:IsA("ImageButton") then continue end
+                if table.find(Script.Achievements, badge.Name) then continue end
+
+                table.insert(Script.Achievements, badge.Name)
+            end
+        end
+    end
 end
 
 function Script.Functions.LoopAchievements()
@@ -359,6 +380,7 @@ end
 OpenElementCreationUI()
 
 --// Script Load \\--
+task.spawn(Script.Functions.SetupVariables)
 
 --// Library Load \\--
 
