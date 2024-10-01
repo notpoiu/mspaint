@@ -355,9 +355,9 @@ local Tabs = {
 }
 
 local _mspaint_custom_captions = Instance.new("ScreenGui") do
-    local Frame = Instance.new("Frame", _mspaint_custom_captions)
-    local TextLabel = Instance.new("TextLabel", Frame)
-    local UITextSizeConstraint = Instance.new("UITextSizeConstraint", TextLabel)
+    local Frame = Instance.new("Frame")
+    local TextLabel = Instance.new("TextLabel")
+    local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
 
     _mspaint_custom_captions.Parent = ReplicatedStorage
     _mspaint_custom_captions.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -368,6 +368,7 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
     Frame.BorderSizePixel = 2
     Frame.Position = UDim2.new(0.5, 0, 0.8, 0)
     Frame.Size = UDim2.new(0, 200, 0, 75)
+    Frame.Parent = _mspaint_custom_captions
 
     TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     TextLabel.BackgroundTransparency = 1.000
@@ -380,8 +381,10 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
     TextLabel.TextScaled = true
     TextLabel.TextSize = 14
     TextLabel.TextWrapped = true
+    TextLabel.Parent = Frame
 
     UITextSizeConstraint.MaxTextSize = 35
+    UITextSizeConstraint.Parent = TextLabel
 
     function Script.Functions.Captions(caption: string)
         if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
@@ -794,11 +797,12 @@ function Script.Functions.Minecart.Teleport(roomNum: number)
     if roomNum == 45 and not isMinecartTeleporting then
         isMinecartTeleporting = true
         task.spawn(function()
-            local progressPart = Instance.new("Part", workspace) do
+            local progressPart = Instance.new("Part") do
                 progressPart.Anchored = true
                 progressPart.CanCollide = false
                 progressPart.Name = "_internal_mspaint_minecart_teleport"
                 progressPart.Transparency = 1
+		progressPart.Parent = workspace
             end
             Script.Functions.Alert("[Minecart-Teleport] Minecart teleport is ready! Waiting for the minecart...", progressPart)
 
@@ -1677,12 +1681,13 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             rootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
         end
 
-        velocityLimiter = Instance.new("LinearVelocity", character)
+        velocityLimiter = Instance.new("LinearVelocity")
         velocityLimiter.Enabled = false
         velocityLimiter.MaxForce = math.huge
         velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
         velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
         velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
+	velocityLimiter.Parent = character
 
         Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
             local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
@@ -2039,11 +2044,12 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", SoundService) do
+        local sound = Instance.new("Sound") do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
             sound:Destroy()
+	    sound.Parent = SoundService
         end
     end
 end
@@ -2771,11 +2777,12 @@ task.spawn(function()
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
-                local progressPart = Instance.new("Part", Workspace) do
+                local progressPart = Instance.new("Part") do
                     progressPart.Anchored = true
                     progressPart.CanCollide = false
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
                     progressPart.Transparency = 1
+		    progressPart.Parent = Workspace
                 end
 
                 if Library.IsMobile then
@@ -2866,7 +2873,7 @@ task.spawn(function()
             local clientRemote = ReplicatedStorage.FloorReplicated.ClientRemote
             local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
             
-            if not internal_temp_mspaint then internal_temp_mspaint = Instance.new("Folder", clientRemote); internal_temp_mspaint.Name = "_mspaint" end
+            if not internal_temp_mspaint then internal_temp_mspaint = Instance.new("Folder"); internal_temp_mspaint.Name = "_mspaint"; internal_temp_mspaint.Parent = clientRemote end
 
             if value then
                 for i,v in pairs(clientRemote.Haste:GetChildren()) do
@@ -2955,8 +2962,9 @@ task.spawn(function()
             return workspace.CurrentRooms[latestRoom.Value].Door.Door
         end
 
-        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
+        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder") do
             _internal_mspaint_pathfinding_nodes.Name = "_internal_mspaint_pathfinding_nodes"
+	    _internal_mspaint_pathfinding_nodes.Parent = Workspace
         end
 
         Toggles.ShowAutoRoomsPathNodes:OnChanged(function(value)
@@ -3023,7 +3031,7 @@ task.spawn(function()
                         _internal_mspaint_pathfinding_nodes:ClearAllChildren()
 
                         for i, waypoint in pairs(waypoints) do
-                            local node = Instance.new("Part", _internal_mspaint_pathfinding_nodes) do
+                            local node = Instance.new("Part") do
                                 node.Name = "_internal_node_" .. i
                                 node.Size = Vector3.new(1, 1, 1)
                                 node.Position = waypoint.Position
@@ -3032,6 +3040,7 @@ task.spawn(function()
                                 node.Shape = Enum.PartType.Ball
                                 node.Color = Color3.new(1, 0, 0)
                                 node.Transparency = Toggles.ShowAutoRoomsPathNodes.Value and 0.5 or 1
+				node.Parent = _internal_mspaint_pathfinding_nodes
                             end
                         end
 
@@ -3691,9 +3700,10 @@ Toggles.FakeRevive:OnChanged(function(value)
 
 			-- Tool Handler (kinda broken) --
 			if character:WaitForChild("RightHand", math.huge) then
-				local rightGrip = Instance.new("Weld", character.RightHand)
+				local rightGrip = Instance.new("Weld")
 				rightGrip.C0 = CFrame.new(0, -0.15, -1.5, 1, 0, -0, 0, 0, 1, 0, -1, 0)
 				rightGrip.Part0 = character.RightHand
+				rightGrip.Parent = character.RightHand
 		
 				local toolsAnim = {}
 				local currentTool = nil
@@ -4498,11 +4508,12 @@ if isBackdoor then
 
     Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", Workspace) do
+            haste_incoming_progress = Instance.new("Part") do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
                 haste_incoming_progress.Transparency = 1
+		haste_incoming_progress.Parent = Workspace
             end
 
             Script.Functions.Alert("Haste is incoming, please find a lever ASAP!", haste_incoming_progress)
