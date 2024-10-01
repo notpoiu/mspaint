@@ -1,5 +1,5 @@
 local HttpService = game:GetService("HttpService")
-local baseURL = "https://github.com/Fuydutdtu/mspaintv3omg/blob/main"
+local baseURL = "https://raw.githubusercontent.com/Fuydutdtu/mspaintv3omg/refs/heads/main"
 
 export type gameMapping = {
     exclusions: table?,
