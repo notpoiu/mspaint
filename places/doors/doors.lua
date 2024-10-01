@@ -2048,8 +2048,8 @@ function Script.Functions.Alert(message: string, duration: number | nil)
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
-            sound:Destroy()
 	    sound.Parent = SoundService
+            sound:Destroy()
         end
     end
 end
