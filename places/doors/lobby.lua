@@ -22,9 +22,86 @@ end
 --// Variables \\--
 local Script = {
     CurrentBadge = 0,
-    Achievements = {},
+    Achievements = {
+        "SurviveWithoutHiding",
+        "SurviveGloombats",
+        "SurviveSeekMinesSecond",
+        "TowerHeroesGoblino",
+        "EscapeBackdoor",
+        "SurviveFiredamp",
+        "CrucifixDread",
+        "EnterRooms",
+        "EncounterVoid",
+        "Join",
+        "DeathAmt100",
+        "UseCrucifix",
+        "EncounterSpider",
+        "SurviveHalt",
+        "SurviveRush",
+        "DeathAmt10",
+        "Revive",
+        "PlayFriend",
+        "SurviveNest",
+        "CrucifixFigure",
+        "CrucifixAmbush",
+        "PlayerBetrayal",
+        "SurviveEyes",
+        "KickGiggle",
+        "EscapeMines",
+        "GlowstickGiggle",
+        "DeathAmt1",
+        "SurviveSeek",
+        "UseRiftMutate",
+        "CrucifixGloombatSwarm",
+        "SurviveScreech",
+        "SurviveDread",
+        "SurviveSeekMinesFirst",
+        "CrucifixHalt",
+        "TowerHeroesVoid",
+        "JoinLSplash",
+        "CrucifixDupe",
+        "EncounterGlitch",
+        "JeffShop",
+        "CrucifixScreech",
+        "SurviveGiggle",
+        "EscapeHotelMod1",
+        "SurviveDupe",
+        "CrucifixRush",
+        "EscapeBackdoorHunt",
+        "EscapeHotel",
+        "CrucifixGiggle",
+        "EscapeFools",
+        "UseRift",
+        "SpecialQATester",
+        "EscapeRetro",
+        "TowerHeroesHard",
+        "EnterBackdoor",
+        "EscapeRooms1000",
+        "EscapeRooms",
+        "EscapeHotelMod2",
+        "EncounterMobble",
+        "CrucifixGrumble",
+        "UseHerbGreen",
+        "CrucifixSeek",
+        "JeffTipFull",
+        "SurviveFigureLibrary",
+        "TowerHeroesHotel",
+        "CrucifixEyes",
+        "BreakerSpeedrun",
+        "SurviveAmbush",
+        "SurviveHide",
+        "JoinAgain"
+    },
     Functions = {}
 }
+
+if ExecutorSupport["require"] then
+    for achievementName, _ in pairs(require(game:GetService("ReplicatedStorage").Achievements)) do
+        if table.find(Script.Achievements, achievementName) then continue end
+
+        table.insert(Script.Achievements, achievementName)
+    end
+end
 
 local localPlayer = Players.LocalPlayer
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
@@ -68,19 +145,6 @@ local Tabs = {
 
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
-end
-
-function Script.Functions.SetupVariables()
-    local badgeList = achievementsFrame:FindFirstChild("List")
-    if badgeList then
-        for _, badge in pairs(badgeList:GetChildren()) do
-            local question = badge:FindFirstChild("Question", true)
-
-            if question and question.Visible == false then
-                table.insert(Script.Achievements, badge.Name)
-            end
-        end
-    end
 end
 
 function Script.Functions.LoopAchievements()
@@ -178,8 +242,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 end))
 
 --// Script Load \\--
-
-task.spawn(Script.Functions.SetupVariables)
 
 --// Library Load \\--
 

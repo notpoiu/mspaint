@@ -73,6 +73,14 @@ local Script = {
     }
 }
 
+local WhitelistConfig = {
+    [45] = {firstKeep = 3, lastKeep = 2},
+    [46] = {firstKeep = 2, lastKeep = 2},
+    [47] = {firstKeep = 2, lastKeep = 2},
+    [48] = {firstKeep = 2, lastKeep = 2},
+    [49] = {firstKeep = 2, lastKeep = 4},
+}
+
 local EntityTable = {
     ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
     ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
@@ -724,26 +732,96 @@ function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
     table.insert(MinecartPathfind, buildPathfind) --add to table
 
     Script.Functions.Minecart.DrawNodes()
-    --add the ESP ToggleCheck if enabled.
-    --if true then
-        
-    --end    
 
     --[[
-    if (roomNum >= 45) then --Functions AFTER this, is for processing on minecart chase only.
-
-        --add the Teleport Exploit ToggleCheck if enabled.
-
-        --if [THE TOOGLE HERE] then
-            --Start destroying nodes
-            Script.Functions.Minecart.NodeDestroy(roomNum)
-
-            --Start the Teleport module if the last room added is 45. 
-            ---Meaning that if last room >= 45 you can't enable Minecart.Teleport (TODO, fix that.)
-            Script.Functions.Minecart.Teleport(roomNum)
-        --end
+    if (lastRoom >= 40 and lastRoom <= 49) and Toggles.TheMinesSeekMinecartTP.Value then
+        Script.Functions.Minecart.NodeDestroy(tonumber(room.Name))
+        Script.Functions.Minecart.Teleport(tonumber(room.Name))
     end]]
 end
+
+--[[
+function Script.Functions.Minecart.NodeDestroy(roomNum: number)
+    local roomConfig = WhitelistConfig[roomNum]
+    if not roomConfig then return end
+
+    local _firstKeep = roomConfig.firstKeep
+    local _lastKeep  = roomConfig.lastKeep
+
+    local realNodes = nil
+    local fakeNodes = nil
+    for _, path: tPathfind in ipairs(MinecartPathfind) do
+        if path.room_number ~= roomNum then continue end
+        if path.destroyed then continue end
+
+        realNodes = path.real
+        fakeNodes = path.fake
+    end
+
+    if realNodes then
+        local _removeTotal = #realNodes - (_firstKeep + _lastKeep) --remove nodes that arent in the first or last
+        for idx=1, _removeTotal do
+            local node = realNodes[_firstKeep + 1]
+            --changeNodeColor(node, NodeColors.Orange) --debug only
+            node:Destroy()
+            
+            table.remove(realNodes, _firstKeep + 1)
+        end
+    else
+        print("[NodeDestroy] Unable to destroy REAL nodes.")
+    end
+
+    if fakeNodes then
+        --Destroy all the fake nodes
+        for _, node in ipairs(fakeNodes) do
+            node:Destroy()
+        end
+        fakeNodes = {} --if we now all the nodes will be destroyed then just make that.
+    else
+        print("[NodeDestroy] Unable to destroy FAKE nodes.")
+    end
+
+    print(string.format("[NodeDestroy] Task completed, remaining: Real nodes: %d | Fake nodes %s", #realNodes, #fakeNodes))
+end
+
+local isMinecartTeleporting = false --for debug purpouses.
+function Script.Functions.Minecart.Teleport(roomNum: number)
+    if roomNum == 45 and not isMinecartTeleporting then
+        isMinecartTeleporting = true
+        task.spawn(function()
+            local progressPart = Instance.new("Part", workspace) do
+                progressPart.Anchored = true
+                progressPart.CanCollide = false
+                progressPart.Name = "_internal_mspaint_minecart_teleport"
+                progressPart.Transparency = 1
+            end
+            Script.Functions.Alert("[Minecart-Teleport] Minecart teleport is ready! Waiting for the minecart...", progressPart)
+
+            local minecartRig = camera:WaitForChild("MinecartRig", math.huge)
+            local minecartCart = minecartRig:WaitForChild("Cart", math.huge)
+
+            if workspace:FindFirstChild("_internal_mspaint_minecart_teleport") then workspace:FindFirstChild("_internal_mspaint_minecart_teleport"):Destroy() end
+            task.wait(3)
+
+            -- in order of insertion, should work just fine.
+            for idx, path: tPathfind in ipairs(MinecartPathfind) do
+                local roomOfThePath = path.room_number
+
+                if roomOfThePath >= 45 then -- ignore ground chase
+                    local getLastNode = path.real[#path.real]
+                    local roomOfTheNode = getLastNode.Parent.Parent
+
+                    minecartCart.CFrame = getLastNode.CFrame --almost 1000 lines of code just to do that. Think about that...
+
+                    repeat task.wait() until workspace.CurrentRooms[tostring(currentRoom)]:WaitForChild("Door"):GetAttribute("Opened")
+                    if currentRoom == 49 then break end
+                end
+            end
+
+        end)
+    end
+end]]
+
 
 --If ESP Toggle is changed, you can call this function directly.
 function Script.Functions.Minecart.DrawNodes()
@@ -2675,7 +2753,6 @@ task.spawn(function()
                 Text = "Anticheat Bypass",
                 Default = false
             })
-
         end
         
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
@@ -4766,6 +4843,14 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
+
+    if isMines and bypassed and currentRoomModel:GetAttribute("RawName") == "HaltHallway" then
+        bypassed = false
+        Script.Functions.Alert("Halt has broken anticheat bypass, please go on a ladder again to fix it.", 5)
+
+        Options.SpeedSlider:SetMax(Toggles.SpeedBypass.Value and 45 or (Toggles.EnableJump.Value and 3 or 7))
+        Options.FlySpeed:SetMax(Toggles.SpeedBypass.Value and 75 or 22)
+    end
 
     if Toggles.DoorESP.Value then
         for _, doorEsp in pairs(Script.ESPTable.Door) do
