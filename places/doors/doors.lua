@@ -212,6 +212,10 @@ local PromptTable = {
         Parent = {
             "KeyObtainFake",
             "Padlock"
+        },
+
+        ModelAncestor = {
+            "DoorFake"
         }
     }
 }
@@ -1353,7 +1357,7 @@ function Script.Functions.CameraCheck(child)
 end
 
 function Script.Functions.ChildCheck(child)
-    if child:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, child.Name) and not table.find(PromptTable.Excluded.Parent, child.Parent and child.Parent.Name or "")) then
+    if Script.Functions.PromptCondition(child) then
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
             if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
@@ -1370,15 +1374,6 @@ function Script.Functions.ChildCheck(child)
     
             if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.ClipObjects, child.Parent.Name)) then
                 child.RequiresLineOfSight = false
-                if child.Name == "ModulePrompt" then
-                    child.Enabled = true
-    
-                    Script.FeatureConnections.Clip[child] = child:GetPropertyChangedSignal("Enabled"):Connect(function()
-                        if Toggles.PromptClip.Value then
-                            child.Enabled = true
-                        end
-                    end)
-                end
             end
         end)
 
@@ -1458,6 +1453,16 @@ function Script.Functions.ItemCondition(item)
     return item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID")
 end
 
+function Script.Functions.PromptCondition(prompt)
+    local modelAncestor = prompt:FindFirstAncestorOfClass("Model")
+    return 
+        prompt:IsA("ProximityPrompt") and (
+            not table.find(PromptTable.Excluded.Prompt, prompt.Name) 
+            and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "") 
+            and not (table.find(PromptTable.Excluded.ModelAncestor, modelAncestor and modelAncestor.Name or ""))
+        )
+end
+
 function Script.Functions.SetupCameraConnection(camera)
     for _, child in pairs(camera:GetChildren()) do
         task.spawn(Script.Functions.CameraCheck, child)
@@ -1484,22 +1489,23 @@ end
 
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
-        task.spawn(Script.Functions.ChildCheck, child)
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
             	Script.Functions.DeleteSeek(child)
             end
         end)
+
+        task.spawn(Script.Functions.ChildCheck, child)
     end
 
     Script.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
-        task.delay(0.1, Script.Functions.ChildCheck, child)
-        
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
             	Script.Functions.DeleteSeek(child)
             end
         end)
+
+        task.delay(0.1, Script.Functions.ChildCheck, child)
     end)
 end
 
@@ -1846,7 +1852,7 @@ function Script.Functions.DisableDupe(dupeRoom, value, isSpaceRoom)
         if doorFake then
             doorFake:WaitForChild("Hidden", 5).CanTouch = not value
     
-            local lock = doorFake:WaitForChild("LockPart", 5)
+            local lock = doorFake:WaitForChild("Lock", 5)
             if lock and lock:FindFirstChild("UnlockPrompt") then
                 lock.UnlockPrompt.Enabled = not value
             end
@@ -3350,21 +3356,10 @@ end)
 
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
+        if Script.Functions.PromptCondition(prompt) then
             if value then
                 prompt.RequiresLineOfSight = false
-                if prompt.Name == "ModulePrompt" then
-                    prompt.Enabled = true
-    
-                    Script.FeatureConnections.Clip[prompt] = prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
-                        if Toggles.PromptClip.Value then
-                            prompt.Enabled = true
-                        end
-                    end)
-                end
             else
-                if Script.FeatureConnections.Clip[prompt] then Script.FeatureConnections.Clip[prompt]:Disconnect() end
-
                 if prompt:GetAttribute("Enabled") and prompt:GetAttribute("Clip") then
                     prompt.Enabled = prompt:GetAttribute("Enabled")
                     prompt.RequiresLineOfSight = prompt:GetAttribute("Clip")
@@ -3376,7 +3371,7 @@ end)
 
 Options.PromptReachMultiplier:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) then
+        if Script.Functions.PromptCondition(prompt) then
             if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
 
             prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
