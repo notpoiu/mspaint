@@ -4848,9 +4848,12 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
 
-    if isMines and bypassed and currentRoomModel:GetAttribute("RoomName") == "HaltHallway" then
+    if isMines and bypassed and currentRoomModel:GetAttribute("RawName") == "HaltHallway" then
         bypassed = false
         Script.Functions.Alert("Halt has broken anticheat bypass, please go on a ladder again to fix it.", 5)
+
+        Options.SpeedSlider:SetMax(Toggles.SpeedBypass.Value and 45 or (Toggles.EnableJump.Value and 3 or 7))
+        Options.FlySpeed:SetMax(Toggles.SpeedBypass.Value and 75 or 22)
     end
 
     if Toggles.DoorESP.Value then
