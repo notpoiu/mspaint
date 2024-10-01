@@ -15,6 +15,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local Workspace = game:GetService("Workspace")
 
 --// Loading Wait \\--
 if not game.IsLoaded then game.Loaded:Wait() end
@@ -212,6 +213,10 @@ local PromptTable = {
         Parent = {
             "KeyObtainFake",
             "Padlock"
+        },
+
+        ModelAncestor = {
+            "DoorFake"
         }
     }
 }
@@ -1286,7 +1291,7 @@ function Script.Functions.GuidingLightEsp(guidance)
     part.Name = "_Guidance"
 
     part:ClearAllChildren()
-    part.Parent = workspace
+    part.Parent = Workspace
 
     Script.Temp.Guidance[guidance] = part
 
@@ -1353,7 +1358,7 @@ function Script.Functions.CameraCheck(child)
 end
 
 function Script.Functions.ChildCheck(child)
-    if child:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, child.Name) and not table.find(PromptTable.Excluded.Parent, child.Parent and child.Parent.Name or "")) then
+    if Script.Functions.PromptCondition(child) then
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
             if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
@@ -1368,17 +1373,8 @@ function Script.Functions.ChildCheck(child)
                 child.HoldDuration = 0
             end
     
-            if Toggles.PromptClip.Value and (table.find(PromptTable.Clip, child.Name) or table.find(PromptTable.ClipObjects, child.Parent.Name)) then
+            if Toggles.PromptClip.Value and Script.Functions.PromptCondition(child) then
                 child.RequiresLineOfSight = false
-                if child.Name == "ModulePrompt" then
-                    child.Enabled = true
-    
-                    Script.FeatureConnections.Clip[child] = child:GetPropertyChangedSignal("Enabled"):Connect(function()
-                        if Toggles.PromptClip.Value then
-                            child.Enabled = true
-                        end
-                    end)
-                end
             end
         end)
 
@@ -1458,6 +1454,16 @@ function Script.Functions.ItemCondition(item)
     return item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID")
 end
 
+function Script.Functions.PromptCondition(prompt)
+    local modelAncestor = prompt:FindFirstAncestorOfClass("Model")
+    return 
+        prompt:IsA("ProximityPrompt") and (
+            not table.find(PromptTable.Excluded.Prompt, prompt.Name) 
+            and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "") 
+            and not (table.find(PromptTable.Excluded.ModelAncestor, modelAncestor and modelAncestor.Name or ""))
+        )
+end
+
 function Script.Functions.SetupCameraConnection(camera)
     for _, child in pairs(camera:GetChildren()) do
         task.spawn(Script.Functions.CameraCheck, child)
@@ -1484,22 +1490,23 @@ end
 
 function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
-        task.spawn(Script.Functions.ChildCheck, child)
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
             	Script.Functions.DeleteSeek(child)
             end
         end)
+
+        task.spawn(Script.Functions.ChildCheck, child)
     end
 
     Script.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
-        task.delay(0.1, Script.Functions.ChildCheck, child)
-        
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
             	Script.Functions.DeleteSeek(child)
             end
         end)
+
+        task.delay(0.1, Script.Functions.ChildCheck, child)
     end)
 end
 
@@ -1846,7 +1853,7 @@ function Script.Functions.DisableDupe(dupeRoom, value, isSpaceRoom)
         if doorFake then
             doorFake:WaitForChild("Hidden", 5).CanTouch = not value
     
-            local lock = doorFake:WaitForChild("LockPart", 5)
+            local lock = doorFake:WaitForChild("Lock", 5)
             if lock and lock:FindFirstChild("UnlockPrompt") then
                 lock.UnlockPrompt.Enabled = not value
             end
@@ -2032,7 +2039,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", workspace) do
+        local sound = Instance.new("Sound", Workspace) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
@@ -2764,7 +2771,7 @@ task.spawn(function()
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
-                local progressPart = Instance.new("Part", workspace) do
+                local progressPart = Instance.new("Part", Workspace) do
                     progressPart.Anchored = true
                     progressPart.CanCollide = false
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
@@ -2948,7 +2955,7 @@ task.spawn(function()
             return workspace.CurrentRooms[latestRoom.Value].Door.Door
         end
 
-        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", workspace) do
+        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
             _internal_mspaint_pathfinding_nodes.Name = "_internal_mspaint_pathfinding_nodes"
         end
 
@@ -3350,21 +3357,10 @@ end)
 
 Toggles.PromptClip:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do        
-        if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) and (table.find(PromptTable.Clip, prompt.Name) or table.find(PromptTable.ClipObjects, prompt.Parent.Name)) then
+        if Script.Functions.PromptCondition(prompt) then
             if value then
                 prompt.RequiresLineOfSight = false
-                if prompt.Name == "ModulePrompt" then
-                    prompt.Enabled = true
-    
-                    Script.FeatureConnections.Clip[prompt] = prompt:GetPropertyChangedSignal("Enabled"):Connect(function()
-                        if Toggles.PromptClip.Value then
-                            prompt.Enabled = true
-                        end
-                    end)
-                end
             else
-                if Script.FeatureConnections.Clip[prompt] then Script.FeatureConnections.Clip[prompt]:Disconnect() end
-
                 if prompt:GetAttribute("Enabled") and prompt:GetAttribute("Clip") then
                     prompt.Enabled = prompt:GetAttribute("Enabled")
                     prompt.RequiresLineOfSight = prompt:GetAttribute("Clip")
@@ -3376,7 +3372,7 @@ end)
 
 Options.PromptReachMultiplier:OnChanged(function(value)
     for _, prompt in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") and (not table.find(PromptTable.Excluded.Prompt, prompt.Name) and not table.find(PromptTable.Excluded.Parent, prompt.Parent and prompt.Parent.Name or "")) then
+        if Script.Functions.PromptCondition(prompt) then
             if not prompt:GetAttribute("Distance") then prompt:SetAttribute("Distance", prompt.MaxActivationDistance) end
 
             prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
@@ -3619,7 +3615,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 		humanoidDescription.HeightScale = 1.2
 
 		local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
-			previewCharacter.Parent = workspace
+			previewCharacter.Parent = Workspace
 			previewCharacter.Name = "PreviewCharacter"
 
 			previewCharacter.HumanoidRootPart.Anchored = true
@@ -4502,7 +4498,7 @@ if isBackdoor then
 
     Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", workspace) do
+            haste_incoming_progress = Instance.new("Part", Workspace) do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
