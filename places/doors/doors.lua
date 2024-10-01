@@ -15,6 +15,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local Workspace = game:GetService("Workspace")
 
 --// Loading Wait \\--
 if not game.IsLoaded then game.Loaded:Wait() end
@@ -1290,7 +1291,7 @@ function Script.Functions.GuidingLightEsp(guidance)
     part.Name = "_Guidance"
 
     part:ClearAllChildren()
-    part.Parent = workspace
+    part.Parent = Workspace
 
     Script.Temp.Guidance[guidance] = part
 
@@ -2038,7 +2039,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", workspace) do
+        local sound = Instance.new("Sound", Workspace) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
@@ -2770,7 +2771,7 @@ task.spawn(function()
 
         Toggles.TheMinesAnticheatBypass:OnChanged(function(value)
             if value then
-                local progressPart = Instance.new("Part", workspace) do
+                local progressPart = Instance.new("Part", Workspace) do
                     progressPart.Anchored = true
                     progressPart.CanCollide = false
                     progressPart.Name = "_internal_mspaint_acbypassprogress"
@@ -2954,7 +2955,7 @@ task.spawn(function()
             return workspace.CurrentRooms[latestRoom.Value].Door.Door
         end
 
-        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", workspace) do
+        local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
             _internal_mspaint_pathfinding_nodes.Name = "_internal_mspaint_pathfinding_nodes"
         end
 
@@ -3614,7 +3615,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 		humanoidDescription.HeightScale = 1.2
 
 		local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
-			previewCharacter.Parent = workspace
+			previewCharacter.Parent = Workspace
 			previewCharacter.Name = "PreviewCharacter"
 
 			previewCharacter.HumanoidRootPart.Anchored = true
@@ -4497,7 +4498,7 @@ if isBackdoor then
 
     Library:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", workspace) do
+            haste_incoming_progress = Instance.new("Part", Workspace) do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
