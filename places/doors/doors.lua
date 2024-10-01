@@ -2039,7 +2039,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", Workspace) do
+        local sound = Instance.new("Sound", SoundService) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
