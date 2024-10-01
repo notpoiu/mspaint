@@ -95,14 +95,6 @@ local Script = {
     Functions = {}
 }
 
-if ExecutorSupport["require"] then
-    for achievementName, _ in pairs(require(game:GetService("ReplicatedStorage").Achievements)) do
-        if table.find(Script.Achievements, achievementName) then continue end
-
-        table.insert(Script.Achievements, achievementName)
-    end
-end
-
 local localPlayer = Players.LocalPlayer
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 
@@ -145,6 +137,28 @@ local Tabs = {
 
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Functions.SetupVariables()
+    if ExecutorSupport["require"] then
+        for achievementName, _ in pairs(require(game:GetService("ReplicatedStorage").Achievements)) do
+            if table.find(Script.Achievements, achievementName) then continue end
+    
+            table.insert(Script.Achievements, achievementName)
+        end
+    else
+        local badgeList = achievementsFrame:WaitForChild("List", math.huge)
+
+        if badgeList then
+            repeat task.wait() until #badgeList:GetChildren() ~= 0
+    
+            for _, badge in pairs(badgeList:GetChildren()) do
+                if table.find(Script.Achievements, badge.Name) then continue end
+                
+                table.insert(Script.Achievements, badge.Name)
+            end
+        end
+    end
 end
 
 function Script.Functions.LoopAchievements()
@@ -242,6 +256,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 end))
 
 --// Script Load \\--
+task.spawn(Script.Functions.SetupVariables)
 
 --// Library Load \\--
 
