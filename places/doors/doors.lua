@@ -67,6 +67,7 @@ local Script = {
     Temp = {
         AnchorFinished = {},
         AutoWardrobeEntities = {},
+        Bridges = {},
         FlyBody = nil,
         Guidance = {},
         PaintingDebounce = false,
@@ -1441,6 +1442,19 @@ function Script.Functions.ChildCheck(child)
             child.Material = Enum.Material.Plastic
             child.Reflectance = 0
         end
+
+        if isMines then
+            if Toggles.AntiBridgeFall.Value and child.Name == "PlayerBarrier" and child.Size.Y == 2.75 and (child.Rotation.X == 0 or child.Rotation.X == 180) then
+                local clone = child:Clone()
+                clone.CFrame = clone.CFrame * CFrame.new(0, 0, -5)
+                clone.Color = Color3.new(1, 1, 1)
+                clone.Name = "AntiBridge"
+                clone.Size = Vector3.new(clone.Size.X, clone.Size.Y, 11)
+                clone.Parent = child.Parent
+                
+                table.insert(Script.Temp.Bridges, clone)
+            end
+        end
     elseif child:IsA("Decal") and Toggles.AntiLag.Value then
         if not child:GetAttribute("Transparency") then child:SetAttribute("Transparency", child.Transparency) end
 
@@ -2039,7 +2053,7 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     Library:Notify(message, duration or 5)
 
     if Toggles.NotifySound.Value then
-        local sound = Instance.new("Sound", Workspace) do
+        local sound = Instance.new("Sound", SoundService) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = 2
             sound.PlayOnRemove = true
@@ -2689,7 +2703,12 @@ task.spawn(function()
             })
 
             Mines_AntiEntityGroupBox:AddToggle("AntiGloomEgg", {
-                Text = "Anti-GloomEgg",
+                Text = "Anti-Gloom Egg",
+                Default = false
+            })
+
+            Mines_AntiEntityGroupBox:AddToggle("AntiBridgeFall", {
+                Text = "Anti-Bridge Fall",
                 Default = false
             })
         end
@@ -2840,6 +2859,35 @@ task.spawn(function()
                             end
                         end
                     end
+                end
+            end
+        end)
+
+        Toggles.AntiBridgeFall:OnChanged(function(value)
+            if value then
+                for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                    if not room:FindFirstChild("Parts") then continue end
+    
+                    for _, bridge in pairs(room.Parts:GetChildren()) do
+                        if bridge.Name == "Bridge" then
+                            for _, barrier in pairs(bridge:GetChildren()) do
+                                if not (barrier.Name == "PlayerBarrier" and barrier.Size.Y == 2.75 and (barrier.Rotation.X == 0 or barrier.Rotation.X == 180)) then continue end
+
+                                local clone = barrier:Clone()
+                                clone.CFrame = clone.CFrame * CFrame.new(0, 0, -5)
+                                clone.Color = Color3.new(1, 1, 1)
+                                clone.Name = "AntiBridge"
+                                clone.Size = Vector3.new(clone.Size.X, clone.Size.Y, 11)
+                                clone.Parent = bridge
+                                
+                                table.insert(Script.Temp.Bridges, clone)
+                            end
+                        end
+                    end
+                end
+            else
+                for _, bridge in pairs(Script.Temp.Bridges) do
+                    bridge:Destroy()
                 end
             end
         end)
@@ -5503,6 +5551,8 @@ Library:OnUnload(function()
     end
 
     if collisionClone then collisionClone:Destroy() end
+
+    for _, antiBridge in pairs(Script.Temp.Bridges) do antiBridge:Destroy() end
     if Script.Temp.FlyBody then Script.Temp.FlyBody:Destroy() end
 
     for _, espType in pairs(Script.ESPTable) do
