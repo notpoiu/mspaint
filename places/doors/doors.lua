@@ -346,9 +346,8 @@ local Tabs = {
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
     Floor = Window:AddTab("Floor"),
-    CustomTab = Window:AddTab("Custom")
-	["UI Settings"] = Window:AddTab("UI Settings"),
-}
+    CustomTab = Window:AddTab("Custom"),
+	["UI Settings"] = Window:AddTab("UI Settings"), }
 
 local _mspaint_custom_captions = Instance.new("ScreenGui") do
     local Frame = Instance.new("Frame", _mspaint_custom_captions)
