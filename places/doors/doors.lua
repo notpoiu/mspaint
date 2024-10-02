@@ -925,7 +925,14 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
     end
 
     local NotifPrefix = "Auto " .. HidingPlaceName[floor.Value];
-    if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Looking for a hiding spot...") end
+    
+    Script.Functions.Log({
+        Title = NotifPrefix,
+        Description = "Looking for a hiding place",
+
+        LinoriaMessage = "[" .. NotifPrefix .. "] Looking for a hiding spot..."
+    }, Toggles.AutoWardrobeNotif.Value)
+
     local entityIndex = #Script.Temp.AutoWardrobeEntities + 1
     Script.Temp.AutoWardrobeEntities[entityIndex] = child
 
@@ -959,7 +966,12 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
     if not Toggles.AutoWardrobe.Value or not alive or Library.Unloaded then return end  
 
     -- Hide
-    if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Starting...") end
+    Script.Functions.Log({
+        Title = NotifPrefix,
+        Description = "Starting...",
+
+        LinoriaMessage = "[" .. NotifPrefix .. "] Starting..."
+    }, Toggles.AutoWardrobeNotif.Value)
 
     local exclusion = Script.Functions.GenerateAutoWardrobeExclusions(targetWardrobePrompt)
     local atempts, maxAtempts = 0, 60
@@ -997,18 +1009,38 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
         	repeat task.wait(.15)
                 local isSafe = isSafeCheck()
                 if didPlayerSeeEntity == true and isSafe == true then
-                    if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Exiting the locker, entity is far away.") end              
-                	break
+                    Script.Functions.Log({
+                        Title = NotifPrefix,
+                        Description = "Exiting the locker, entity is far away.",
+                        
+                        LinoriaMessage = "[" .. NotifPrefix .. "] Exiting the locker, entity is far away."
+                    }, Toggles.AutoWardrobeNotif.Value)
+
+                    break
                 else
                     if isSafe == true and not child:IsDescendantOf(workspace) then 
-                        if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Exiting the locker, entity is deleted.") end           
-                    	break 
+                        Script.Functions.Log({
+                            Title = NotifPrefix,
+                            Description = "Exiting the locker, entity is deleted.",
+                            
+                            LinoriaMessage = "[" .. NotifPrefix .. "] Exiting the locker, entity is deleted."
+                        }, Toggles.AutoWardrobeNotif.Value)
+
+                        break 
                     end          
                 end
 
                 if not alive then  
                     if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Stopping (you died).") end             
-                	break 
+                	Script.Functions.Log({
+                        Title = NotifPrefix,
+                        Description = "Stopping (you died)",
+                        
+                        LinoriaMessage = "[" .. NotifPrefix .. "] Stopping (you died)."
+                    }, Toggles.AutoWardrobeNotif.Value)
+
+                    
+                    break 
                 end                             
             until false == true          
         end
@@ -1045,14 +1077,26 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
         end)
 
     	repeat task.wait()
-            if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Waiting for Ambush to be close enough...") end
+            Script.Functions.Log({
+                Title = NotifPrefix,
+                Description = "Waiting for Ambush to be close enough...",
+
+                LinoriaMessage = "[" .. NotifPrefix .. "] Waiting for Ambush to be close enough...",
+            }, Toggles.AutoWardrobeNotif.Value)
+
             repeat task.wait() until (IsMoving == true and Script.Functions.DistanceFromCharacter(child:GetPivot().Position) <= distance) or (not child or not child:IsDescendantOf(workspace))
             if not child or not child:IsDescendantOf(workspace) then break end
             
             local success = hide()
             if success then
-                if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Waiting for it to be safe to exit...") end
-            	repeat task.wait() until (IsMoving == false and Script.Functions.DistanceFromCharacter(child:GetPivot().Position) >= distance) or (not child or not child:IsDescendantOf(workspace));
+                Script.Functions.Log({
+                    Title = NotifPrefix,
+                    Description = "Waiting for it to be safe to exit...",
+
+                    LinoriaMessage = "[" .. NotifPrefix .. "] Waiting for it to be safe to exit...",
+                }, Toggles.AutoWardrobeNotif.Value)
+
+                repeat task.wait() until (IsMoving == false and Script.Functions.DistanceFromCharacter(child:GetPivot().Position) >= distance) or (not child or not child:IsDescendantOf(workspace));
                 if not child or not child:IsDescendantOf(workspace) then break end
 
                 remotesFolder.CamLock:FireServer()
@@ -1074,7 +1118,12 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
     end
 
     table.remove(Script.Temp.AutoWardrobeEntities, entityIndex)
-    if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Finished.") end
+    Script.Functions.Log({
+        Title = NotifPrefix,
+        Description = "Finished.",
+
+        LinoriaMessage = "[" .. NotifPrefix .. "] Finished.",
+    }, Toggles.AutoWardrobeNotif.Value)
 end
 
 function Script.Functions.ESP(args: ESP)
@@ -2038,7 +2087,10 @@ function Script.Functions.DeleteSeek(collision: BasePart)
             end
             
             if not collision:IsDescendantOf(workspace) then
-                Script.Functions.Log("Deleted Seek trigger successfully!")
+                Script.Functions.Log({
+                    Title = "Delete Seek FE",
+                    Description = "Deleted Seek trigger successfully!",
+                })
             end
         end
     end)
@@ -2271,15 +2323,17 @@ function Script.Functions.Alert(options)
     end
 end
 
-function Script.Functions.Log(options)
+function Script.Functions.Log(options, condition: boolean | nil)
     repeat task.wait() until getgenv().mspaint_loaded
-
+    
     if Options.NotifyStyle.Value == "Linoria" then
         local linoriaMessage = options["LinoriaMessage"] or options.Description
         options.Description = linoriaMessage
         
-        Script.Functions.Notifs.Linoria.Log(options)
+        Script.Functions.Notifs.Linoria.Log(options, condition)
     elseif Options.NotifyStyle.Value == "Doors" then
+        if not condition and typeof(condition) == "boolean" then return end
+
         options["NotificationType"] = "LOGGING"
         options["Color"] = Color3.fromRGB(0, 102, 255)
 
@@ -3316,7 +3370,10 @@ task.spawn(function()
                 local function doAutoRooms()
                     local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
-                    Script.Functions.Log("Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...", 5, Toggles.AutoRoomsDebug.Value)
+                    Script.Functions.Log({
+                        Title = "Auto Rooms",
+                        Description = "Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...",
+                    }, Toggles.AutoRoomsDebug.Value)
 
                     local path = PathfindingService:CreatePath({
                         AgentCanJump = false,
@@ -3325,14 +3382,20 @@ task.spawn(function()
                         AgentRadius = 1
                     })
 
-                    Script.Functions.Log("Computing Path to " .. pathfindingGoal.Parent.Name .. "...", 5, Toggles.AutoRoomsDebug.Value) 
+                    Script.Functions.Log({
+                        Title = "Auto Rooms",
+                        Description = "Computing Path to " .. pathfindingGoal.Parent.Name .. "...",
+                    }, Toggles.AutoRoomsDebug.Value)
 
                     path:ComputeAsync(rootPart.Position - Vector3.new(0, 2.5, 0), pathfindingGoal.Position)
                     local waypoints = path:GetWaypoints()
 
                     if path.Status == Enum.PathStatus.Success then
-                        Script.Functions.Log("Computed path successfully with " .. #waypoints .. " waypoints!", 5, Toggles.AutoRoomsDebug.Value)
-                        
+                        Script.Functions.Log({
+                            Title = "Auto Rooms",
+                            Description = "Computed path successfully with " .. #waypoints .. " waypoints!",
+                        }, Toggles.AutoRoomsDebug.Value)
+
                         _internal_mspaint_pathfinding_nodes:ClearAllChildren()
 
                         for i, waypoint in pairs(waypoints) do
@@ -3388,7 +3451,10 @@ task.spawn(function()
                             if recalculate then break end
                         end
                     else
-                        Script.Functions.Log("Pathfinding failed with status " .. tostring(path.Status), 5, Toggles.AutoRoomsDebug.Value)
+                        Script.Functions.Log({
+                            Title = "Auto Rooms",
+                            Description = "Pathfinding failed with status " .. tostring(path.Status)   
+                        }, Toggles.AutoRoomsDebug.Value)
                     end
                 end
 
