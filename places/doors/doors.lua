@@ -3,7 +3,6 @@
 
 if not ExecutorSupport then print("[mspaint] Loading stopped, please use the official loadstring for mspaint. (ERROR: ExecutorSupport == nil)") return end
 if getgenv().mspaint_loaded then print("[mspaint] Loading stopped. (ERROR: Already loaded)") return end
-getgenv().mspaint_loaded = true
 
 --// Services \\--
 local Lighting = game:GetService("Lighting")
@@ -2151,7 +2150,9 @@ function Script.Functions.Notifs.Doors.Notify(unsafeOptions)
 		NotificationType = "NOTIFICATION",
 		Image = "6023426923",
 		Color = nil,
-		Time = nil
+		Time = nil,
+
+        TweenDuration = 0.8
 	})
 
 
@@ -2188,7 +2189,7 @@ function Script.Functions.Notifs.Doors.Notify(unsafeOptions)
 	    acheivement.Sound:Play()
     end
 
-    acheivement:TweenSize(UDim2.new(1, 0, 0.2, 0), "In", "Quad", 0.8, true)
+    acheivement:TweenSize(UDim2.new(1, 0, 0.2, 0), "In", "Quad", options.TweenDuration, true)
 
 	task.wait(0.8)
 
@@ -2220,6 +2221,7 @@ function Script.Functions.Notifs.Doors.Warn(options)
 
 	options["NotificationType"] = "WARNING"
 	options["Color"] = Color3.new(1, 0, 0)
+    options["TweenDuration"] = 0.3
 
 	Script.Functions.Notifs.Doors.Notify(options)
 end
@@ -2253,17 +2255,16 @@ function Script.Functions.Notifs.Linoria.Log(unsafeOptions, condition: boolean |
 end
 
 function Script.Functions.Alert(options)
-    local notifyStyle = Options.NotifyStyle.Value or "Linoria"
+    repeat task.wait() until getgenv().mspaint_loaded
 
-    
-    if notifyStyle == "Linoria" then
+    if Options.NotifyStyle.Value == "Linoria" then
         local linoriaMessage = options["LinoriaMessage"] or options.Description
         options.Description = linoriaMessage
         
         Script.Functions.Notifs.Linoria.Notify(options)
-    elseif notifyStyle == "Doors" and not options.Warning then
+    elseif Options.NotifyStyle.Value == "Doors" and not options.Warning then
         Script.Functions.Notifs.Doors.Notify(options)
-    elseif notifyStyle == "Doors" and options.Warning then
+    elseif Options.NotifyStyle.Value == "Doors" and options.Warning then
         options["Warning"] = nil
 
         Script.Functions.Notifs.Doors.Warn(options)
@@ -2271,14 +2272,14 @@ function Script.Functions.Alert(options)
 end
 
 function Script.Functions.Log(options)
-    local notifyStyle = Options.NotifyStyle.Value or "Linoria"
+    repeat task.wait() until getgenv().mspaint_loaded
 
-    if notifyStyle == "Linoria" then
+    if Options.NotifyStyle.Value == "Linoria" then
         local linoriaMessage = options["LinoriaMessage"] or options.Description
         options.Description = linoriaMessage
         
         Script.Functions.Notifs.Linoria.Log(options)
-    elseif notifyStyle == "Doors" then
+    elseif Options.NotifyStyle.Value == "Doors" then
         options["NotificationType"] = "LOGGING"
         options["Color"] = Color3.fromRGB(0, 102, 255)
 
@@ -5756,6 +5757,11 @@ Library:OnUnload(function()
         internal_temp_mspaint:Destroy()
     end
 
+    if isMines then
+        local acbypasspart = workspace:FindFirstChild("_internal_mspaint_acbypassprogress")
+        if acbypasspart then acbypasspart:Destroy() end
+    end
+
     if isRooms then
         if workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
             workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
@@ -5838,3 +5844,4 @@ ThemeManager:ApplyToTab(Tabs["UI Settings"])
 SaveManager:LoadAutoloadConfig()
 
 Script.Functions.UpdateRPC()
+getgenv().mspaint_loaded = true
