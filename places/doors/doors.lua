@@ -124,8 +124,10 @@ local EntityTable = {
         },
         ["JeffTheKiller"] = {
             ["Image"] = "98993343",
+            ["Spawned"] = true
         },
         ["GloombatSwarm"] = {
+            ["Image"] = "108578770251369",
             ["Spawned"] = true
         }
     },
