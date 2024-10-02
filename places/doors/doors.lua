@@ -2512,6 +2512,14 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
 end
 
 local AmbientGroupBox = Tabs.Visuals:AddLeftGroupbox("Ambient") do
+    AmbientGroupBox:AddSlider("Brightness", {
+        Text = "Brightness",
+        Default = 0,
+        Min = 0,
+        Max = 3,
+        Rounding = 1,
+    })
+
     AmbientGroupBox:AddToggle("Fullbright", {
         Text = "Fullbright",
         Default = false,
@@ -4409,6 +4417,10 @@ Options.ESPTracerStart:OnChanged(function(value)
     end
 end)
 
+Options.Brightness:OnChanged(function(value)
+    Lighting.Brightness = value
+end)
+
 Toggles.Fullbright:OnChanged(function(value)
     if value then
         Lighting.Ambient = Color3.new(1, 1, 1)
@@ -5011,6 +5023,10 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
             end
         end)
     end
+end))
+
+Library:GiveSignal(Lighting:GetPropertyChangedSignal("Brightness"):Connect(function()
+    Lighting.Brightness = Options.Brightness.Value
 end))
 
 Library:GiveSignal(Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
