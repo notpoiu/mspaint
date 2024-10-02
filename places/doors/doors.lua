@@ -1139,6 +1139,7 @@ function Script.Functions.ESP(args: ESP)
         IsEntity = args.IsEntity or false,
         IsDoubleDoor = args.IsDoubleDoor or false,
         Type = args.Type or "None",
+        OnDestroy = args.OnDestroy or nil,
 
         Invisible = false,
         Humanoid = nil
@@ -1171,7 +1172,7 @@ function Script.Functions.ESP(args: ESP)
             Color = ESPManager.Color
         },
 
-        OnDestroy = function()
+        OnDestroy = ESPManager.OnDestroy or function()
             if ESPManager.Object.PrimaryPart and ESPManager.Invisible then ESPManager.Object.PrimaryPart.Transparency = 1 end
             if ESPManager.Humanoid then ESPManager.Humanoid:Destroy() end
         end
@@ -1194,17 +1195,23 @@ function Script.Functions.DoorESP(room)
         local opened = door:GetAttribute("Opened")
         local locked = room:GetAttribute("RequiresKey")
 
-        local doorState = if opened then " [Opened]" elseif locked then " [Locked]" else ""
+        local doorState = if opened then "[Opened]" elseif locked then "[Locked]" else ""
+        local doorIdx = Script.Functions.RandomString()
+
         local doorEsp = Script.Functions.ESP({
             Type = "Door",
             Object = door:WaitForChild("Door"),
             Text = string.format("Door %s %s", doorNumber, doorState),
-            Color = Options.DoorEspColor.Value
+            Color = Options.DoorEspColor.Value,
+
+            OnDestroy = function()
+                if Script.FeatureConnections.Door[doorIdx] then Script.FeatureConnections.Door[doorIdx]:Disconnect() end
+            end
         })
 
-        Script.Connections[room.Name .. "Opened"] = door:GetAttributeChangedSignal("Opened"):Connect(function()
-            if Script.FeatureConnections.Door[room.Name] then Script.Connections.Door[room.Name]:Disconnect() end
+        Script.FeatureConnections.Door[doorIdx] = door:GetAttributeChangedSignal("Opened"):Connect(function()
             if doorEsp then doorEsp.SetText(string.format("Door %s [Opened]", doorNumber)) end
+            if Script.FeatureConnections.Door[doorIdx] then Script.FeatureConnections.Door[doorIdx]:Disconnect() end
         end)
     end
 end 
@@ -2191,6 +2198,15 @@ function Script.Functions.AutoBreaker(code, breakers)
             Script.Functions.EnableBreaker(breaker, isEnabled)
         end
     end
+end
+
+function Script.Functions.RandomString()
+    local length = math.random(10,20)
+    local array = {}
+    for i = 1, length do
+        array[i] = string.char(math.random(32, 126))
+    end
+    return table.concat(array)
 end
 
 function Script.Functions.Notifs.Doors.Notify(unsafeOptions)
