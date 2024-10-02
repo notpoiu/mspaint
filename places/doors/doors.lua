@@ -15,6 +15,7 @@ local TextChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 --// Loading Wait \\--
@@ -54,7 +55,8 @@ local Script = {
         None = {}
     },
     Functions = {
-        Minecart = {}
+        Minecart = {},
+        Notifs = {Linoria = {}, Doors = {}}
     },
     Lagback = {
         Detected = false,
@@ -96,6 +98,37 @@ local EntityTable = {
     ["Avoid"] = {
         "RushMoving",
         "AmbushMoving"
+    },
+    ["NotifyReason"] = {
+        ["A60"] = {
+            ["Image"] = "12350986086",
+        },
+        ["A120"] = {
+            ["Image"] = "12351008553",
+        },
+        ["BackdoorRush"] = {
+            ["Image"] = "11102256553",
+        },
+        ["RushMoving"] = {
+            ["Image"] = "11102256553",
+        },
+        ["AmbushMoving"] = {
+            ["Image"] = "10938726652",
+        },
+        ["Eyes"] = {
+            ["Image"] = "10865377903",
+            ["Spawned"] = true
+        },
+        ["BackdoorLookman"] = {
+            ["Image"] = "16764872677",
+            ["Spawned"] = true
+        },
+        ["JeffTheKiller"] = {
+            ["Image"] = "98993343",
+        },
+        ["GloombatSwarm"] = {
+            ["Spawned"] = true
+        }
     },
     ["NoCheck"] = {
         "Eyes",
@@ -424,6 +457,22 @@ function Script.Functions.IsInViewOfPlayer(instance: Instance, range: number | n
     end
 
     return false
+end
+
+function Script.Functions.EnforceTypes(args, template)
+    args = type(args) == "table" and args or {}
+
+    for key, value in pairs(template) do
+        local argValue = args[key]
+
+        if argValue == nil or (value ~= nil and type(argValue) ~= type(value)) then
+            args[key] = value
+        elseif type(value) == "table" then
+            args[key] = Script.Functions.EnforceTypes(argValue, value)
+        end
+    end
+
+    return args
 end
 
 function Script.Functions.UpdateRPC()
@@ -1387,7 +1436,7 @@ function Script.Functions.ChildCheck(child)
             Script.Functions.SolveBreakerBox(child)
         end
 
-        if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" then
+        if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" and not bypassed then
             Script.Functions.ESP({
                 Type = "None",
                 Object = child,
@@ -1562,7 +1611,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 end
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
-                    Script.Functions.Alert(string.format("Library Code: %s", output))
+                    Script.Functions.Alert({
+                        Title = "Library Code",
+                        Description = string.format("Library Code: %s", output),
+                    })
 
                     if Toggles.NotifyChat.Value and count == 0 then
                         RBXGeneral:SendAsync(string.format("Library Code: %s", output))
@@ -1712,7 +1764,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     Script.Lagback.LastSpeed = Options.SpeedSlider.Value
                     Script.Lagback.LastFlySpeed = Options.FlySpeed.Value
 
-                    Script.Functions.Alert("Fixing Lagback...")
+                    Script.Functions.Alert({
+                        Title = "Lagback Detection",
+                        Description = "Fixing Lagback...",
+                    })
                     Toggles.SpeedBypass:SetValue(false)
                     local cframeChanged = false
 
@@ -1725,7 +1780,10 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     Options.SpeedSlider:SetValue(Script.Lagback.LastSpeed)
                     Options.FlySpeed:SetValue(Script.Lagback.LastFlySpeed)
                     Script.Lagback.Detected = false
-                    Script.Functions.Alert("Fixed Lagback.")
+                    Script.Functions.Alert({
+                        Title = "Lagback Detection",
+                        Description = "Fixed Lagback!"
+                    })
                 end
             end
         end)
@@ -1756,10 +1814,23 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     character:SetAttribute("Climbing", false)
     
                     bypassed = true
+
+                    for _, ladderEsp in pairs(Script.ESPTable.None) do
+                        ladderEsp.Destroy()
+                    end
+
                     Options.SpeedSlider:SetMax(45)
                     Options.FlySpeed:SetMax(75)
 
-                    Script.Functions.Alert("Bypassed the anticheat successfully, this will only last until the next cutscene!", 7)
+                    Script.Functions.Alert({
+                        Title = "Anticheat Bypass",
+                        Description = "Bypassed the anticheat successfully!",
+                        Reason = "This will only last until the next cutscene!",
+
+                        LinoriaMessage = "Bypassed the anticheat successfully! This will only last until the next cutscene",
+
+                        Time = 7
+                    })
                     if workspace:FindFirstChild("_internal_mspaint_acbypassprogress") then workspace:FindFirstChild("_internal_mspaint_acbypassprogress"):Destroy() end
                 end
             end)
@@ -1797,7 +1868,11 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
                 end
 
                 if Toggles.NotifyPadlock.Value and count < 5 then
-                    Script.Functions.Alert(string.format("Library Code: %s", output))
+                    Script.Functions.Alert({
+                        Title = "Padlock Code",
+                        Description = string.format("Library Code: %s", output),
+                        Reason = (tonumber(code) and "Solved the library padlock code" or "You are still missing some books"),
+                    })
 
                     if Toggles.NotifyChat.Value and count == 0 then
                         RBXGeneral:SendAsync(string.format("Library Code: %s", output))
@@ -1930,11 +2005,19 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
         
         if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
-        	Script.Functions.Alert("Deleting Seek trigger...")
+        	Script.Functions.Alert({
+                Title = "Delete Seek FE",
+                Description = "Deleting Seek trigger...",
+                Reason = "",
+            })
 
             task.delay(4, function()
                 if collision:IsDescendantOf(workspace) then
-                    Script.Functions.Alert("Failed to delete Seek trigger!")
+                    Script.Functions.Alert({
+                        Title = "Delete Seek FE",
+                        Description = "Failed to delete Seek trigger!",
+                        Reason = "",
+                    })
                 end
             end)
             
@@ -1989,7 +2072,11 @@ function Script.Functions.SolveBreakerBox(breakerBox)
     repeat task.wait() until code.Text ~= "..." or not breakerBox:IsDescendantOf(workspace)
     if not breakerBox:IsDescendantOf(workspace) then return end
 
-    Script.Functions.Alert("Solving the breaker box...")
+    Script.Functions.Alert({
+        Title = "Auto Breaker Solver",
+        Description = "Solving the breaker box...",
+        Reason = ""
+    })
 
     if Options.AutoBreakerSolverMethod.Value == "Legit" then
         Script.Temp.UsedBreakers = {}
@@ -2020,7 +2107,10 @@ function Script.Functions.SolveBreakerBox(breakerBox)
             remotesFolder.EBF:FireServer()
         until not workspace.CurrentRooms["100"]:FindFirstChild("DoorToBreakDown")
 
-        Script.Functions.Alert("The breaker box has been successfully solved.")
+        Script.Functions.Alert({
+            Title = "Auto Breaker Solver",
+            Description = "The breaker box has been successfully solved.",
+        })
     end
 end
 
@@ -2050,8 +2140,97 @@ function Script.Functions.AutoBreaker(code, breakers)
     end
 end
 
-function Script.Functions.Alert(message: string, duration: number | nil)
-    Library:Notify(message, duration or 5)
+function Script.Functions.Notifs.Doors.Notify(unsafeOptions)
+	assert(typeof(unsafeOptions) == "table", "Expected a table as options argument but got " .. typeof(unsafeOptions))
+    if not mainUI then return end
+    
+	local options = Script.Functions.EnforceTypes(unsafeOptions, {
+		Title = "No Title",
+		Description = "No Text",
+		Reason = "",
+		NotificationType = "NOTIFICATION",
+		Image = "6023426923",
+		Color = nil,
+		Time = nil
+	})
+
+
+	local acheivement = mainUI.AchievementsHolder.Achievement:Clone()
+	acheivement.Size = UDim2.new(0, 0, 0, 0)
+	acheivement.Frame.Position = UDim2.new(1.1, 0, 0, 0)
+	acheivement.Name = "LiveAchievement"
+	acheivement.Visible = true
+
+	acheivement.Frame.TextLabel.Text = options.NotificationType
+
+	if options.Color ~= nil then
+		acheivement.Frame.TextLabel.TextColor3 = options.Color
+		acheivement.Frame.UIStroke.Color = options.Color
+		acheivement.Frame.Glow.ImageColor3 = options.Color
+	end
+	
+	acheivement.Frame.Details.Desc.Text = tostring(options.Description)
+	acheivement.Frame.Details.Title.Text = tostring(options.Title)
+	acheivement.Frame.Details.Reason.Text = tostring(options.Reason or "")
+
+	if options.Image:match("rbxthumb://") or options.Image:match("rbxassetid://") then
+		acheivement.Frame.ImageLabel.Image = tostring(options.Image or "rbxassetid://0")
+	else
+		acheivement.Frame.ImageLabel.Image = "rbxassetid://" .. tostring(options.Image or "0")
+	end
+
+	acheivement.Parent = mainUI.AchievementsHolder
+	acheivement.Sound.SoundId = "rbxassetid://10469938989"
+
+    acheivement.Sound.Volume = 1
+
+    if Toggles.NotifySound.Value then
+	    acheivement.Sound:Play()
+    end
+
+    acheivement:TweenSize(UDim2.new(1, 0, 0.2, 0), "In", "Quad", 0.8, true)
+
+	task.wait(0.8)
+
+	acheivement.Frame:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Quad", 0.5, true)
+
+	TweenService:Create(acheivement.Frame.Glow, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In),{
+		ImageTransparency = 1
+	}):Play()
+
+	if options.Time ~= nil then
+		if typeof(options.Time) == "number" then
+			task.wait(options.Time)
+		elseif typeof(options.Time) == "Instance" then
+			options.Time.Destroying:Wait()
+		end
+	else
+		task.wait(5)
+	end
+
+	acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
+	task.wait(0.5)
+	acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
+	task.wait(0.5)
+	acheivement:Destroy()
+end
+
+function Script.Functions.Notifs.Doors.Warn(options)
+	assert(typeof(options) == "table", "Expected a table as options argument but got " .. typeof(options))
+
+	options["NotificationType"] = "WARNING"
+	options["Color"] = Color3.new(1, 0, 0)
+
+	Script.Functions.Notifs.Doors.Notify(options)
+end
+
+function Script.Functions.Notifs.Linoria.Notify(unsafeOptions)
+    local options = Script.Functions.EnforceTypes(unsafeOptions, {
+		Description = "No Message",
+        Time = nil
+	})
+
+    Library:Notify(options.Description, options.Time or 5)
 
     if Toggles.NotifySound.Value then
         local sound = Instance.new("Sound", SoundService) do
@@ -2063,9 +2242,48 @@ function Script.Functions.Alert(message: string, duration: number | nil)
     end
 end
 
-function Script.Functions.Log(message: string, duration: number | Instance, condition: boolean | nil)
+function Script.Functions.Notifs.Linoria.Log(unsafeOptions, condition: boolean | nil)
+    local options = Script.Functions.EnforceTypes(unsafeOptions, {
+		Description = "No Message",
+        Time = nil
+	})
+
     if condition ~= nil and not condition then return end
-    Library:Notify(message, duration or 5)
+    Library:Notify(options.Description, options.Time or 5)
+end
+
+function Script.Functions.Alert(options)
+    local notifyStyle = Options.NotifyStyle.Value or "Linoria"
+
+    
+    if notifyStyle == "Linoria" then
+        local linoriaMessage = options["LinoriaMessage"] or options.Description
+        options.Description = linoriaMessage
+        
+        Script.Functions.Notifs.Linoria.Notify(options)
+    elseif notifyStyle == "Doors" and not options.Warning then
+        Script.Functions.Notifs.Doors.Notify(options)
+    elseif notifyStyle == "Doors" and options.Warning then
+        options["Warning"] = nil
+
+        Script.Functions.Notifs.Doors.Warn(options)
+    end
+end
+
+function Script.Functions.Log(options)
+    local notifyStyle = Options.NotifyStyle.Value or "Linoria"
+
+    if notifyStyle == "Linoria" then
+        local linoriaMessage = options["LinoriaMessage"] or options.Description
+        options.Description = linoriaMessage
+        
+        Script.Functions.Notifs.Linoria.Log(options)
+    elseif notifyStyle == "Doors" then
+        options["NotificationType"] = "LOGGING"
+        options["Color"] = Color3.fromRGB(0, 102, 255)
+
+        Script.Functions.Notifs.Doors.Notify(options)
+    end
 end
 
 --// Main \\--
@@ -2566,7 +2784,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
         })
 
         NotifySettingsTab:AddDivider()
-
+        
         NotifySettingsTab:AddToggle("NotifySound", {
             Text = "Play Alert Sound",
             Default = true,
@@ -2579,6 +2797,15 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Multi = false,
 
             Text = "Notification Side"
+        })
+
+        NotifySettingsTab:AddDropdown("NotifyStyle", {
+            AllowNull = false,
+            Values = {"Linoria", "Doors"},
+            Default = "Linoria",
+            Multi = false,
+
+            Text = "Notification Style"
         })
     end
 end
@@ -2726,7 +2953,15 @@ task.spawn(function()
             Mines_AutomationGroupBox:AddButton({
                 Text = "Beat Door 200",
                 Func = function()
-                    if latestRoom.Value < 99 then Script.Functions.Alert("You haven't reached door 200...") end
+                    if latestRoom.Value < 99 then
+                        Script.Functions.Alert({
+                            Title = "Beat Door 200",
+                            Description = "You haven't reached door 200...",
+                            Time = 5
+                        })
+
+                        return
+                    end
 
                     local bypassing = Toggles.SpeedBypass.Value
                     local startPos = rootPart.CFrame
@@ -2807,9 +3042,23 @@ task.spawn(function()
                 end
 
                 if Library.IsMobile then
-                    Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. Ladder ESP has been enabled", progressPart)
+                    Script.Functions.Alert({
+                        Title = "Anticheat bypass",
+                        Description = "To bypass the ac, you must interact with a ladder.",
+                        Reason = "Ladder ESP has been enabled, do not move while on the ladder.",
+
+                        LinoriaMessage = "To bypass the anticheat, you must interact with a ladder. Ladder ESP has been enabled.\nDo not move while on the ladder.",
+                        Time = progressPart
+                    })
                 else
-                    Script.Functions.Alert("To bypass the anticheat, you must interact with a ladder. For your convenience, Ladder ESP has been enabled", progressPart)
+                    Script.Functions.Alert({
+                        Title = "Anticheat bypass",
+                        Description = "To bypass the ac, you must interact with a ladder.",
+                        Reason = "Ladder ESP has been enabled, do not move while on the ladder.",
+
+                        LinoriaMessage = "To bypass the anticheat, you must interact with a ladder. Ladder ESP has been enabled.\nDo not move while on the ladder.",
+                        Time = progressPart
+                    })
                 end
                 
 
@@ -2988,7 +3237,12 @@ task.spawn(function()
 
         Toggles.AntiA90:OnChanged(function(value)
             if Toggles.AutoRooms.Value and not value then
-                Script.Functions.Alert("Anti A-90 is required for Auto Rooms to work!", 5)
+                Script.Functions.Alert({
+                    Title = "Auto Rooms",
+                    Description = "Anti A-90 is required for Auto Rooms to work!",
+                    Reason = "Anti A-90 has been enabled",
+                })
+                
                 Toggles.AntiA90:SetValue(true)
             end
 
@@ -3107,7 +3361,12 @@ task.spawn(function()
 
                                     repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
 
-                                    Script.Functions.Alert("Seems like you are stuck, trying to recalculate path...", 5)
+                                    Script.Functions.Alert({
+                                        Title = "Auto Rooms",
+                                        Description = "Seems like you are stuck, trying to recalculate path...",
+                                        Reason = "Failed to move to waypoint",
+                                    })
+
                                     recalculate = true
                                 end)
                             end
@@ -3135,7 +3394,12 @@ task.spawn(function()
                 -- Movement
                 while Toggles.AutoRooms.Value and not Library.Unloaded do
                     if latestRoom.Value == 1000 then
-                        Script.Functions.Alert("You have reached A-1000")
+                        Script.Functions.Alert({
+                            Title = "Auto Rooms",
+                            Description = "You have reached A-1000",
+                            Reason = "A-1000 reached by mspaint autorooms",
+                        })
+
                         break
                     end
 
@@ -3319,7 +3583,7 @@ task.spawn(function()
         end)
 
         Toggles.FigureGodmodeFools:OnChanged(function(value)
-            if value and not Toggles.GodmodeNoclipBypassFools.Value then Toggles.GodmodeNoclipBypassFools:SetValue(true); Script.Functions.Alert("Godmode/Noclip Bypass is required to use figure godmode") end
+            if value and not Toggles.GodmodeNoclipBypassFools.Value then Toggles.GodmodeNoclipBypassFools:SetValue(true); Script.Functions.Alert({Title = "Figure Godmode", Description = "Godmode/Noclip Bypass is required to use figure godmode", Reason = "Godmode/Noclip Bypass not enabled"}) end
             if latestRoom.Value ~= 50 or latestRoom.Value ~= 100 then return end
 
             for _, figure in pairs(workspace.CurrentRooms:GetDescendants()) do
@@ -3566,11 +3830,20 @@ end)
 Toggles.FakeRevive:OnChanged(function(value)
     if value and alive and character and not fakeReviveEnabled then
         if latestRoom and latestRoom.Value == 0 then
-            Script.Functions.Alert("You have to open the next door to use fake revive")
+            Script.Functions.Alert({
+                Title = "Fake Revive",
+                Description = "You have to open the next door to use fake revive",
+                Reason = "You are in the first room"
+            })
             repeat task.wait() until latestRoom.Value > 0
         end
 
-        Script.Functions.Alert("Please find a way to die or wait for around 20 seconds\nfor fake revive to work.", 20)
+        Script.Functions.Alert({
+            Title = "Fake Revive",
+            Description = "Please find a way to die or wait for around 20 seconds\nfor fake revive to work.",
+            Reason = "You are not yet dead",
+            Time = 20
+        })
         
         local oxygenModule = mainGame:FindFirstChild("Oxygen")
         local healthModule = mainGame:FindFirstChild("Health")
@@ -3593,7 +3866,11 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         if alive and not Toggles.FakeRevive.Value then
             remotesFolder.Underwater:FireServer(false)
-            Script.Functions.Alert("Fake revive has been disabled, was unable to kill player.")
+            Script.Functions.Alert({
+                Title = "Fake Revive",
+                Description = "Fake revive has been disabled, was unable to kill player.",
+                Reason = "You are not yet dead",
+            })
             oxygenModule.Enabled = true
             healthModule.Enabled = true
             return
@@ -4107,7 +4384,11 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         Library:GiveSignal(fakeReviveConnections["CurrentRoomFix"])
 
-		Script.Functions.Alert("Fake Death is now iniialized, have fun!", 5)
+		Script.Functions.Alert({
+            Title = "Fake Revive",
+            Description = "Fake Revive is now initialized, have fun!",
+            Reason = 'You are now "dead"',
+        })
     end
 end)
 
@@ -4567,7 +4848,14 @@ if isBackdoor then
                 haste_incoming_progress.Transparency = 1
             end
 
-            Script.Functions.Alert("Haste is incoming, please find a lever ASAP!", haste_incoming_progress)
+            Script.Functions.Alert({
+                Title = "ENTITIES",
+                Description = "Haste is incoming, please find a lever ASAP!",
+                Time = haste_incoming_progress,
+
+                Warning = true
+            })
+
             repeat task.wait() until not haste_incoming_progress or not Toggles.NotifyEntity.Value or not character:GetAttribute("Alive")
             if haste_incoming_progress then haste_incoming_progress:Destroy() end
         end
@@ -4660,7 +4948,14 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     end
 
                     if Options.NotifyEntity.Value[shortName] == true then
-                        Script.Functions.Alert(shortName .. " has spawned!")
+                        Script.Functions.Alert({
+                            Title = "ENTITIES",
+                            Description = shortName .. " has spawned!",
+                            Reason = (not EntityTable.NotifyReason[child.Name].Spawned and "Go find a hiding place!" or nil),
+                            Image = EntityTable.NotifyReason[child.Name].Image,
+
+                            Warning = true
+                        })
 
                         if Toggles.NotifyChat.Value then
                             RBXGeneral:SendAsync(shortName .. " has spawned!")
@@ -4669,7 +4964,14 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                 end
             end)
         elseif EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
-            Script.Functions.Alert(EntityTable.NotifyMessage[child.Name])
+            Script.Functions.Alert({
+                Title = "ENTITIES",
+                Description = shortName .. " has spawned!",
+                Reason = (not EntityTable.NotifyReason[child.Name].Spawned and "Go find a hiding place!" or nil),
+                Image = EntityTable.NotifyReason[child.Name].Image,
+
+                Warning = true
+            })
 
             if Toggles.NotifyChat.Value then
                 RBXGeneral:SendAsync(EntityTable.NotifyMessage[child.Name])     
@@ -4866,7 +5168,13 @@ Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
         table.clear(fakeReviveConnections)
 
         if Toggles.FakeRevive.Value then
-            Script.Functions.Alert("You have revived, fake revive has stopped working, enable it again to start fake revive")
+            Script.Functions.Alert({
+                Title = "Fake Revive",
+                Description = "You have revived, fake revive has stopped working.",
+                Reason = "Enable it again to start fake revive",
+
+                LinoriaMessage = "Fake Revive has stopped working, enable it again to start fake revive",
+            })
             Toggles.FakeRevive:SetValue(false)
         end
 
@@ -4904,7 +5212,13 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
 
     if isMines and bypassed and currentRoomModel:GetAttribute("RawName") == "HaltHallway" then
         bypassed = false
-        Script.Functions.Alert("Halt has broken anticheat bypass, please go on a ladder again to fix it.", 5)
+        Script.Functions.Alert({
+            Title = "Anticheat Bypass",
+            Description = "Halt has broken anticheat bypass.",
+            Reason = "Please go on a ladder again to fix it.",
+
+            LinoriaMessage = "Halt has broken anticheat bypass, please go on a ladder again to fix it.",
+        })
 
         Options.SpeedSlider:SetMax(Toggles.SpeedBypass.Value and 45 or (Toggles.EnableJump.Value and 3 or 7))
         Options.FlySpeed:SetMax(Toggles.SpeedBypass.Value and 75 or 22)
@@ -5258,7 +5572,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                         local result = Anchor:FindFirstChildOfClass("RemoteFunction"):InvokeServer(CurrentGameState.AnchorCode)
                         if result then
-                            Script.Functions.Alert("Solved Anchor " .. CurrentAnchor .. " successfully!", 5)
+                            Script.Functions.Alert({
+                                Title = "Auto Anchor Solver",
+                                Description = "Solved Anchor " .. CurrentAnchor .. " successfully!",
+                                Reason = "Solved anchor with the code " .. CurrentGameState.AnchorCode,
+                            })
                         end
                     end)
                 end
@@ -5268,7 +5586,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
         if isFools then
             local HoldingItem = Script.Temp.HoldingItem
             if HoldingItem and not isnetowner(HoldingItem) then
-                Script.Functions.Alert("You are no longer holding the item due to network owner change!", 5)
+                Script.Functions.Alert({
+                    Title = "Banana/Jeff Throw",
+                    Description = "You are no longer holding the item due to network owner change!",
+                })
                 Script.Temp.HoldingItem = nil
             end
     
