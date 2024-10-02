@@ -1450,6 +1450,7 @@ function Script.Functions.ChildCheck(child)
                 clone.Color = Color3.new(1, 1, 1)
                 clone.Name = "AntiBridge"
                 clone.Size = Vector3.new(clone.Size.X, clone.Size.Y, 11)
+                clone.Transparency = 0
                 clone.Parent = child.Parent
                 
                 table.insert(Script.Temp.Bridges, clone)
@@ -2878,6 +2879,7 @@ task.spawn(function()
                                 clone.Color = Color3.new(1, 1, 1)
                                 clone.Name = "AntiBridge"
                                 clone.Size = Vector3.new(clone.Size.X, clone.Size.Y, 11)
+                                clone.Transparency = 0
                                 clone.Parent = bridge
                                 
                                 table.insert(Script.Temp.Bridges, clone)
