@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 if not game.IsLoaded then 
     repeat
         task.wait()
-    until game.IsLoaded and Players.LocalPlayer
+    until game.IsLoaded and Players.LocalPlayer and Players.LocalPlayer.Character
 end
 
 local executorSupport = {}
