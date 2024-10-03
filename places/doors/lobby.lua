@@ -92,7 +92,9 @@ local Script = {
         "SurviveHide",
         "JoinAgain"
     },
-    Functions = {}
+    Functions = {File = {}},
+    ElevatorPresetData = {},
+    ElevatorPresets = {}
 }
 
 local localPlayer = Players.LocalPlayer
@@ -102,8 +104,10 @@ local playerGui = localPlayer.PlayerGui
 local mainUI = playerGui:WaitForChild("MainUI")
 local lobbyFrame = mainUI:WaitForChild("LobbyFrame")
 local achievementsFrame = lobbyFrame:WaitForChild("Achievements")
+local createElevatorFrame = lobbyFrame:WaitForChild("CreateElevator")
 
 local remotesFolder = ReplicatedStorage:WaitForChild("RemotesFolder")
+local createElevator = remotesFolder:WaitForChild("CreateElevator")
 
 local lobbyElevators = workspace:WaitForChild("Lobby"):WaitForChild("LobbyElevators")
 
@@ -129,6 +133,7 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
 	Main = Window:AddTab("Main"),
+    Elevator = Window:AddTab("Elevator"),
 	["UI Settings"] = Window:AddTab("UI Settings"),
 }
 
@@ -137,6 +142,117 @@ local Tabs = {
 
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Functions.EnforceTypes(args, template)
+    args = type(args) == "table" and args or {}
+
+    for key, value in pairs(template) do
+        local argValue = args[key]
+
+        if argValue == nil or (value ~= nil and type(argValue) ~= type(value)) then
+            args[key] = value
+        elseif type(value) == "table" then
+            args[key] = Script.Functions.EnforceTypes(argValue, value)
+        end
+    end
+
+    return args
+end
+
+function Script.Functions.File.BuildPresetStructure()
+    if not isfolder("mspaint/doors/presets") then
+        makefolder("mspaint/doors/presets")
+    end
+end
+
+function Script.Functions.File.CreatePreset(name: string, data: table)
+    local presetData = Script.Functions.EnforceTypes(data, {
+        Floor = "Hotel",
+        MaxPlayers = 1,
+        Modifiers = nil,
+        FriendsOnly = true
+    })
+
+    Script.Functions.File.BuildPresetStructure()
+    writefile("mspaint/doors/presets/" .. name .. ".json", HttpService:JSONEncode(presetData))
+end
+
+function Script.Functions.File.GetFileNameFromPath(path: string, extention: string | nil)
+    local fileExtension = extention or ".json"
+
+    if path:sub(-#fileExtension) == fileExtension then
+        path = path:gsub("\\", "/")
+
+        local pos = path:find("/[^/]*$")
+        if pos then
+            return path:sub(pos + 1, -#fileExtension - 1)
+        end
+    end
+
+    return nil
+end
+
+function Script.Functions.File.LoadPresets()
+    table.clear(Script.ElevatorPresets)
+    table.clear(Script.ElevatorPresetData)
+
+    for _, file in pairs(listfiles("mspaint/doors/presets")) do
+        local success, ret = pcall(function()
+            local data = readfile(file)
+            return HttpService:JSONDecode(data)
+        end)
+
+        if success then
+            local name = Script.Functions.File.GetFileNameFromPath(file)
+
+            Script.ElevatorPresetData[name] = Script.Functions.EnforceTypes(ret, {
+                Floor = "Hotel",
+                MaxPlayers = 1,
+                Modifiers = nil,
+                FriendsOnly = true
+            })
+
+            table.insert(Script.ElevatorPresets, name)
+        else
+            print("Failed to load preset: " .. file)
+        end
+    end
+
+    Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
+    Options.Elevator_PresetList:SetValue(nil)
+end
+
+function Script.Functions.LoadPreset(name: string)
+    Script.Functions.File.BuildPresetStructure()
+
+    local success, ret = pcall(function()
+        local data = readfile("mspaint/doors/presets/" .. name .. ".json")
+        return HttpService:JSONDecode(data)
+    end)
+
+    if not success then
+        Script.Functions.Alert("Failed to load preset: " .. name .. ".json")
+        return
+    end
+
+    local presetData = Script.Functions.EnforceTypes(ret, {
+        Floor = "Hotel",
+        MaxPlayers = 1,
+        Modifiers = nil,
+        FriendsOnly = true
+    })
+
+    local data = {
+        ["FriendsOnly"] = presetData.FriendsOnly,
+        ["Destination"] = presetData.Floor,
+        ["Mods"] = presetData.Modifiers or {},
+        ["MaxPlayers"] = tostring(presetData.MaxPlayers)
+    }
+
+    createElevator:FireServer(data)
+
+    Script.Functions.Alert("Loaded elevator preset: " .. name)
 end
 
 function Script.Functions.SetupVariables()
@@ -225,6 +341,120 @@ local OtherGroupbox = Tabs.Main:AddRightGroupbox("Other") do
     })
 end
 
+--// Elevator \\--
+local PresetGroupbox = Tabs.Elevator:AddLeftGroupbox("Presets") do
+    
+    PresetGroupbox:AddInput('Elevator_PresetName', { Text = 'Preset name' })
+    PresetGroupbox:AddButton({
+        Text = "Create Preset",
+        Func = function()
+            if isfile("mspaint/doors/presets/" .. Options.Elevator_PresetName.Value .. ".json") then
+                Script.Functions.Alert("Preset already exists!")
+                return
+            end
+
+            local presetData = {
+                Floor = "Hotel",
+                MaxPlayers = 1,
+                Modifiers = {},
+                FriendsOnly = true
+            }
+
+            for _, floor in pairs(createElevatorFrame.Floors:GetChildren()) do
+                if floor:IsA("TextLabel") and floor.Visible then
+                    presetData.Floor = floor.Name
+                    break
+                end
+            end
+
+            for _, modifier in pairs(createElevatorFrame.Modifiers:GetChildren()) do
+                if modifier:GetAttribute("Enabled") then
+                    table.insert(presetData.Modifiers, modifier.Name)    
+                end
+            end
+
+            presetData.MaxPlayers = tonumber(createElevatorFrame.Settings.MaxPlayers.Toggle.Text)
+            presetData.FriendsOnly = createElevatorFrame.Settings.FriendsOnly:GetAttribute("Setting")
+
+            Script.Functions.File.CreatePreset(Options.Elevator_PresetName.Value, presetData)
+            Script.Functions.Alert("Created elevator preset " .. Options.Elevator_PresetName.Value .. " with " .. #presetData.Modifiers .. " modifiers")
+
+            Script.Functions.File.LoadPresets()
+            Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
+            Options.Elevator_PresetList:SetValue(nil)
+        end
+    })
+
+    PresetGroupbox:AddDivider()
+
+    PresetGroupbox:AddDropdown('Elevator_PresetList', { Text = 'Preset list', Values = Script.ElevatorPresets, AllowNull = true })
+    PresetGroupbox:AddButton('Load Preset', function()
+        Script.Functions.LoadPreset(Options.Elevator_PresetList.Value)
+    end)
+
+    PresetGroupbox:AddButton('Override Preset', function()
+        local presetData = {
+            Floor = "Hotel",
+            MaxPlayers = 1,
+            Modifiers = {},
+            FriendsOnly = true
+        }
+
+        for _, floor in pairs(createElevatorFrame.Floors:GetChildren()) do
+            if floor:IsA("TextLabel") and floor.Visible then
+                presetData.Floor = floor.Name
+                break
+            end
+        end
+
+        for _, modifier in pairs(createElevatorFrame.Modifiers:GetChildren()) do
+            if modifier:GetAttribute("Enabled") then
+                table.insert(presetData.Modifiers, modifier.Name)    
+            end
+        end
+
+        presetData.MaxPlayers = tonumber(createElevatorFrame.Settings.MaxPlayers.Toggle.Text)
+        presetData.FriendsOnly = createElevatorFrame.Settings.FriendsOnly:GetAttribute("Setting")
+
+        Script.Functions.Alert("Overrided preset: " .. Options.Elevator_PresetList.Value)
+
+        Script.Functions.File.CreatePreset(Options.Elevator_PresetList.Value, HttpService:JSONEncode(presetData))
+        
+        Script.Functions.File.LoadPresets()
+        Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
+        Options.Elevator_PresetList:SetValue(nil)
+    end)
+
+    PresetGroupbox:AddButton('Delete Preset', function()
+        if not isfile("mspaint/doors/presets/" .. Options.Elevator_PresetList.Value .. ".json") then
+            Script.Functions.Alert("Preset does not exist!")
+            return
+        end
+
+        local success, err = pcall(function()
+            delfile("mspaint/doors/presets/" .. Options.Elevator_PresetList.Value .. ".json")
+        end)
+
+        if not success then
+            Script.Functions.Alert("Failed to delete preset: " .. Options.Elevator_PresetList.Value)
+            return
+        end
+
+        Script.Functions.Alert("Deleted preset: " .. Options.Elevator_PresetList.Value)
+        
+        Script.Functions.File.LoadPresets()
+        Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
+        Options.Elevator_PresetList:SetValue(nil)
+    end)
+
+    PresetGroupbox:AddButton('Refresh Presets', function()
+        Script.Functions.File.LoadPresets()
+        Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
+        Options.Elevator_PresetList:SetValue(nil)
+    end)
+
+end
+
 --// Connections \\--
 
 Toggles.LoopAchievements:OnChanged(function(value)
@@ -310,3 +540,6 @@ SaveManager:BuildConfigSection(Tabs["UI Settings"])
 ThemeManager:ApplyToTab(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+
+Script.Functions.File.BuildPresetStructure()
+Script.Functions.File.LoadPresets()
