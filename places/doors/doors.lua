@@ -18,8 +18,8 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 --// Loading Wait \\--
-if not game.IsLoaded then game.Loaded:Wait() end
-if Players.LocalPlayer.PlayerGui:FindFirstChild("LoadingUI") and Players.LocalPlayer.PlayerGui.LoadingUI.Enabled then
+if not game:IsLoaded() then game.Loaded:Wait() end
+if Players.LocalPlayer and Players.LocalPlayer.PlayerGui:FindFirstChild("LoadingUI") and Players.LocalPlayer.PlayerGui.LoadingUI.Enabled then
     repeat task.wait() until not game.Players.LocalPlayer.PlayerGui.LoadingUI.Enabled
 end
 

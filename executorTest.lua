@@ -1,11 +1,10 @@
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 
-if not game.IsLoaded then 
-    repeat
-        task.wait()
-    until game.IsLoaded and Players.LocalPlayer and Players.LocalPlayer.Character
-end
+if not game:IsLoaded() then game.Loaded:Wait() end
+repeat
+    task.wait()
+until Players.LocalPlayer and Players.LocalPlayer.Character
 
 local executorSupport = {}
 local executorName = string.split(identifyexecutor() or "None", " ")[1]
