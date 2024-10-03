@@ -377,7 +377,7 @@ local PresetGroupbox = Tabs.Elevator:AddLeftGroupbox("Presets") do
             presetData.FriendsOnly = createElevatorFrame.Settings.FriendsOnly:GetAttribute("Setting")
 
             Script.Functions.File.CreatePreset(Options.Elevator_PresetName.Value, presetData)
-            Script.Functions.Alert("Created elevator preset " .. Options.Elevator_PresetName.Value .. " with " .. #presetData.Modifiers .. " modifiers")
+            Script.Functions.Alert('Created elevator preset "' .. Options.Elevator_PresetName.Value .. '" with ' .. #presetData.Modifiers .. " modifiers")
 
             Script.Functions.File.LoadPresets()
             Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
