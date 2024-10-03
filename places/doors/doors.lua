@@ -2763,8 +2763,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     
         ESPSettingsTab:AddToggle("ESPDistance", {
             Text = "Show Distance",
-            Default = true,
-            Visible = false, -- Not implemented in mstudio45's ESP library
+            Default = true
         })
     
         ESPSettingsTab:AddSlider("ESPFillTransparency", {
@@ -4749,6 +4748,10 @@ end)
 
 Toggles.ESPRainbow:OnChanged(function(value)
     ESPLibrary.Rainbow.Set(value)
+end)
+
+Toggles.ESPDistance:OnChanged(function(value)
+    ESPLibrary.Distance.Set(value)
 end)
 
 Options.ESPFillTransparency:OnChanged(function(value)
