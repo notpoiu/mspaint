@@ -121,21 +121,25 @@ local Options = getgenv().Linoria.Options
 local Toggles = getgenv().Linoria.Toggles
 
 local Window = Library:CreateWindow({
-	Title = "mspaint v2",
-	Center = true,
-	AutoShow = true,
-	Resizable = true,
+    Title = "mspaint v2",
+    Center = true,
+    AutoShow = true,
+    Resizable = true,
     NotifySide = "Right",
-	ShowCustomCursor = true,
-	TabPadding = 2,
-	MenuFadeTime = 0
+    ShowCustomCursor = true,
+    TabPadding = 2,
+    MenuFadeTime = 0
 })
 
 local Tabs = {
+
 	Main = Window:AddTab("Main"),
 	CustomTab = Window:AddTab("Custom"),
+
+    Main = Window:AddTab("Main"),
+
     Elevator = Window:AddTab("Elevator"),
-	["UI Settings"] = Window:AddTab("UI Settings"),
+    ["UI Settings"] = Window:AddTab("UI Settings"),
 }
 
 
@@ -615,8 +619,8 @@ task.spawn(Script.Functions.SetupVariables)
 --// Library Load \\--
 
 Library:OnUnload(function()
-	print("Unloaded!")
-	Library.Unloaded = true
+    print("Unloaded!")
+    Library.Unloaded = true
     getgenv().mspaint_loaded = false
 end)
 
@@ -629,11 +633,11 @@ MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
 MenuGroup:AddButton("Join Discord Server", function()
     local Inviter = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Discord%20Inviter/Source.lua"))()
-	Inviter.Join("https://discord.com/invite/cfyMptntHr")
-	Inviter.Prompt({
-		name = "mspaint",
-		invite = "https://discord.com/invite/cfyMptntHr",
-	})
+    Inviter.Join("https://discord.com/invite/cfyMptntHr")
+    Inviter.Prompt({
+        name = "mspaint",
+        invite = "https://discord.com/invite/cfyMptntHr",
+    })
 end)
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
