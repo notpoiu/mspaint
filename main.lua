@@ -162,14 +162,21 @@ task.spawn(function()
                             return 
                         end
 
-                        if type(addon.Game) ~= "string" then
+                        if typeof(addon.Game) ~= "string" or typeof(addon.Game) ~= "table" then
                             warn("Addon '" .. string.gsub(file, "mspaint/addons/", "") .. "' didn't load: Invalid GameId.")
                             return
                         end
 
-                        if addon.Game ~= gameAddonPath and addon.Game ~= "*" then
-                            warn("Addon '" .. string.gsub(file, "mspaint/addons/", "") .. "' didn't load: Wrong game.")
-                            return
+                        if typeof(addon.Game) == "string" then
+                            if addon.Game ~= gameAddonPath and addon.Game ~= "*" then
+                                warn("Addon '" .. string.gsub(file, "mspaint/addons/", "") .. "' didn't load: Wrong game.")
+                                return
+                            end
+                        elseif typeof(addon.Game) == "table" then
+                            if not table.find(addon.Game, gameAddonPath) then
+                                warn("Addon '" .. string.gsub(file, "mspaint/addons/", "") .. "' didn't load: Wrong game.")
+                                return
+                            end
                         end
 
                         addon.Name = addon.Name:gsub("%s+", "")
