@@ -29,7 +29,20 @@ function test(name: string, func: () -> (), shouldCallback: boolean)
     return success
 end
 
+test("readfile", readfile, false)
+test("listfiles", listfiles, false)
+test("writefile", writefile, false)
+test("makefolder", makefolder, false)
+test("appendfile", appendfile, false)
+test("isfile", isfile, false)
+test("isfolder", isfolder, false)
+test("delfile", delfile, false)
+test("delfolder", delfolder, false)
+test("loadfile", loadfile, false)
+test("dofile", dofile, false)
+
 test("queue_on_teleport", queue_on_teleport, false)
+
 test("require", function()
     require(Players.LocalPlayer:WaitForChild("PlayerScripts", math.huge):WaitForChild("PlayerModule", 5)) -- ReplicatedStorage:WaitForChild("ModuleScript")
 end)
