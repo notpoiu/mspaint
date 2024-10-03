@@ -371,7 +371,7 @@ local Toggles = getgenv().Linoria.Toggles
 local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/mstudio45/MS-ESP/refs/heads/main/source.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "mspaint v2",
+    Title = "mspaint v2 | DOORS",
     Center = true,
     AutoShow = true,
     Resizable = true,
@@ -5281,6 +5281,12 @@ Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
     end
 end))
 
+Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
+    if (state == Enum.TeleportState.RequestedFromServer or state == state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value then
+        queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
+    end
+end))
+
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("Alive"):Connect(function()
     alive = localPlayer:GetAttribute("Alive")
 
@@ -6016,6 +6022,7 @@ end)
 local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu")
 local CreditsGroup = Tabs["UI Settings"]:AddRightGroupbox("Credits")
 
+MenuGroup:AddToggle("ExecuteOnTeleport", { Default = false, Text = "Execute on Teleport", Visible = ExecutorSupport["queue_on_teleport"] })
 MenuGroup:AddToggle("KeybindMenuOpen", { Default = false, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end})
 MenuGroup:AddToggle("ShowCustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(Value) Library.ShowCustomCursor = Value end})
 MenuGroup:AddDivider()
