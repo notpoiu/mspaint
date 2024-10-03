@@ -371,22 +371,22 @@ local Toggles = getgenv().Linoria.Toggles
 local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/mstudio45/MS-ESP/refs/heads/main/source.lua"))()
 
 local Window = Library:CreateWindow({
-	Title = "mspaint v2",
-	Center = true,
-	AutoShow = true,
-	Resizable = true,
+    Title = "mspaint v2",
+    Center = true,
+    AutoShow = true,
+    Resizable = true,
     NotifySide = "Right",
-	ShowCustomCursor = true,
-	TabPadding = 2,
-	MenuFadeTime = 0
+    ShowCustomCursor = true,
+    TabPadding = 2,
+    MenuFadeTime = 0
 })
 
 local Tabs = {
-	Main = Window:AddTab("Main"),
+    Main = Window:AddTab("Main"),
     Exploits = Window:AddTab("Exploits"),
     Visuals = Window:AddTab("Visuals"),
     Floor = Window:AddTab("Floor"),
-	["UI Settings"] = Window:AddTab("UI Settings"),
+    ["UI Settings"] = Window:AddTab("UI Settings"),
 }
 
 local _mspaint_custom_captions = Instance.new("ScreenGui") do
@@ -918,8 +918,8 @@ end
 
 function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = entity, ty upio
     if not Toggles.AutoWardrobe.Value or not alive or not child or not child:IsDescendantOf(workspace) then
-    	index = index or table.find(Script.Temp.AutoWardrobeEntities, child)
-    	if index then
+        index = index or table.find(Script.Temp.AutoWardrobeEntities, child)
+        if index then
             table.remove(Script.Temp.AutoWardrobeEntities, index)
         end
 
@@ -944,7 +944,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
         if not prompt.Parent then return false end
         if not prompt.Parent:FindFirstChild("HiddenPlayer") then return false end
         if prompt.Parent:FindFirstChild("Main") and prompt.Parent.Main:FindFirstChild("HideEntityOnSpot") then
-        	if prompt.Parent.Main.HideEntityOnSpot.Whispers.Playing == true then return false end -- Hide
+            if prompt.Parent.Main.HideEntityOnSpot.Whispers.Playing == true then return false end -- Hide
         end
 
         return prompt.Name == "HidePrompt" and (prompt.Parent:GetAttribute("LoadModule") == "Wardrobe" or prompt.Parent:GetAttribute("LoadModule") == "Bed" or prompt.Parent.Name == "Rooms_Locker") and not prompt.Parent.HiddenPlayer.Value and (Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance * Options.PromptReachMultiplier.Value)
@@ -994,7 +994,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
     end
     local waitForSafeExit; waitForSafeExit = function()
         if child.Name == "A120" then
-        	repeat task.wait() until not child:IsDescendantOf(workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10) or (not alive or not character:GetAttribute("Hiding"))
+            repeat task.wait() until not child:IsDescendantOf(workspace) or (child.PrimaryPart and child.PrimaryPart.Position.Y < -10) or (not alive or not character:GetAttribute("Hiding"))
         else   
             local didPlayerSeeEntity = false
             task.spawn(function()
@@ -1008,7 +1008,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
                 until false == true
             end)
 
-        	repeat task.wait(.15)
+            repeat task.wait(.15)
                 local isSafe = isSafeCheck()
                 if didPlayerSeeEntity == true and isSafe == true then
                     Script.Functions.Log({
@@ -1034,7 +1034,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
 
                 if not alive then  
                     if Toggles.AutoWardrobeNotif.Value then Script.Functions.Log("[" .. NotifPrefix .. "] Stopping (you died).") end             
-                	Script.Functions.Log({
+                    Script.Functions.Log({
                         Title = NotifPrefix,
                         Description = "Stopping (you died)",
                         
@@ -1078,7 +1078,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
             until not child or not child:IsDescendantOf(workspace)
         end)
 
-    	repeat task.wait()
+        repeat task.wait()
             Script.Functions.Log({
                 Title = NotifPrefix,
                 Description = "Waiting for Ambush to be close enough...",
@@ -1105,7 +1105,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
             end
         until (not child or not child:IsDescendantOf(workspace)) or not alive
     else
-     	repeat task.wait() until isSafeCheck(true) == false
+         repeat task.wait() until isSafeCheck(true) == false
 
         repeat
             local success = hide()
@@ -1613,7 +1613,7 @@ function Script.Functions.SetupRoomConnection(room)
     for _, child in pairs(room:GetDescendants()) do
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
-            	Script.Functions.DeleteSeek(child)
+                Script.Functions.DeleteSeek(child)
             end
         end)
 
@@ -1623,7 +1623,7 @@ function Script.Functions.SetupRoomConnection(room)
     Script.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
         task.spawn(function()
             if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
-            	Script.Functions.DeleteSeek(child)
+                Script.Functions.DeleteSeek(child)
             end
         end)
 
@@ -2062,7 +2062,7 @@ function Script.Functions.DeleteSeek(collision: BasePart)
         repeat task.wait() attemps += 1 until collision.Parent or attemps > 200
         
         if collision:IsDescendantOf(workspace) and (collision.Parent and collision.Parent.Name == "TriggerEventCollision") then
-        	Script.Functions.Alert({
+            Script.Functions.Alert({
                 Title = "Delete Seek FE",
                 Description = "Deleting Seek trigger...",
                 Reason = "",
@@ -2079,7 +2079,7 @@ function Script.Functions.DeleteSeek(collision: BasePart)
             end)
             
             if fireTouch then
-            	rootPart.Anchored = true
+                rootPart.Anchored = true
                 task.delay(0.25, function() rootPart.Anchored = false end)
 
                 repeat
@@ -2210,97 +2210,97 @@ function Script.Functions.RandomString()
 end
 
 function Script.Functions.Notifs.Doors.Notify(unsafeOptions)
-	assert(typeof(unsafeOptions) == "table", "Expected a table as options argument but got " .. typeof(unsafeOptions))
+    assert(typeof(unsafeOptions) == "table", "Expected a table as options argument but got " .. typeof(unsafeOptions))
     if not mainUI then return end
     
-	local options = Script.Functions.EnforceTypes(unsafeOptions, {
-		Title = "No Title",
-		Description = "No Text",
-		Reason = "",
-		NotificationType = "NOTIFICATION",
-		Image = "6023426923",
-		Color = nil,
-		Time = nil,
+    local options = Script.Functions.EnforceTypes(unsafeOptions, {
+        Title = "No Title",
+        Description = "No Text",
+        Reason = "",
+        NotificationType = "NOTIFICATION",
+        Image = "6023426923",
+        Color = nil,
+        Time = nil,
 
         TweenDuration = 0.8
-	})
+    })
 
 
-	local acheivement = mainUI.AchievementsHolder.Achievement:Clone()
-	acheivement.Size = UDim2.new(0, 0, 0, 0)
-	acheivement.Frame.Position = UDim2.new(1.1, 0, 0, 0)
-	acheivement.Name = "LiveAchievement"
-	acheivement.Visible = true
+    local acheivement = mainUI.AchievementsHolder.Achievement:Clone()
+    acheivement.Size = UDim2.new(0, 0, 0, 0)
+    acheivement.Frame.Position = UDim2.new(1.1, 0, 0, 0)
+    acheivement.Name = "LiveAchievement"
+    acheivement.Visible = true
 
-	acheivement.Frame.TextLabel.Text = options.NotificationType
+    acheivement.Frame.TextLabel.Text = options.NotificationType
 
-	if options.Color ~= nil then
-		acheivement.Frame.TextLabel.TextColor3 = options.Color
-		acheivement.Frame.UIStroke.Color = options.Color
-		acheivement.Frame.Glow.ImageColor3 = options.Color
-	end
-	
-	acheivement.Frame.Details.Desc.Text = tostring(options.Description)
-	acheivement.Frame.Details.Title.Text = tostring(options.Title)
-	acheivement.Frame.Details.Reason.Text = tostring(options.Reason or "")
+    if options.Color ~= nil then
+        acheivement.Frame.TextLabel.TextColor3 = options.Color
+        acheivement.Frame.UIStroke.Color = options.Color
+        acheivement.Frame.Glow.ImageColor3 = options.Color
+    end
+    
+    acheivement.Frame.Details.Desc.Text = tostring(options.Description)
+    acheivement.Frame.Details.Title.Text = tostring(options.Title)
+    acheivement.Frame.Details.Reason.Text = tostring(options.Reason or "")
 
-	if options.Image:match("rbxthumb://") or options.Image:match("rbxassetid://") then
-		acheivement.Frame.ImageLabel.Image = tostring(options.Image or "rbxassetid://0")
-	else
-		acheivement.Frame.ImageLabel.Image = "rbxassetid://" .. tostring(options.Image or "0")
-	end
+    if options.Image:match("rbxthumb://") or options.Image:match("rbxassetid://") then
+        acheivement.Frame.ImageLabel.Image = tostring(options.Image or "rbxassetid://0")
+    else
+        acheivement.Frame.ImageLabel.Image = "rbxassetid://" .. tostring(options.Image or "0")
+    end
 
-	acheivement.Parent = mainUI.AchievementsHolder
-	acheivement.Sound.SoundId = "rbxassetid://10469938989"
+    acheivement.Parent = mainUI.AchievementsHolder
+    acheivement.Sound.SoundId = "rbxassetid://10469938989"
 
     acheivement.Sound.Volume = 1
 
     if Toggles.NotifySound.Value then
-	    acheivement.Sound:Play()
+        acheivement.Sound:Play()
     end
 
     acheivement:TweenSize(UDim2.new(1, 0, 0.2, 0), "In", "Quad", options.TweenDuration, true)
 
-	task.wait(0.8)
+    task.wait(0.8)
 
-	acheivement.Frame:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Quad", 0.5, true)
+    acheivement.Frame:TweenPosition(UDim2.new(0, 0, 0, 0), "Out", "Quad", 0.5, true)
 
-	TweenService:Create(acheivement.Frame.Glow, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In),{
-		ImageTransparency = 1
-	}):Play()
+    TweenService:Create(acheivement.Frame.Glow, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In),{
+        ImageTransparency = 1
+    }):Play()
 
-	if options.Time ~= nil then
-		if typeof(options.Time) == "number" then
-			task.wait(options.Time)
-		elseif typeof(options.Time) == "Instance" then
-			options.Time.Destroying:Wait()
-		end
-	else
-		task.wait(5)
-	end
+    if options.Time ~= nil then
+        if typeof(options.Time) == "number" then
+            task.wait(options.Time)
+        elseif typeof(options.Time) == "Instance" then
+            options.Time.Destroying:Wait()
+        end
+    else
+        task.wait(5)
+    end
 
-	acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
-	task.wait(0.5)
-	acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
-	task.wait(0.5)
-	acheivement:Destroy()
+    acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
+    task.wait(0.5)
+    acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
+    task.wait(0.5)
+    acheivement:Destroy()
 end
 
 function Script.Functions.Notifs.Doors.Warn(options)
-	assert(typeof(options) == "table", "Expected a table as options argument but got " .. typeof(options))
+    assert(typeof(options) == "table", "Expected a table as options argument but got " .. typeof(options))
 
-	options["NotificationType"] = "WARNING"
-	options["Color"] = Color3.new(1, 0, 0)
+    options["NotificationType"] = "WARNING"
+    options["Color"] = Color3.new(1, 0, 0)
     options["TweenDuration"] = 0.3
 
-	Script.Functions.Notifs.Doors.Notify(options)
+    Script.Functions.Notifs.Doors.Notify(options)
 end
 
 function Script.Functions.Notifs.Linoria.Notify(unsafeOptions)
     local options = Script.Functions.EnforceTypes(unsafeOptions, {
-		Description = "No Message",
+        Description = "No Message",
         Time = nil
-	})
+    })
 
     Library:Notify(options.Description, options.Time or 5)
 
@@ -2316,9 +2316,9 @@ end
 
 function Script.Functions.Notifs.Linoria.Log(unsafeOptions, condition: boolean | nil)
     local options = Script.Functions.EnforceTypes(unsafeOptions, {
-		Description = "No Message",
+        Description = "No Message",
         Time = nil
-	})
+    })
 
     if condition ~= nil and not condition then return end
     Library:Notify(options.Description, options.Time or 5)
@@ -2471,7 +2471,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
     AutomationGroupBox:AddToggle("AutoWardrobe", {
         Text = "Auto " .. HidingPlaceName[floor.Value],
         Default = false,
-	Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)"
+    Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)"
     }):AddKeyPicker("AutoWardrobeKey", {
         Mode = "Toggle",
         Default = "Q",
@@ -3973,46 +3973,46 @@ Toggles.FakeRevive:OnChanged(function(value)
         end
 
         task.wait(0.1)
-		for _, hotbarItem in pairs(mainUI.MainFrame.Hotbar:GetChildren()) do
-			if not hotbarItem:IsA("TextButton") then continue end
-			hotbarItem.Visible = false
-		end
+        for _, hotbarItem in pairs(mainUI.MainFrame.Hotbar:GetChildren()) do
+            if not hotbarItem:IsA("TextButton") then continue end
+            hotbarItem.Visible = false
+        end
 
         local tool = Instance.new("Tool") do
-			tool.RequiresHandle = false
-			tool.Name = "AttachTool"
-			tool.Parent = character
+            tool.RequiresHandle = false
+            tool.Name = "AttachTool"
+            tool.Parent = character
 
-			humanoid.Name = "old_Humanoid"
-			local newHumanoid = humanoid:Clone()
-			newHumanoid.Parent = character
-			newHumanoid.Name = "Humanoid"
+            humanoid.Name = "old_Humanoid"
+            local newHumanoid = humanoid:Clone()
+            newHumanoid.Parent = character
+            newHumanoid.Name = "Humanoid"
 
-			task.wait()
+            task.wait()
 
-			humanoid:Destroy()
-			camera.CameraSubject = character
-			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+            humanoid:Destroy()
+            camera.CameraSubject = character
+            humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 
-			local determined_cframe = rootPart.CFrame * CFrame.new(0, 0, 0) * CFrame.new(math.random(-100, 100)/200,math.random(-100, 100)/200,math.random(-100, 100)/200)
-			rootPart.CFrame = determined_cframe
-			
-			local atempts = 0
-			repeat task.wait()
-				atempts = atempts + 1
-				rootPart.CFrame = determined_cframe
-			until (tool.Parent ~= character or not rootPart or not rootPart.Parent or atempts > 250) and atempts > 2
-			tool:Destroy()
-		end
+            local determined_cframe = rootPart.CFrame * CFrame.new(0, 0, 0) * CFrame.new(math.random(-100, 100)/200,math.random(-100, 100)/200,math.random(-100, 100)/200)
+            rootPart.CFrame = determined_cframe
+            
+            local atempts = 0
+            repeat task.wait()
+                atempts = atempts + 1
+                rootPart.CFrame = determined_cframe
+            until (tool.Parent ~= character or not rootPart or not rootPart.Parent or atempts > 250) and atempts > 2
+            tool:Destroy()
+        end
 
         -- setup character
-		for _, part in pairs(character:GetDescendants()) do
-			if part:IsA("BasePart") and part.Name ~= "UpperTorso" and part.Name ~= "Collision" and part.Parent.Name ~= "Collision" then 
-				--v.CanCollide = false
-				part.Massless = true
-				part.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1)
-			end
-		end
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "UpperTorso" and part.Name ~= "Collision" and part.Parent.Name ~= "Collision" then 
+                --v.CanCollide = false
+                part.Massless = true
+                part.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5, 1, 1)
+            end
+        end
 
         for _, weld in pairs(character:GetChildren()) do
             if weld:IsA("Weld") then
@@ -4023,227 +4023,227 @@ Toggles.FakeRevive:OnChanged(function(value)
         camera:Destroy()
         task.wait(.1)
         workspace.CurrentCamera.CameraSubject = character:FindFirstChildWhichIsA('Humanoid')
-		workspace.CurrentCamera.CameraType = "Custom"
-	    localPlayer.CameraMinZoomDistance = 0.5
-		localPlayer.CameraMaxZoomDistance = 400
-		localPlayer.CameraMode = "Classic"
-		character.Head.Anchored = false
-		camera = workspace.CurrentCamera
+        workspace.CurrentCamera.CameraType = "Custom"
+        localPlayer.CameraMinZoomDistance = 0.5
+        localPlayer.CameraMaxZoomDistance = 400
+        localPlayer.CameraMode = "Classic"
+        character.Head.Anchored = false
+        camera = workspace.CurrentCamera
 
         -- setup fake char
-		local humanoidDescription = Players:GetHumanoidDescriptionFromUserId(localPlayer.UserId)
-		humanoidDescription.HeightScale = 1.2
+        local humanoidDescription = Players:GetHumanoidDescriptionFromUserId(localPlayer.UserId)
+        humanoidDescription.HeightScale = 1.2
 
-		local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
-			previewCharacter.Parent = Workspace
-			previewCharacter.Name = "PreviewCharacter"
+        local previewCharacter = Players:CreateHumanoidModelFromDescription(humanoidDescription, Enum.HumanoidRigType.R15) do
+            previewCharacter.Parent = Workspace
+            previewCharacter.Name = "PreviewCharacter"
 
-			previewCharacter.HumanoidRootPart.Anchored = true
-			character.UpperTorso.CanCollide = false
-		end
+            previewCharacter.HumanoidRootPart.Anchored = true
+            character.UpperTorso.CanCollide = false
+        end
 
         fakeReviveConnections["HidingFix"] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if UserInputService:GetFocusedTextBox() then return end
             if gameProcessed then return end
 
-			if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
-				if character:GetAttribute("Hiding") then
-					for i = 1, 50 do
-						task.wait()
-						remotesFolder.CamLock:FireServer()
-					end
-				end
-			end
-		end)
+            if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
+                if character:GetAttribute("Hiding") then
+                    for i = 1, 50 do
+                        task.wait()
+                        remotesFolder.CamLock:FireServer()
+                    end
+                end
+            end
+        end)
 
         Library:GiveSignal(fakeReviveConnections["HidingFix"])
 
         -- animation setup
-		task.spawn(function()
-			local anims = character:WaitForChild("Animations", 10) or previewCharacter:WaitForChild("Animations", 10);
-			local crouch, oldCrouchSpeed = previewCharacter.Humanoid:LoadAnimation(anims.Crouch), 0;
-			local walk, idle = previewCharacter.Humanoid:LoadAnimation(anims.Forward), previewCharacter.Humanoid:LoadAnimation(anims.Idle);
-			local interact = previewCharacter.Humanoid:LoadAnimation(anims.Interact);
-			oldCrouchSpeed = crouch.Speed;
+        task.spawn(function()
+            local anims = character:WaitForChild("Animations", 10) or previewCharacter:WaitForChild("Animations", 10);
+            local crouch, oldCrouchSpeed = previewCharacter.Humanoid:LoadAnimation(anims.Crouch), 0;
+            local walk, idle = previewCharacter.Humanoid:LoadAnimation(anims.Forward), previewCharacter.Humanoid:LoadAnimation(anims.Idle);
+            local interact = previewCharacter.Humanoid:LoadAnimation(anims.Interact);
+            oldCrouchSpeed = crouch.Speed;
 
-			local function playWalkingAnim(key)
-				repeat
-					if idle.isPlaying then idle:Stop() end
+            local function playWalkingAnim(key)
+                repeat
+                    if idle.isPlaying then idle:Stop() end
 
-					if character:GetAttribute("Crouching") then
-						if not crouch.isPlaying then crouch:Play() crouch:AdjustSpeed(oldCrouchSpeed) end
-						if walk.isPlaying then walk:Stop() end
-					else
-						if crouch.isPlaying then crouch:Stop() end
-						if not walk.isPlaying then walk:Play() end
-					end
+                    if character:GetAttribute("Crouching") then
+                        if not crouch.isPlaying then crouch:Play() crouch:AdjustSpeed(oldCrouchSpeed) end
+                        if walk.isPlaying then walk:Stop() end
+                    else
+                        if crouch.isPlaying then crouch:Stop() end
+                        if not walk.isPlaying then walk:Play() end
+                    end
 
-					task.wait(.5)
-				until not UserInputService:IsKeyDown(key) and not UserInputService:GetFocusedTextBox()
-			end
+                    task.wait(.5)
+                until not UserInputService:IsKeyDown(key) and not UserInputService:GetFocusedTextBox()
+            end
 
             fakeReviveConnections["AnimationHandler"] = UserInputService.InputBegan:Connect(function(input)
                 if UserInputService:GetFocusedTextBox() then return end
-				if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
-					playWalkingAnim(input.KeyCode)
-				end
-			end)
+                if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
+                    playWalkingAnim(input.KeyCode)
+                end
+            end)
 
-			Library:GiveSignal(fakeReviveConnections["AnimationHandler"])
+            Library:GiveSignal(fakeReviveConnections["AnimationHandler"])
 
             fakeReviveConnections["AnimationHandler2"] = UserInputService.InputEnded:Connect(function(input)
                 if UserInputService:GetFocusedTextBox() then return end
 
-				if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
-					task.wait(.1)
-					if walk.isPlaying then walk:Stop() end
-					if character:GetAttribute("Crouching") then 
-						if not crouch.isPlaying then crouch:Play() end
-						crouch:AdjustSpeed(0)
-					else 
-						if crouch.isPlaying then crouch:Stop() end 
-					end
-					if not idle.isPlaying then idle:Play() end
-				end
-			end)
+                if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
+                    task.wait(.1)
+                    if walk.isPlaying then walk:Stop() end
+                    if character:GetAttribute("Crouching") then 
+                        if not crouch.isPlaying then crouch:Play() end
+                        crouch:AdjustSpeed(0)
+                    else 
+                        if crouch.isPlaying then crouch:Stop() end 
+                    end
+                    if not idle.isPlaying then idle:Play() end
+                end
+            end)
 
-			Library:GiveSignal(fakeReviveConnections["AnimationHandler2"])
+            Library:GiveSignal(fakeReviveConnections["AnimationHandler2"])
 
-			-- Tool Handler (kinda broken) --
-			if character:WaitForChild("RightHand", math.huge) then
-				local rightGrip = Instance.new("Weld", character.RightHand)
-				rightGrip.C0 = CFrame.new(0, -0.15, -1.5, 1, 0, -0, 0, 0, 1, 0, -1, 0)
-				rightGrip.Part0 = character.RightHand
-		
-				local toolsAnim = {}
-				local currentTool = nil
-				local doorInteractables = { "Key", "Lockpick" }
+            -- Tool Handler (kinda broken) --
+            if character:WaitForChild("RightHand", math.huge) then
+                local rightGrip = Instance.new("Weld", character.RightHand)
+                rightGrip.C0 = CFrame.new(0, -0.15, -1.5, 1, 0, -0, 0, 0, 1, 0, -1, 0)
+                rightGrip.Part0 = character.RightHand
+        
+                local toolsAnim = {}
+                local currentTool = nil
+                local doorInteractables = { "Key", "Lockpick" }
 
                 fakeReviveConnections["ToolAnimHandler"] = character.ChildAdded:Connect(function(tool)
-					if tool:IsA("Tool") then
-						for _, anim in pairs(toolsAnim) do
-							anim:Stop()
-						end
-		
-						table.clear(toolsAnim)
-		
-						local anims = tool:WaitForChild("Animations")
-						currentTool = tool
-		
-						for i, v in pairs(anims:GetChildren()) do
-							if v:IsA("Animation") then
-								toolsAnim[v.Name] = previewCharacter.Humanoid:LoadAnimation(v)
-							end
-						end
-		
-						if toolsAnim.idle then toolsAnim.idle:Play(0.4, 1, 1) end
-						if toolsAnim.equip then toolsAnim.equip:Play(0.05, 1, 1) end
-		
-						local toolHandle = tool:WaitForChild("Handle", 3)
-						if toolHandle and character:FindFirstChild("RightHand") then
-							rightGrip.Parent = character.RightHand
-							rightGrip.C1 = tool.Grip
-							rightGrip.Part1 = toolHandle        
-						end
-		
-						local animation_state = false
-						tool.Activated:Connect(function()
-							if table.find(doorInteractables, tool.Name) then return end
-		
-							local anim = toolsAnim.use or (tool:GetAttribute("LightSource") and toolsAnim.open)
-		
-							if anim then
+                    if tool:IsA("Tool") then
+                        for _, anim in pairs(toolsAnim) do
+                            anim:Stop()
+                        end
+        
+                        table.clear(toolsAnim)
+        
+                        local anims = tool:WaitForChild("Animations")
+                        currentTool = tool
+        
+                        for i, v in pairs(anims:GetChildren()) do
+                            if v:IsA("Animation") then
+                                toolsAnim[v.Name] = previewCharacter.Humanoid:LoadAnimation(v)
+                            end
+                        end
+        
+                        if toolsAnim.idle then toolsAnim.idle:Play(0.4, 1, 1) end
+                        if toolsAnim.equip then toolsAnim.equip:Play(0.05, 1, 1) end
+        
+                        local toolHandle = tool:WaitForChild("Handle", 3)
+                        if toolHandle and character:FindFirstChild("RightHand") then
+                            rightGrip.Parent = character.RightHand
+                            rightGrip.C1 = tool.Grip
+                            rightGrip.Part1 = toolHandle        
+                        end
+        
+                        local animation_state = false
+                        tool.Activated:Connect(function()
+                            if table.find(doorInteractables, tool.Name) then return end
+        
+                            local anim = toolsAnim.use or (tool:GetAttribute("LightSource") and toolsAnim.open)
+        
+                            if anim then
                                 if ExecutorSupport["require"] then require(tool.ToolModule).fire() end
                                 local toolRemote = tool:FindFirstChild("Remote")
                                 if toolRemote then
                                     toolRemote:FireServer()
                                 end
 
-								if tool:GetAttribute("LightSource") then
-									if animation_state then
-										anim:Stop()
-									else
-										anim:Play()
-									end
-									
-									animation_state = not animation_state
-									return
-								end
-		
-								anim:Play()
-							end
-						end)
-					end
-				end)
+                                if tool:GetAttribute("LightSource") then
+                                    if animation_state then
+                                        anim:Stop()
+                                    else
+                                        anim:Play()
+                                    end
+                                    
+                                    animation_state = not animation_state
+                                    return
+                                end
+        
+                                anim:Play()
+                            end
+                        end)
+                    end
+                end)
 
-				Library:GiveSignal(fakeReviveConnections["ToolAnimHandler"])
-		
-				-- Prompts handler
+                Library:GiveSignal(fakeReviveConnections["ToolAnimHandler"])
+        
+                -- Prompts handler
                 local holding, holdStart, startDurability = false, 0, 0
                 fakeReviveConnections["ToolAnimHandler2"] = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-					if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
-						holding = true; holdStart = tick(); startDurability = currentTool:GetAttribute("Durability")
+                    if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
+                        holding = true; holdStart = tick(); startDurability = currentTool:GetAttribute("Durability")
                         
-						toolsAnim.use:Play()
-					end
-				end)
+                        toolsAnim.use:Play()
+                    end
+                end)
 
-				Library:GiveSignal(fakeReviveConnections["ToolAnimHandler2"])
+                Library:GiveSignal(fakeReviveConnections["ToolAnimHandler2"])
 
                 fakeReviveConnections["ToolAnimInteractHandler"] = ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt)
-					if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
-						if holdStart == 0 then return end
-		
-						if startDurability and currentTool:GetAttribute("Durability") < startDurability then
-							toolsAnim.use:Stop()
-							toolsAnim.usebreak:Play()
-		
-							return
-						end
-						
-						if holding and tick() - holdStart > prompt.HoldDuration then
-							holding = false; holdStart = 0
-		
-							toolsAnim.use:Stop()
-							toolsAnim.usefinish:Play()
-							
-							return
-						end
-		
-						holding = false; holdStart = 0
-		
-						toolsAnim.use:Stop()
-					end
-				end)
+                    if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
+                        if holdStart == 0 then return end
+        
+                        if startDurability and currentTool:GetAttribute("Durability") < startDurability then
+                            toolsAnim.use:Stop()
+                            toolsAnim.usebreak:Play()
+        
+                            return
+                        end
+                        
+                        if holding and tick() - holdStart > prompt.HoldDuration then
+                            holding = false; holdStart = 0
+        
+                            toolsAnim.use:Stop()
+                            toolsAnim.usefinish:Play()
+                            
+                            return
+                        end
+        
+                        holding = false; holdStart = 0
+        
+                        toolsAnim.use:Stop()
+                    end
+                end)
 
-				Library:GiveSignal(fakeReviveConnections["ToolAnimInteractHandler"])
+                Library:GiveSignal(fakeReviveConnections["ToolAnimInteractHandler"])
                 
                 fakeReviveConnections["ToolAnimUnequipHandler"] = character.ChildRemoved:Connect(function(v)
-					if v:IsA("Tool") then
-						rightGrip.Part1 = nil
-						rightGrip.C1 = CFrame.new()
-						rightGrip.Parent = nil
-		
-						for _, anim in pairs(toolsAnim) do
-							anim:Stop()
-						end
-		
-						currentTool = nil
-					end
-				end)
+                    if v:IsA("Tool") then
+                        rightGrip.Part1 = nil
+                        rightGrip.C1 = CFrame.new()
+                        rightGrip.Parent = nil
+        
+                        for _, anim in pairs(toolsAnim) do
+                            anim:Stop()
+                        end
+        
+                        currentTool = nil
+                    end
+                end)
 
-				Library:GiveSignal(fakeReviveConnections["ToolAnimUnequipHandler"])
-			end
-		end)
+                Library:GiveSignal(fakeReviveConnections["ToolAnimUnequipHandler"])
+            end
+        end)
 
-		-- movement code
-		local function generateCharacterCFrame(obj)
-			local obj_pos = obj.Position
-			return CFrame.new(obj_pos, obj_pos - (Vector3.new(camera.CFrame.Position.X, obj_pos.Y, camera.CFrame.Position.Z) - obj_pos).unit)
-		end
+        -- movement code
+        local function generateCharacterCFrame(obj)
+            local obj_pos = obj.Position
+            return CFrame.new(obj_pos, obj_pos - (Vector3.new(camera.CFrame.Position.X, obj_pos.Y, camera.CFrame.Position.Z) - obj_pos).unit)
+        end
 
-		local function usePreviewCharacter(doStepped)
-			-- fuck you roblox for using head instead of primarypart or char:GetPivot() 
+        local function usePreviewCharacter(doStepped)
+            -- fuck you roblox for using head instead of primarypart or char:GetPivot() 
             -- mstudio45 2023 ^^
             if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
                 _fixDistanceFromCharacter = hookmetamethod(localPlayer, "__namecall", function(self, ...)
@@ -4262,34 +4262,34 @@ Toggles.FakeRevive:OnChanged(function(value)
                 end)
             end
 
-			if doStepped ~= false then
-				Library:Notify("You are not longer visible to others because you have lost Network Ownership of your character.", 5);
+            if doStepped ~= false then
+                Library:Notify("You are not longer visible to others because you have lost Network Ownership of your character.", 5);
 
-				for _,v in pairs(previewCharacter:GetDescendants()) do
-					if v:IsA("BasePart") then 
-						v.CanCollide = false
-					end
-				end
+                for _,v in pairs(previewCharacter:GetDescendants()) do
+                    if v:IsA("BasePart") then 
+                        v.CanCollide = false
+                    end
+                end
 
                 for _, connection in pairs(fakeReviveConnections) do
                     connection:Disconnect()
                 end
                 
                 table.clear(fakeReviveConnections)
-			end
+            end
 
-			if previewCharacter:FindFirstChild("Humanoid") then previewCharacter.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+            if previewCharacter:FindFirstChild("Humanoid") then previewCharacter.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
             
             Toggles.Fly:SetValue(true)
 
-			Library:GiveSignal(RunService.RenderStepped:Connect(function()
-				if doStepped ~= false then previewCharacter:PivotTo(generateCharacterCFrame(character:GetPivot())) end
-				if rootPart then 
-					rootPart.Transparency = (doStepped ~= false) and 1 or 0
-					rootPart.CanCollide = false
-				end
-			end))
-		end
+            Library:GiveSignal(RunService.RenderStepped:Connect(function()
+                if doStepped ~= false then previewCharacter:PivotTo(generateCharacterCFrame(character:GetPivot())) end
+                if rootPart then 
+                    rootPart.Transparency = (doStepped ~= false) and 1 or 0
+                    rootPart.CanCollide = false
+                end
+            end))
+        end
 
         if character:FindFirstChild("LeftFoot") then character.LeftFoot.CanCollide = true end
         if character:FindFirstChild("RightFoot") then character.RightFoot.CanCollide = true end
@@ -4303,116 +4303,116 @@ Toggles.FakeRevive:OnChanged(function(value)
                 rootPart.Position = workspace.SpawnLocation.Position
             end
 
-			if character:FindFirstChild("UpperTorso") then
-				character.UpperTorso.CanCollide = false 
-			else
-				if character:FindFirstChild("HumanoidRootPart") then 
-					local totalParts = 0
-					for _, v in pairs(character:GetChildren()) do if v:IsA("BasePart") then totalParts = totalParts + 1 end end
-					if totalParts <= 2 then
-						task.spawn(usePreviewCharacter)
-						fakeReviveConnections["mainStepped"]:Disconnect()
+            if character:FindFirstChild("UpperTorso") then
+                character.UpperTorso.CanCollide = false 
+            else
+                if character:FindFirstChild("HumanoidRootPart") then 
+                    local totalParts = 0
+                    for _, v in pairs(character:GetChildren()) do if v:IsA("BasePart") then totalParts = totalParts + 1 end end
+                    if totalParts <= 2 then
+                        task.spawn(usePreviewCharacter)
+                        fakeReviveConnections["mainStepped"]:Disconnect()
 
                         for _, connection in pairs(fakeReviveConnections) do
                             connection:Disconnect()
                         end
                         
                         table.clear(fakeReviveConnections)
-						return
-					end
-				end
-			end
+                        return
+                    end
+                end
+            end
 
-			if not character:FindFirstChild("HumanoidRootPart") then
-				Library:Notify("You have completely lost Network Ownership of your character which resulted of breaking Fake Death.", 5);
-				task.spawn(usePreviewCharacter, false)
-				fakeReviveConnections["mainStepped"]:Disconnect()
+            if not character:FindFirstChild("HumanoidRootPart") then
+                Library:Notify("You have completely lost Network Ownership of your character which resulted of breaking Fake Death.", 5);
+                task.spawn(usePreviewCharacter, false)
+                fakeReviveConnections["mainStepped"]:Disconnect()
 
                 for _, connection in pairs(fakeReviveConnections) do
                     connection:Disconnect()
                 end
                 
                 table.clear(fakeReviveConnections)
-				return
-			end
-			
-			previewCharacter:PivotTo(generateCharacterCFrame(rootPart.CFrame * CFrame.new(0,1000,0)))
+                return
+            end
+            
+            previewCharacter:PivotTo(generateCharacterCFrame(rootPart.CFrame * CFrame.new(0,1000,0)))
 
-			local charPartCFrames = {}
-			for _, part in ipairs(previewCharacter:GetDescendants()) do
-				if part:IsA("BasePart") then
-					charPartCFrames[part.Name..part.ClassName] = part.CFrame
-				end
-			end
+            local charPartCFrames = {}
+            for _, part in ipairs(previewCharacter:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    charPartCFrames[part.Name..part.ClassName] = part.CFrame
+                end
+            end
 
-			for _, part in ipairs(character:GetDescendants()) do
-				if part:IsA("BasePart") then
-					if part.Name == "RagdollCollision" then
-						part.CFrame = (charPartCFrames[part.Parent.Name .. part.Parent.ClassName] - Vector3.new(0,1000,0))
-						part.CanCollide = true
-					else
-						if charPartCFrames[part.Name..part.ClassName] then
-							part.CFrame = (charPartCFrames[part.Name..part.ClassName] - Vector3.new(0,1000,0))
-						end
-					end
-					
-					if part.Name ~= "HumanoidRootPart" then
-						if part.Parent == character or part.Parent:IsA("Accessory") then
-							part.LocalTransparencyModifier = 0
-						end
+            for _, part in ipairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    if part.Name == "RagdollCollision" then
+                        part.CFrame = (charPartCFrames[part.Parent.Name .. part.Parent.ClassName] - Vector3.new(0,1000,0))
+                        part.CanCollide = true
+                    else
+                        if charPartCFrames[part.Name..part.ClassName] then
+                            part.CFrame = (charPartCFrames[part.Name..part.ClassName] - Vector3.new(0,1000,0))
+                        end
+                    end
+                    
+                    if part.Name ~= "HumanoidRootPart" then
+                        if part.Parent == character or part.Parent:IsA("Accessory") then
+                            part.LocalTransparencyModifier = 0
+                        end
 
-						part.AssemblyAngularVelocity = Vector3.zero
-						part.AssemblyLinearVelocity = Vector3.zero
-					end
-				end
-			end
-		end)
+                        part.AssemblyAngularVelocity = Vector3.zero
+                        part.AssemblyLinearVelocity = Vector3.zero
+                    end
+                end
+            end
+        end)
 
         Library:GiveSignal(fakeReviveConnections["mainStepped"])
 
-		task.wait(0.1)
-		local function fixUI()
-			local setComponentVisibility = {
-				mainUI.HodlerRevive,
-				mainUI.Statistics,
-				
-				mainUI.DeathPanelDead,
-				mainUI.DeathPanel,
+        task.wait(0.1)
+        local function fixUI()
+            local setComponentVisibility = {
+                mainUI.HodlerRevive,
+                mainUI.Statistics,
+                
+                mainUI.DeathPanelDead,
+                mainUI.DeathPanel,
 
-				mainUI.MainFrame.Healthbar,
+                mainUI.MainFrame.Healthbar,
 
-				["visible_real"] = mainUI.MainFrame.PromptFrame.CenterImage,
-				["deivid_ballers_fake"] = mainUI.MainFrame.PromptFrame.Holder,
+                ["visible_real"] = mainUI.MainFrame.PromptFrame.CenterImage,
+                ["deivid_ballers_fake"] = mainUI.MainFrame.PromptFrame.Holder,
 
                 mainUI.MainFrame.Hotbar,
                 mainUI.MainFrame.InventoryCap,
                 mainUI.MainFrame.InventoryLeftArrow,
                 mainUI.MainFrame.InventoryRightArrow,
-			}
+            }
 
-			for i,v in pairs(setComponentVisibility) do
-				local target_visibility = (typeof(i) == "string" and true or false)
+            for i,v in pairs(setComponentVisibility) do
+                local target_visibility = (typeof(i) == "string" and true or false)
 
-				v:GetPropertyChangedSignal("Visible"):Connect(function()
-					v.Visible = target_visibility
-				end)
+                v:GetPropertyChangedSignal("Visible"):Connect(function()
+                    v.Visible = target_visibility
+                end)
 
-				v.Visible = target_visibility
-			end
+                v.Visible = target_visibility
+            end
 
-			game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
-		end
+            game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
+        end
 
-		task.spawn(fixUI)
+        task.spawn(fixUI)
 
-		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		UserInputService.MouseIconEnabled = true
-		UserInputService.MouseIcon = "rbxassetid://2833720882"
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
+        UserInputService.MouseIcon = "rbxassetid://2833720882"
 
-		task.wait()
-		character.HumanoidRootPart.Anchored = false
+        task.wait()
+        character.HumanoidRootPart.Anchored = false
 
-		if mainGameSrc then mainGameSrc.dead = false end
+        if mainGameSrc then mainGameSrc.dead = false end
         
         ProximityPromptService.Enabled = true
         fakeReviveConnections["ProximityPromptEnabler"] = ProximityPromptService:GetPropertyChangedSignal("Enabled"):Connect(function()
@@ -4421,7 +4421,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         Library:GiveSignal(fakeReviveConnections["ProximityPromptEnabler"])
 
-		workspace.Gravity = 90
+        workspace.Gravity = 90
 
         -- ESP Fix :smartindividual:
         for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
@@ -4469,7 +4469,7 @@ Toggles.FakeRevive:OnChanged(function(value)
 
         Library:GiveSignal(fakeReviveConnections["CurrentRoomFix"])
 
-		Script.Functions.Alert({
+        Script.Functions.Alert({
             Title = "Fake Revive",
             Description = "Fake Revive is now initialized, have fun!",
             Reason = 'You are now "dead"',
@@ -5884,8 +5884,8 @@ Library:OnUnload(function()
         end
     end
 
-	print("Unloaded!")
-	Library.Unloaded = true
+    print("Unloaded!")
+    Library.Unloaded = true
     getgenv().mspaint_loaded = false
 end)
 
@@ -5898,11 +5898,11 @@ MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
 MenuGroup:AddButton("Join Discord Server", function()
     local Inviter = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Discord%20Inviter/Source.lua"))()
-	Inviter.Join("https://discord.com/invite/cfyMptntHr")
-	Inviter.Prompt({
-		name = "mspaint",
-		invite = "https://discord.com/invite/cfyMptntHr",
-	})
+    Inviter.Join("https://discord.com/invite/cfyMptntHr")
+    Inviter.Prompt({
+        name = "mspaint",
+        invite = "https://discord.com/invite/cfyMptntHr",
+    })
 end)
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
