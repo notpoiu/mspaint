@@ -207,13 +207,11 @@ task.spawn(function()
             end
 
             local function loadElements(linoriaMainElement, elements)
-                for _, element in pairs(elements) do
-                    task.spawn(function()
-                        local linoriaElement = AddAddonElement(linoriaMainElement, addon.Name, element)
-                        if linoriaElement ~= nil and typeof(element.Elements) == "table" then
-                            loadElements(linoriaElement, element.Elements)
-                        end  
-                    end)                      
+                for _, element in pairs(elements) do                      
+                    local linoriaElement = AddAddonElement(linoriaMainElement, addon.Name, element)
+                    if linoriaElement ~= nil and typeof(element.Elements) == "table" then
+                        loadElements(linoriaElement, element.Elements)
+                    end  
                 end
             end
 
