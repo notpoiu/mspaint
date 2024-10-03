@@ -3,7 +3,6 @@
 
 if not ExecutorSupport then print("[mspaint] Loading stopped, please use the official loadstring for mspaint. (ERROR: ExecutorSupport == nil)") return end
 if getgenv().mspaint_loaded then print("[mspaint] Loading stopped. (ERROR: Already loaded)") return end
-getgenv().mspaint_loaded = true
 
 --// Services \\--
 local HttpService = game:GetService("HttpService")
@@ -543,3 +542,5 @@ SaveManager:LoadAutoloadConfig()
 
 Script.Functions.File.BuildPresetStructure()
 Script.Functions.File.LoadPresets()
+
+getgenv().mspaint_loaded = true
