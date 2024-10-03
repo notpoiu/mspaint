@@ -160,8 +160,8 @@ task.spawn(function()
     local AddonTab, LastGroupbox = nil, "Right"
 
     for _, file in pairs(listfiles("mspaint\\addons")) do
-        if file:sub(#file - 3) ~= ".lua" or file:sub(#file - 4) ~= ".luau" then continue end
-        
+        if file:sub(#file - 3) ~= ".lua" and file:sub(#file - 4) ~= ".luau" then continue end
+
         local success, errorMessage = pcall(function()
             local fileContent = readfile(file)
             local addon = loadstring(fileContent)()
