@@ -54,27 +54,19 @@ local canFirePrompt = test("fireproximityprompt", function()
     prompt.Parent.Transparency = 1
     prompt.Triggered:Once(function() triggered = true end)
 
-    Debris:AddItem(prompt.Parent, 5)
     fireproximityprompt(prompt)
     task.wait(0.1)
 
     if not triggered then
         -- garbage fireproximityprompt test
         prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * CFrame.new(0, 0, -4)
-        task.delay(0.2, function()
-            if prompt.Parent ~= nil then 
-            	prompt.Parent.CFrame = CFrame.new(0, 0, 0)
-            end            
-        end)
-        
         task.wait(0.1)
-        triggered = false
-        prompt.Triggered:Once(function() triggered = true end)
         fireproximityprompt(prompt)
         task.wait(0.1)
-
-        assert(triggered, "Failed to fire proximity prompt")
     end
+
+    prompt.Parent:Destroy()
+    assert(triggered, "Failed to fire proximity prompt")
 end)
 
 --// Fixes \\--
