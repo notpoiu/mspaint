@@ -8,6 +8,7 @@ local brokenFeatures = {
     ["Arceus"] = { "require" },
     ["Codex"] = { "require" },
     ["VegaX"] = { "require" },
+    ["Fluxus"] = { "require" },
 }
 
 function test(name: string, func: () -> (), ...)
