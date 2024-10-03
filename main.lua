@@ -167,7 +167,7 @@ task.spawn(function()
                             return
                         end
 
-                        if addon.Game ~= gameAddonPath then
+                        if addon.Game ~= gameAddonPath and addon.Game ~= "*" then
                             warn("Addon '" .. string.gsub(file, "mspaint/addons/", "") .. "' didn't load: Wrong game.")
                             return
                         end
