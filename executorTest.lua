@@ -1,3 +1,5 @@
+if not game.IsLoaded then game.Loaded:Wait() end
+
 local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -10,14 +12,21 @@ local brokenFeatures = {
     ["VegaX"] = { "require" },
 }
 
-function test(name: string, func: () -> (), ...)
+function test(name: string, func: () -> (), shouldCallback: boolean)
     if typeof(brokenFeatures[executorName]) == "table" and table.find(brokenFeatures[executorName], name) then return false end -- garbage executor 🤯
     
-    local success, _ = pcall(func, ...)
+    local success = false
+    if shouldCallback ~= false then
+        success = pcall(func)
+    else
+        success = typeof(func) == "function"
+    end
+    
     executorSupport[name] = success
     return success
 end
 
+test("queue_on_teleport", queue_on_teleport, false)
 test("require", function()
     require(Players.LocalPlayer:WaitForChild("PlayerScripts", math.huge):WaitForChild("PlayerModule", 5)) -- ReplicatedStorage:WaitForChild("ModuleScript")
 end)
