@@ -93,6 +93,7 @@ local SuffixPrefixes = {
     ["Backdoor"] = "",
     ["Ceiling"] = "",
     ["Moving"] = "",
+    ["NewClone"] = "",
     ["Ragdoll"] = "",
     ["Rig"] = "",
     ["Wall"] = "",
@@ -106,7 +107,7 @@ local SuffixPrefixes = {
 
 local EntityTable = {
     ["Names"] = {"BackdoorRush", "BackdoorLookman", "RushMoving", "AmbushMoving", "Eyes", "JeffTheKiller", "A60", "A120"},
-    ["SideNames"] = {"FigureRig", "GiggleCeiling", "GrumbleRig", "Snare"},
+    ["SideNames"] = {"FigureRig", "GiggleCeiling", "SeekMovingNewClone", "GrumbleRig", "Snare"},
     ["ShortNames"] = {
         ["BackdoorRush"] = "Blitz",
         ["JeffTheKiller"] = "Jeff The Killer"
@@ -5322,7 +5323,7 @@ end))
 
 Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
     if (state == Enum.TeleportState.RequestedFromServer or state == state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value then
-        queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
+        queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/Dylan3020/Scripts/refs/heads/main/DOORS/mspaint.lua"))()]])
     end
 end))
 
@@ -5965,6 +5966,7 @@ CreditsGroup:AddLabel("upio - owner")
 CreditsGroup:AddLabel("deividcomsono - main script dev")
 CreditsGroup:AddLabel("mstudio45")
 CreditsGroup:AddLabel("bacalhauz")
+CreditsGroup:AddLabel("Goofy Lsplash")
 
 Library.ToggleKeybind = Options.MenuKeybind
 
