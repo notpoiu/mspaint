@@ -1164,6 +1164,9 @@ function Script.Functions.ESP(args: ESP)
         TextColor = ESPManager.Color,
         TextSize = Options.ESPTextSize.Value or 16,
 
+        FillTransparency = Options.ESPFillTransparency.Value,
+        OutlineTransparency = Options.ESPOutlineTransparency.Value,
+
         Tracer = {
             Enabled = Toggles.ESPTracer.Value,
             From = Options.ESPTracerStart.Value,
