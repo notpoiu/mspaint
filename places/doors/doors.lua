@@ -1430,7 +1430,6 @@ function Script.Functions.GetAllPromptsWithCondition(condition)
         assert(success, "An error has occured while running condition function.\n" .. tostring(returnData))
         assert(typeof(returnData) == "boolean", "Expected condition function to return a boolean")
         
-
         if returnData then
             table.insert(validPrompts, prompt)
         end

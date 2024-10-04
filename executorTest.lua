@@ -85,7 +85,7 @@ end)
 
 --// Fixes \\--
 if not canFirePrompt then
-    local function fireProximityPrompt(prompt: ProximityPrompt, lookToPrompt: boolean)
+    local function fireProximityPrompt(prompt: ProximityPrompt, lookToPrompt, doNotDoInstant)
         if not prompt:IsA("ProximityPrompt") then
             return error("ProximityPrompt expected, got " .. typeof(prompt))
         end
@@ -97,12 +97,14 @@ if not canFirePrompt then
         local originalHold = prompt.HoldDuration
         local originalLineOfSight = prompt.RequiresLineOfSight
         local originalCamCFrame = workspace.CurrentCamera.CFrame
-    
-        prompt.Enabled = true
-        prompt.HoldDuration = 0
-        prompt.RequiresLineOfSight = false
         
-        if lookToPrompt then
+        prompt.Enabled = true
+        prompt.RequiresLineOfSight = false
+        if doNotDoInstant ~= true then
+            prompt.HoldDuration = 0
+        end
+
+        if lookToPrompt == true then
             workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, promptPosition)
             connection = workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Connect(function()
                 workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, promptPosition)
@@ -113,6 +115,7 @@ if not canFirePrompt then
 
         prompt:InputHoldEnd()
         prompt:InputHoldBegin()
+        task.wait(prompt.HoldDuration + 0.05)
         prompt:InputHoldEnd()
 
         if connection then connection:Disconnect() end
@@ -120,11 +123,11 @@ if not canFirePrompt then
         prompt.Enabled = originalEnabled
         prompt.HoldDuration = originalHold
         prompt.RequiresLineOfSight = originalLineOfSight
-        workspace.CurrentCamera.CFrame = originalCamCFrame
+        if lookToPrompt == true then workspace.CurrentCamera.CFrame = originalCamCFrame end
     end
 
-    getgenv()._fireproximityprompt = function(prompt)
-        return fireProximityPrompt(prompt)
+    getgenv()._fireproximityprompt = function(...)
+        return fireProximityPrompt(...)
     end
 
     getgenv()._forcefireproximityprompt = function(prompt)
