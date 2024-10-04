@@ -1342,12 +1342,14 @@ function Script.Functions.ItemESP(item)
 end
 
 function Script.Functions.ChestESP(chest)
+    local text = chest.Name:gsub("Box", ""):gsub("_Small", "")
     local locked = chest:GetAttribute("Locked")
+    local state = if locked then "[Locked]" else ""
 
     Script.Functions.ESP({
         Type = "Chest",
         Object = chest,
-        Text = if locked then "Chest [Locked]" else "Chest",
+        Text = string.format("%s %s", text, state),
         Color = Options.ChestEspColor.Value
     })
 end
@@ -1955,6 +1957,7 @@ function Script.Functions.GetShortName(entityName: string)
         ["Clock"] = " Clock",
         ["Key"] = " Key",
         ["Pack"] = " Pack",
+        ["Pointer"] = " Pointer",
         ["Swarm"] = " Swarm",
     }
 
@@ -4601,7 +4604,7 @@ Toggles.ChestESP:OnChanged(function(value)
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, chest in pairs(currentRoomModel:GetDescendants()) do
-                if chest:GetAttribute("Storage") == "ChestBox" then
+                if chest:GetAttribute("Storage") == "ChestBox" or chest.Name == "Toolshed_Small" then
                     Script.Functions.ChestESP(chest)
                 end
             end
@@ -5372,7 +5375,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
                 task.spawn(Script.Functions.ItemESP, asset)
             end
 
-            if Toggles.ChestESP.Value and asset:GetAttribute("Storage") == "ChestBox" then
+            if Toggles.ChestESP.Value and (asset:GetAttribute("Storage") == "ChestBox" or asset.Name == "Toolshed_Small") then
                 task.spawn(Script.Functions.ChestESP, asset)
             end
 
