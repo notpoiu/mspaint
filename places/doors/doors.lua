@@ -102,6 +102,9 @@ local SuffixPrefixes = {
     ["Pointer"] = " Pointer",
     ["Swarm"] = " Swarm",
 }
+local PrettyFloorName = {
+    ["Fools"] = "Super Hard Mode",
+}
 
 
 local EntityTable = {
