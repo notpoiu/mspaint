@@ -940,7 +940,7 @@ do
     end
     
     function Script.Functions.ChestESP(chest)
-        local text = chest.Name:gsub("Box", ""):gsub("_Small", "")
+        local text = chest.Name:gsub("Box", ""):gsub("_Vine", ""):gsub("_Small", "")
         local locked = chest:GetAttribute("Locked")
         local state = if locked then "[Locked]" else ""
     
