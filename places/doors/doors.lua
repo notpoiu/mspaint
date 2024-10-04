@@ -25,8 +25,10 @@ end
 
 --// Variables \\--
 local fireTouch = firetouchinterest or firetouchtransmitter
-local badfireproxprompt = ExecutorSupport["fireproximityprompt"] ~= true and (typeof(custom_fireproximityprompt) == "function" and custom_fireproximityprompt) or fireproximityprompt
-local isnetowner = ExecutorSupport["isnetworkowner"] ~= true and (typeof(custom_isnetworkowner) == "function" and custom_isnetworkowner) or isnetworkowner
+local firePrompt = ExecutorSupport["fireproximityprompt"] and fireproximityprompt or _fireproximityprompt
+local forceFirePrompt = ExecutorSupport["fireproximityprompt"] and fireproximityprompt or _forcefireproximityprompt
+local isnetowner = ExecutorSupport["isnetworkowner"] and isnetworkowner or _isnetworkowner
+
 local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 local Script = {
@@ -1056,11 +1058,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil) -- child = en
         repeat task.wait()
             atempts += 1
 
-            if ExecutorSupport["fireproximityprompt"] then
-                fireproximityprompt(targetWardrobePrompt)
-            else
-                badfireproxprompt(targetWardrobePrompt, true)
-            end
+            forceFirePrompt(targetWardrobePrompt)
         until atempts > maxAtempts or not alive or (character:GetAttribute("Hiding") and rootPart.Anchored)
 
         if atempts > maxAtempts or not alive then return false end
@@ -3047,7 +3045,7 @@ task.spawn(function()
                             for _, pump in pairs(damHandler.Flood1.Pumps:GetChildren()) do
                                 character:PivotTo(pump.Wheel.CFrame)
                                 task.wait(0.25)
-                                fireproximityprompt(pump.Wheel.ValvePrompt)
+                                forceFirePrompt(pump.Wheel.ValvePrompt)
                                 task.wait(0.25)
                             end
 
@@ -3058,7 +3056,7 @@ task.spawn(function()
                             for _, pump in pairs(damHandler.Flood2.Pumps:GetChildren()) do
                                 character:PivotTo(pump.Wheel.CFrame)
                                 task.wait(0.25)
-                                fireproximityprompt(pump.Wheel.ValvePrompt)
+                                forceFirePrompt(pump.Wheel.ValvePrompt)
                                 task.wait(0.25)
                             end
 
@@ -3069,7 +3067,7 @@ task.spawn(function()
                             for _, pump in pairs(damHandler.Flood3.Pumps:GetChildren()) do
                                 character:PivotTo(pump.Wheel.CFrame)
                                 task.wait(0.25)
-                                fireproximityprompt(pump.Wheel.ValvePrompt)
+                                forceFirePrompt(pump.Wheel.ValvePrompt)
                                 task.wait(0.25)
                             end
 
@@ -3082,7 +3080,7 @@ task.spawn(function()
                     if generator then
                         character:PivotTo(generator.PrimaryPart.CFrame)
                         task.wait(0.25)
-                        fireproximityprompt(generator.Lever.LeverPrompt)
+                        forceFirePrompt(generator.Lever.LeverPrompt)
                         task.wait(0.25)
                     end
 
@@ -3359,11 +3357,7 @@ task.spawn(function()
                 local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
                 if Script.Functions.IsPromptInRange(pathfindingGoal.Parent.HidePrompt) then
-                    if ExecutorSupport["fireproximityprompt"] then
-                        fireproximityprompt(pathfindingGoal.Parent.HidePrompt)
-                    else
-                        badfireproxprompt(pathfindingGoal.Parent.HidePrompt, true)
-                    end
+                    forceFirePrompt(pathfindingGoal.Parent.HidePrompt)
                 end
             elseif not isEntitySpawned and rootPart.Anchored then
                 for i = 1, 10 do
@@ -4979,7 +4973,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
                 end)
 
                 if itemPickupPrompt then
-                    fireproximityprompt(itemPickupPrompt)
+                    firePrompt(itemPickupPrompt)
                 end
             end)
         end
@@ -5176,7 +5170,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                             if droppedItem.Name == "Crucifix" then
                                 local targetProximityPrompt = droppedItem:WaitForChild("ModulePrompt", 3) or droppedItem:FindFirstChildOfClass("ProximityPrompt")
                                 repeat task.wait()
-                                    fireproximityprompt(targetProximityPrompt)
+                                    firePrompt(targetProximityPrompt)
                                 until not droppedItem:IsDescendantOf(workspace)
                             end
                         end)
@@ -5600,7 +5594,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                             
                             local currentPainting = character:FindFirstChild("Prop")
                             if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
-                                return fireproximityprompt(prompt)
+                                return firePrompt(prompt)
                             end
 
                             if prompt.Parent:FindFirstChild("Prop") then 
@@ -5614,7 +5608,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                                 local oldHint = currentPainting:GetAttribute("Hint")
                                 repeat task.wait()
-                                    fireproximityprompt(prompt)
+                                    firePrompt(prompt)
                                 until not character:FindFirstChild("Prop") or character:FindFirstChild("Prop"):GetAttribute("Hint") ~= oldHint
 
                                 task.wait(0.15)
@@ -5624,7 +5618,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                             return
                         end
                         
-                        fireproximityprompt(prompt)
+                        firePrompt(prompt)
                     end
                 end)
             end

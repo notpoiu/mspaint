@@ -71,23 +71,13 @@ test("firesignal", function()
     assert(fired, "Failed to fire a BindableEvent")
 end)
 local canFirePrompt = test("fireproximityprompt", function()
-    local triggered = false
-        
     local prompt = Instance.new("ProximityPrompt", Instance.new("Part", Workspace))
-    prompt.Parent.Anchored = true
-    prompt.Parent.Transparency = 1
+    local triggered = false
+
     prompt.Triggered:Once(function() triggered = true end)
 
     fireproximityprompt(prompt)
     task.wait(0.1)
-
-    if not triggered then
-        -- garbage fireproximityprompt test
-        prompt.Parent.CFrame = Players.LocalPlayer.Character:GetPivot() * CFrame.new(0, 0, -4)
-        task.wait(0.1)
-        fireproximityprompt(prompt)
-        task.wait(0.1)
-    end
 
     prompt.Parent:Destroy()
     assert(triggered, "Failed to fire proximity prompt")
@@ -95,7 +85,7 @@ end)
 
 --// Fixes \\--
 if not canFirePrompt then
-    function customFirepp(prompt: ProximityPrompt, lookToPrompt: boolean)
+    local function fireProximityPrompt(prompt: ProximityPrompt, lookToPrompt: boolean)
         if not prompt:IsA("ProximityPrompt") then
             return error("ProximityPrompt expected, got " .. typeof(prompt))
         end
@@ -132,9 +122,14 @@ if not canFirePrompt then
         prompt.RequiresLineOfSight = originalLineOfSight
         workspace.CurrentCamera.CFrame = originalCamCFrame
     end
-    
-    getgenv().fireproximityprompt = customFirepp;
-    getgenv().custom_fireproximityprompt = customFirepp;
+
+    getgenv()._fireproximityprompt = function(prompt)
+        return fireProximityPrompt(prompt)
+    end
+
+    getgenv()._forcefireproximityprompt = function(prompt)
+        return fireProximityPrompt(prompt, true)
+    end
 end
 
 if not isnetworkowner then
@@ -146,8 +141,7 @@ if not isnetworkowner then
         return part.ReceiveAge == 0
     end
     
-    getgenv().isnetworkowner = isnetowner;
-    getgenv().custom_isnetworkowner = isnetowner;
+    getgenv()._isnetworkowner = isnetowner;
 end
 
 --// Load \\--
