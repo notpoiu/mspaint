@@ -5345,8 +5345,7 @@ end
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
-
-    Script.Functions.UpdateRPC()  
+    task.spawn(Script.Functions.UpdateRPC)
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
