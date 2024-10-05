@@ -1080,7 +1080,7 @@ do
                 Script.Functions.SolveBreakerBox(child)
             end
     
-            if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" and not bypassed then
+            if isMines and Toggles.TheMinesAnticheatBypass.Value and child.Name == "Ladder" then
                 Script.Functions.ESP({
                     Type = "None",
                     Object = child,
