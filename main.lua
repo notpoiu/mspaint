@@ -64,6 +64,7 @@ loadstring(game:HttpGet(baseURL .. scriptPath))()
 
 
 -- Addons (this is BETA, expect stuff to change) --
+if getgenv().mspaint_disable_addons then return end
 task.spawn(function()
     local supportsFileSystem = (ExecutorSupport["isfile"] and ExecutorSupport["delfile"] and ExecutorSupport["listfiles"] and ExecutorSupport["writefile"] and ExecutorSupport["makefolder"] and ExecutorSupport["isfolder"])
     

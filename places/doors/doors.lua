@@ -585,21 +585,23 @@ do
             ImageTransparency = 1
         }):Play()
     
-        if options.Time ~= nil then
-            if typeof(options.Time) == "number" then
-                task.wait(options.Time)
-            elseif typeof(options.Time) == "Instance" then
-                options.Time.Destroying:Wait()
+        task.spawn(function()
+            if options.Time ~= nil then
+                if typeof(options.Time) == "number" then
+                    task.wait(options.Time)
+                elseif typeof(options.Time) == "Instance" then
+                    options.Time.Destroying:Wait()
+                end
+            else
+                task.wait(5)
             end
-        else
-            task.wait(5)
-        end
-    
-        acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
-        task.wait(0.5)
-        acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
-        task.wait(0.5)
-        acheivement:Destroy()
+        
+            acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
+            task.wait(0.5)
+            acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
+            task.wait(0.5)
+            acheivement:Destroy()
+        end)
     end
     
     function Script.Functions.Notifs.Doors.Warn(options)
@@ -1952,7 +1954,7 @@ do
     
                     Time = progressPart
                 })
-    
+
                 local minecartRig
                 local minecartRoot
                 repeat task.wait(0.1) 
@@ -1960,10 +1962,10 @@ do
                     if not minecartRig then continue end
                     minecartRoot = minecartRig:FindFirstChild("Root")
                 until minecartRig and minecartRoot
-    
+
                 if workspace:FindFirstChild("_internal_mspaint_minecart_teleport") then workspace:FindFirstChild("_internal_mspaint_minecart_teleport"):Destroy() end
                 task.wait(3)
-    
+
                 for _, path: tPathfind in ipairs(MinecartPathfind) do
                     local roomOfThePath = path.room_number
     
