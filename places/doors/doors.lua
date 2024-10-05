@@ -584,21 +584,23 @@ do
             ImageTransparency = 1
         }):Play()
     
-        if options.Time ~= nil then
-            if typeof(options.Time) == "number" then
-                task.wait(options.Time)
-            elseif typeof(options.Time) == "Instance" then
-                options.Time.Destroying:Wait()
+        task.spawn(function()
+            if options.Time ~= nil then
+                if typeof(options.Time) == "number" then
+                    task.wait(options.Time)
+                elseif typeof(options.Time) == "Instance" then
+                    options.Time.Destroying:Wait()
+                end
+            else
+                task.wait(5)
             end
-        else
-            task.wait(5)
-        end
-    
-        acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
-        task.wait(0.5)
-        acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
-        task.wait(0.5)
-        acheivement:Destroy()
+        
+            acheivement.Frame:TweenPosition(UDim2.new(1.1, 0, 0, 0), "In", "Quad", 0.5, true)
+            task.wait(0.5)
+            acheivement:TweenSize(UDim2.new(1, 0, -0.1, 0), "InOut", "Quad", 0.5, true)
+            task.wait(0.5)
+            acheivement:Destroy()
+        end)
     end
     
     function Script.Functions.Notifs.Doors.Warn(options)
@@ -1939,21 +1941,18 @@ do
         if roomNum == 45 and not isMinecartTeleporting then
             isMinecartTeleporting = true
             task.spawn(function()
-                task.spawn(function()
-                    local progressPart = Instance.new("Part", workspace) do
-                        progressPart.Anchored = true
-                        progressPart.CanCollide = false
-                        progressPart.Name = "_internal_mspaint_minecart_teleport"
-                        progressPart.Transparency = 1
-                    end
-                    
-                    Script.Functions.Alert({
-                        Title = "Minecart Teleport",
-                        Description = "Minecart teleport is ready! Waiting for the minecart...",
-        
-                        Time = progressPart
-                    })
-                end)
+                local progressPart = Instance.new("Part", workspace) do
+                    progressPart.Anchored = true
+                    progressPart.CanCollide = false
+                    progressPart.Name = "_internal_mspaint_minecart_teleport"
+                    progressPart.Transparency = 1
+                end
+                Script.Functions.Alert({
+                    Title = "Minecart Teleport",
+                    Description = "Minecart teleport is ready! Waiting for the minecart...",
+    
+                    Time = progressPart
+                })
 
                 local minecartRig
                 local minecartRoot
