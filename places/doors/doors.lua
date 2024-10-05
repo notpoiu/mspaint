@@ -1939,19 +1939,22 @@ do
         if roomNum == 45 and not isMinecartTeleporting then
             isMinecartTeleporting = true
             task.spawn(function()
-                local progressPart = Instance.new("Part", workspace) do
-                    progressPart.Anchored = true
-                    progressPart.CanCollide = false
-                    progressPart.Name = "_internal_mspaint_minecart_teleport"
-                    progressPart.Transparency = 1
-                end
-                Script.Functions.Alert({
-                    Title = "Minecart Teleport",
-                    Description = "Minecart teleport is ready! Waiting for the minecart...",
-    
-                    Time = progressPart
-                })
-    
+                task.spawn(function()
+                    local progressPart = Instance.new("Part", workspace) do
+                        progressPart.Anchored = true
+                        progressPart.CanCollide = false
+                        progressPart.Name = "_internal_mspaint_minecart_teleport"
+                        progressPart.Transparency = 1
+                    end
+                    
+                    Script.Functions.Alert({
+                        Title = "Minecart Teleport",
+                        Description = "Minecart teleport is ready! Waiting for the minecart...",
+        
+                        Time = progressPart
+                    })
+                end)
+
                 local minecartRig
                 local minecartRoot
                 repeat task.wait(0.1) 
@@ -1959,10 +1962,10 @@ do
                     if not minecartRig then continue end
                     minecartRoot = minecartRig:FindFirstChild("Root")
                 until minecartRig and minecartRoot
-    
+
                 if workspace:FindFirstChild("_internal_mspaint_minecart_teleport") then workspace:FindFirstChild("_internal_mspaint_minecart_teleport"):Destroy() end
                 task.wait(3)
-    
+
                 for _, path: tPathfind in ipairs(MinecartPathfind) do
                     local roomOfThePath = path.room_number
     
