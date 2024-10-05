@@ -341,7 +341,7 @@ local OtherGroupbox = Tabs.Main:AddRightGroupbox("Other") do
     })
 
 
-    OtherGroupbox:AddSlider()
+    OtherGroupbox:AddDivider()
 
     OtherGroupbox:AddButton("Create Retro Elevator", function()
         local data = {
