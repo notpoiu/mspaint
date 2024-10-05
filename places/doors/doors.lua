@@ -2481,7 +2481,8 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
     AutomationGroupBox:AddToggle("AutoWardrobe", {
         Text = "Auto " .. HidingPlaceName[floor.Value],
         Default = false,
-    Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)"
+        Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)",
+        Visible = not isRetro
     }):AddKeyPicker("AutoWardrobeKey", {
         Mode = "Toggle",
         Default = "Q",
