@@ -324,6 +324,7 @@ local isRooms = floor.Value == "Rooms"
 local isHotel = floor.Value == "Hotel"
 local isBackdoor = floor.Value == "Backdoor"
 local isFools = floor.Value == "Fools"
+local isRetro = floor.Value == "Retro"
 
 local floorReplicated = if not isFools then ReplicatedStorage:WaitForChild("FloorReplicated") else nil
 local remotesFolder = if not isFools then ReplicatedStorage:WaitForChild("RemotesFolder") else ReplicatedStorage:WaitForChild("EntityInfo")
@@ -4677,7 +4678,7 @@ Toggles.HidingSpotESP:OnChanged(function(value)
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, wardrobe in pairs(currentRoomModel:GetDescendants()) do
-                if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" then
+                if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" or wardrobe.Name == "RetroWardrobe" then
                     Script.Functions.HidingSpotESP(wardrobe)
                 end
             end
@@ -5397,7 +5398,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
                 task.spawn(Script.Functions.ChestESP, asset)
             end
 
-            if Toggles.HidingSpotESP.Value and (asset:GetAttribute("LoadModule") == "Wardrobe" or asset:GetAttribute("LoadModule") == "Bed" or asset.Name == "Rooms_Locker") then
+            if Toggles.HidingSpotESP.Value and (asset:GetAttribute("LoadModule") == "Wardrobe" or asset:GetAttribute("LoadModule") == "Bed" or asset.Name == "Rooms_Locker" or asset.Name == "RetroWardrobe") then
                 Script.Functions.HidingSpotESP(asset)
             end
 
@@ -5607,6 +5608,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
                 if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
+                if isRetro and prompt.Parent.Parent.Name == "RetroWardrobe" then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
