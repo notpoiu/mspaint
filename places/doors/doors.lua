@@ -1717,32 +1717,15 @@ do
         return create
     end
     
-    local _debugAutoMinecart = false --if you know what you're doing
-    local function _dbgprint(...) 
-        if not _debugAutoMinecart then return end
-        print("[Minecart-Pathfind DBG]", #{...} < 1 and " \n" or "", ...)
-    end
-    
     function Script.Functions.Minecart.Pathfind(room: Model, lastRoom: number)
         if not (lastRoom >= 40 and lastRoom <= 49) and not (lastRoom >= 95 and lastRoom <= 100) then return end
         
         local nodes = room:WaitForChild("RunnerNodes", 5.0) --well, skill issue ig
         if (nodes == nil) then return end
     
-        --Script.Functions.Alert(string.format("[Minecart-Pathfind] Finding the correct path for the room %s, please wait...", room.Name), 3)
-        
-        -- if this is sent to the client, means that the room has all the nodes in the room.
-        --task.wait(0.5)
-        -- repeat
-        --     task.wait(0.1) --this doesn't be so intensive, we can check casually
-        -- until nodeSpawnTriggerRooms[lastRoom]
-    
         nodes = nodes:GetChildren()
     
         local numOfNodes = #nodes
-        local detailog = string.format("[Minecart-Pathfind] Found room with tracks: %s - Nodes: %s", room.Name, numOfNodes)
-        _dbgprint(detailog)
-    
         if numOfNodes <= 1 then return end --This is literally impossible but... umm. acutally, yea why not.
     
         --[[
@@ -1762,21 +1745,20 @@ do
     
         local _startNode = nodes[1]
         local _lastNode = nil --we need to find this node.
-        --local _lastNodeTask = nil --Arbitrary tasks: "Start", "End", "Track", "Fake"
     
         local _gpID = 1
         local stackNode = {} --Group all track groups here.
         stackNode[_gpID] = tGroupTrackNew()
         
         --Ensure sort all nodes properly (reversed)
-        table.sort(nodes, function(a,b)
+        table.sort(nodes, function(a, b)
             local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
             local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
             return tonumber(_Asub) > tonumber(_Bsub)
         end)
     
         local _last = 1
-        for i=_last+1, numOfNodes, 1 do
+        for i= _last + 1, numOfNodes, 1 do
             local nodeA: Part = nodes[_last]
             local nodeB: Part = _lastNode and nodes[i] or doorModel
     
@@ -1796,7 +1778,7 @@ do
             end
     
             --check if group is diff, ignore "End" or "Start" tasks
-            if  (_currNodeTask == "Fake" or _currNodeTask == "End") and _lastNode then
+            if (_currNodeTask == "Fake" or _currNodeTask == "End") and _lastNode then
                 _gpID += 1
                 stackNode[_gpID] = tGroupTrackNew()
                 if _currNodeTask == "End" then
@@ -1805,36 +1787,25 @@ do
             end
             table.insert(stackNode[_gpID].nodes, nodeA)
     
-            --Use this to debug the nodeTask
-            _dbgprint(string.format("[%s] - [%s] Distance between: %s <--> %s ==> %.2f", _gpID, _currNodeTask, nodeA.Name, nodeB.Name, distance))
-    
             _last = i
-            --_lastNodeTask = _currNodeTask
         end
         stackNode[_gpID].hasStart = true --after the reversed path finding, the last group has the start node.
         table.insert(stackNode[_gpID].nodes, _startNode)
-        --if we only have one group, means that there's no fake path.
         local hasMoreThanOneGroup = _gpID > 1
     
         local _closestNodes = {} --unwanted nodes if any
         local hasIncorrectPath = false -- if this is true, we're cooked. No path for you ):
         if hasMoreThanOneGroup then
-            _dbgprint()
             for _gpI, v: tGroupTrack in ipairs(stackNode) do
                 _closestNodes[_gpI] = {}
-                _dbgprint(string.format("[TrackGroup] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
-    
                 if _gpI <= 1 then continue end
-                _dbgprint(string.format("[TrackGroup] Group %s was selected to deep pathfinding", _gpI))
     
-                --Sort table for the normal flow, A -> B (was B -> A before)
                 table.sort(v.nodes, function(a,b)
                     local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
                     local _Bsub, _ = string.gsub(b.Name, "MinecartNode", "")
                     return tonumber(_Asub) < tonumber(_Bsub)
                 end)
     
-                --Finally, perform the clean up by removing wrong nodes when a "distance jump" is found
                 local _gplast = 1
                 local hasNodeJump = false
                 for _gpS=_gplast+1, #v.nodes, 1 do
@@ -1845,55 +1816,36 @@ do
     
                     hasNodeJump = (distance >= _longW)
                     if not hasNodeJump then _gplast = _gpS continue end
-                    _dbgprint(string.format("[%s] Distance between %s <--> %s ==> %.2f", _gpI, nodeA.Name, nodeB.Name, distance))
-    
-                    --Ok, we found a node jump, now we need to know what should be the closest node
-                    --table.remove(v.nodes, _gpS)
-                    _dbgprint(string.format("[TrackGroup] Group %s with, %s will find his closest node now.", _gpI, nodeB.Name))
+
                     local nodeSearchPath = nodeB
     
                     --Search again with the nodeSearchPath
                     local closestDistance = math.huge
     
                     local _gpFlast = #v.nodes
-                    for i=_gpFlast-1, 1, -1 do
-    
+                    for i = _gpFlast - 1, 1, -1 do
                         local fnode = v.nodes[_gpFlast]
                         local Sdistance = (nodeSearchPath:GetPivot().Position - fnode:GetPivot().Position).Magnitude
                         _gpFlast = i
     
                         if Sdistance == 0.00 then continue end --node is self
-                        _dbgprint(string.format("  [%s] DeepPath ==> Distance between %s <--> %s ==> %.2f", _gpI, nodeSearchPath.Name, fnode.Name, Sdistance))
     
                         if Sdistance <= closestDistance then
                             closestDistance = Sdistance
                             table.insert(_closestNodes[_gpI], fnode)
-                            table.remove(v.nodes, _gpFlast+1)
+                            table.remove(v.nodes, _gpFlast + 1)
                             continue
                         end
                         break
                     end
-                    --table.insert(v.nodes, _gpS, nodeSearchPath)
     
                     local _FoundAmount = #_closestNodes[_gpI]
-                    if _FoundAmount > 1 then 
-                        _dbgprint(string.format("[TrackGroup] Group %s with, closest node is: %s ", _gpI, _closestNodes[_gpI][_FoundAmount].Name))
-                    else
-                        warn(string.format("[TrackGroup] Group %s ERROR: Unable to find closest node, path is likely broken.", _gpI))
+                    if _FoundAmount < 1 then 
                         hasIncorrectPath = true
                     end
                     break
                 end
-                if not hasNodeJump then
-                    _dbgprint(string.format("[TrackGroup] Group %s has a correct path! ", _gpI))
-                end
             end
-    
-            for _gpI, v: tGroupTrack in ipairs(stackNode) do
-                _dbgprint(string.format("[TrackGroup -- VERIFY] Group %s has %s nodes. \t Start: %s | End: %s", _gpI, #v.nodes, tostring(v.hasStart), tostring(v.hasEnd)))
-            end
-    
-            --table.remove(stackNode, 1) --remove the fake 
         end
     
         if hasIncorrectPath then return end
@@ -1920,9 +1872,6 @@ do
                 table.insert(fakeNodes, nfinal)
             end
         end
-        local roomNum = tonumber(room.Name)
-        --local success = string.format("Correct path was generated for the ROOM %d", roomNum)
-        --Script.Functions.Alert("[Minecart-Pathfind] " .. success, 2); _dbgprint(success)
     
         table.sort(realNodes, function(a, b)
             local _Asub, _ = string.gsub(a.Name, "MinecartNode", "")
@@ -1938,14 +1887,12 @@ do
     
         Script.Functions.Minecart.DrawNodes()
     
-        --[[
-        if (lastRoom >= 40 and lastRoom <= 49) and Toggles.TheMinesSeekMinecartTP.Value then
+        if Toggles.MinecartTeleport.Value and (lastRoom >= 45 and lastRoom <= 49) then
             Script.Functions.Minecart.NodeDestroy(tonumber(room.Name))
             Script.Functions.Minecart.Teleport(tonumber(room.Name))
-        end]]
+        end
     end
     
-    --[[
     function Script.Functions.Minecart.NodeDestroy(roomNum: number)
         local roomConfig = WhitelistConfig[roomNum]
         if not roomConfig then return end
@@ -1965,9 +1912,8 @@ do
     
         if realNodes then
             local _removeTotal = #realNodes - (_firstKeep + _lastKeep) --remove nodes that arent in the first or last
-            for idx=1, _removeTotal do
+            for _ = 1, _removeTotal do
                 local node = realNodes[_firstKeep + 1]
-                --changeNodeColor(node, NodeColors.Orange) --debug only
                 node:Destroy()
                 
                 table.remove(realNodes, _firstKeep + 1)
@@ -2000,32 +1946,36 @@ do
                     progressPart.Name = "_internal_mspaint_minecart_teleport"
                     progressPart.Transparency = 1
                 end
-                Script.Functions.Alert("[Minecart-Teleport] Minecart teleport is ready! Waiting for the minecart...", progressPart)
+                Script.Functions.Alert({
+                    Title = "Minecart Teleport",
+                    Description = "Minecart teleport is ready! Waiting for the minecart...",
+    
+                    Time = progressPart
+                })
     
                 local minecartRig = camera:WaitForChild("MinecartRig", math.huge)
-                local minecartCart = minecartRig:WaitForChild("Cart", math.huge)
+                local minecartRoot = minecartRig:WaitForChild("Root", math.huge)
     
                 if workspace:FindFirstChild("_internal_mspaint_minecart_teleport") then workspace:FindFirstChild("_internal_mspaint_minecart_teleport"):Destroy() end
                 task.wait(3)
     
-                -- in order of insertion, should work just fine.
-                for idx, path: tPathfind in ipairs(MinecartPathfind) do
+                for _, path: tPathfind in ipairs(MinecartPathfind) do
                     local roomOfThePath = path.room_number
     
                     if roomOfThePath >= 45 then -- ignore ground chase
                         local getLastNode = path.real[#path.real]
-                        local roomOfTheNode = getLastNode.Parent.Parent
     
-                        minecartCart.CFrame = getLastNode.CFrame --almost 1000 lines of code just to do that. Think about that...
-    
-                        repeat task.wait() until workspace.CurrentRooms[tostring(currentRoom)]:WaitForChild("Door"):GetAttribute("Opened")
+                        repeat 
+                            task.wait()
+                            minecartRoot.CFrame = getLastNode.CFrame
+                        until workspace.CurrentRooms[tostring(currentRoom)]:WaitForChild("Door"):GetAttribute("Opened")
+                        task.wait(2)
                         if currentRoom == 49 then break end
                     end
                 end
-    
             end)
         end
-    end]]
+    end
     
     
     --If ESP Toggle is changed, you can call this function directly.
@@ -2221,7 +2171,7 @@ do
             end)
     
             Script.FeatureConnections.Humanoid["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
-                if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not fakeReviveEnabled then
+                if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not Script.FakeRevive.Enabled then
                     if humanoid.JumpHeight > 0 then
                         lastSpeed = Options.SpeedSlider.Value
                         Options.SpeedSlider:SetMax(3)
@@ -3148,6 +3098,19 @@ task.spawn(function()
                 Default = false
             })
         end
+
+        local Mines_BypassGroupBox = Tabs.Floor:AddRightGroupbox("Bypass") do
+            Mines_BypassGroupBox:AddToggle("MinecartTeleport", {
+                Text = "Minecart Teleport",
+                Default = false
+            })
+
+            Mines_BypassGroupBox:AddToggle("MinecartTeleportDebug", {
+                Text = "Minecart Teleport Debug",
+                Default = false,
+                Visible = false,
+            })
+        end
         
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
             Mines_VisualGroupBox:AddToggle("MinecartPathVisualiser", {
@@ -3204,7 +3167,7 @@ task.spawn(function()
                     ladderEsp.Destroy()
                 end
 
-                if bypassed and not fakeReviveEnabled then
+                if bypassed and not Script.FakeRevive.Enabled then
                     remotesFolder.ClimbLadder:FireServer()
                     bypassed = false
                     
@@ -3769,7 +3732,7 @@ Toggles.EnableJump:OnChanged(function(value)
         character:SetAttribute("CanJump", value)
     end
 
-    if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 and not fakeReviveEnabled then
+    if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 and not Script.FakeRevive.Enabled then
         Options.SpeedSlider:SetMax(7)
     end
 end)
@@ -3916,7 +3879,7 @@ function Script.Functions.SpeedBypass()
                 collisionClone.Size = Vector3.new(3, 5.5, 3)
             end
             
-            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod and not fakeReviveEnabled then
+            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod and not Script.FakeRevive.Enabled then
                 Script.Functions.SpeedBypass()
             end
         end
@@ -3924,14 +3887,14 @@ function Script.Functions.SpeedBypass()
 
     task.spawn(function()
         if SpeedBypassMethod == "Massless" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
                 collisionClone.Massless = not collisionClone.Massless
                 task.wait(Options.SpeedBypassDelay.Value)
             end
     
             cleanup()
         elseif SpeedBypassMethod == "Size" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not fakeReviveEnabled do
+            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
                 collisionClone.Size = Vector3.new(3, 5.5, 3)
                 task.wait(Options.SpeedBypassDelay.Value)
                 collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
@@ -3950,7 +3913,7 @@ Toggles.SpeedBypass:OnChanged(function(value)
         
         Script.Functions.SpeedBypass()
     else
-        if fakeReviveEnabled then return end
+        if Script.FakeRevive.Enabled then return end
 
         local speed = if bypassed then 45 elseif Toggles.EnableJump.Value then 3 else 7
 
@@ -3960,7 +3923,7 @@ Toggles.SpeedBypass:OnChanged(function(value)
 end)
 
 Toggles.FakeRevive:OnChanged(function(value)
-    if value and alive and character and not fakeReviveEnabled then
+    if value and alive and character and not Script.FakeRevive.Enabled then
         if latestRoom and latestRoom.Value == 0 then
             Script.Functions.Alert({
                 Title = "Fake Revive",
@@ -4012,7 +3975,7 @@ Toggles.FakeRevive:OnChanged(function(value)
         Options.SpeedSlider:SetMax(45)
         Options.FlySpeed:SetMax(75)
 
-        fakeReviveEnabled = true
+        Script.FakeRevive.Enabled = true
         workspace.Gravity = 0
 
         if cameraModule then
@@ -4089,7 +4052,7 @@ Toggles.FakeRevive:OnChanged(function(value)
             character.UpperTorso.CanCollide = false
         end
 
-        fakeReviveConnections["HidingFix"] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        Script.FakeRevive.Connections["HidingFix"] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if UserInputService:GetFocusedTextBox() then return end
             if gameProcessed then return end
 
@@ -4103,7 +4066,7 @@ Toggles.FakeRevive:OnChanged(function(value)
             end
         end)
 
-        Library:GiveSignal(fakeReviveConnections["HidingFix"])
+        Library:GiveSignal(Script.FakeRevive.Connections["HidingFix"])
 
         -- animation setup
         task.spawn(function()
@@ -4129,16 +4092,16 @@ Toggles.FakeRevive:OnChanged(function(value)
                 until not UserInputService:IsKeyDown(key) and not UserInputService:GetFocusedTextBox()
             end
 
-            fakeReviveConnections["AnimationHandler"] = UserInputService.InputBegan:Connect(function(input)
+            Script.FakeRevive.Connections["AnimationHandler"] = UserInputService.InputBegan:Connect(function(input)
                 if UserInputService:GetFocusedTextBox() then return end
                 if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
                     playWalkingAnim(input.KeyCode)
                 end
             end)
 
-            Library:GiveSignal(fakeReviveConnections["AnimationHandler"])
+            Library:GiveSignal(Script.FakeRevive.Connections["AnimationHandler"])
 
-            fakeReviveConnections["AnimationHandler2"] = UserInputService.InputEnded:Connect(function(input)
+            Script.FakeRevive.Connections["AnimationHandler2"] = UserInputService.InputEnded:Connect(function(input)
                 if UserInputService:GetFocusedTextBox() then return end
 
                 if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
@@ -4154,7 +4117,7 @@ Toggles.FakeRevive:OnChanged(function(value)
                 end
             end)
 
-            Library:GiveSignal(fakeReviveConnections["AnimationHandler2"])
+            Library:GiveSignal(Script.FakeRevive.Connections["AnimationHandler2"])
 
             -- Tool Handler (kinda broken) --
             if character:WaitForChild("RightHand", math.huge) then
@@ -4166,7 +4129,7 @@ Toggles.FakeRevive:OnChanged(function(value)
                 local currentTool = nil
                 local doorInteractables = { "Key", "Lockpick" }
 
-                fakeReviveConnections["ToolAnimHandler"] = character.ChildAdded:Connect(function(tool)
+                Script.FakeRevive.Connections["ToolAnimHandler"] = character.ChildAdded:Connect(function(tool)
                     if tool:IsA("Tool") then
                         for _, anim in pairs(toolsAnim) do
                             anim:Stop()
@@ -4223,11 +4186,11 @@ Toggles.FakeRevive:OnChanged(function(value)
                     end
                 end)
 
-                Library:GiveSignal(fakeReviveConnections["ToolAnimHandler"])
+                Library:GiveSignal(Script.FakeRevive.Connections["ToolAnimHandler"])
         
                 -- Prompts handler
                 local holding, holdStart, startDurability = false, 0, 0
-                fakeReviveConnections["ToolAnimHandler2"] = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+                Script.FakeRevive.Connections["ToolAnimHandler2"] = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
                     if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
                         holding = true; holdStart = tick(); startDurability = currentTool:GetAttribute("Durability")
                         
@@ -4235,9 +4198,9 @@ Toggles.FakeRevive:OnChanged(function(value)
                     end
                 end)
 
-                Library:GiveSignal(fakeReviveConnections["ToolAnimHandler2"])
+                Library:GiveSignal(Script.FakeRevive.Connections["ToolAnimHandler2"])
 
-                fakeReviveConnections["ToolAnimInteractHandler"] = ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt)
+                Script.FakeRevive.Connections["ToolAnimInteractHandler"] = ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt)
                     if (currentTool and table.find(doorInteractables, currentTool.Name)) and (prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock") then
                         if holdStart == 0 then return end
         
@@ -4263,9 +4226,9 @@ Toggles.FakeRevive:OnChanged(function(value)
                     end
                 end)
 
-                Library:GiveSignal(fakeReviveConnections["ToolAnimInteractHandler"])
+                Library:GiveSignal(Script.FakeRevive.Connections["ToolAnimInteractHandler"])
                 
-                fakeReviveConnections["ToolAnimUnequipHandler"] = character.ChildRemoved:Connect(function(v)
+                Script.FakeRevive.Connections["ToolAnimUnequipHandler"] = character.ChildRemoved:Connect(function(v)
                     if v:IsA("Tool") then
                         rightGrip.Part1 = nil
                         rightGrip.C1 = CFrame.new()
@@ -4279,7 +4242,7 @@ Toggles.FakeRevive:OnChanged(function(value)
                     end
                 end)
 
-                Library:GiveSignal(fakeReviveConnections["ToolAnimUnequipHandler"])
+                Library:GiveSignal(Script.FakeRevive.Connections["ToolAnimUnequipHandler"])
             end
         end)
 
@@ -4318,11 +4281,11 @@ Toggles.FakeRevive:OnChanged(function(value)
                     end
                 end
 
-                for _, connection in pairs(fakeReviveConnections) do
+                for _, connection in pairs(Script.FakeRevive.Connections) do
                     connection:Disconnect()
                 end
                 
-                table.clear(fakeReviveConnections)
+                table.clear(Script.FakeRevive.Connections)
             end
 
             if previewCharacter:FindFirstChild("Humanoid") then previewCharacter.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
@@ -4341,7 +4304,7 @@ Toggles.FakeRevive:OnChanged(function(value)
         if character:FindFirstChild("LeftFoot") then character.LeftFoot.CanCollide = true end
         if character:FindFirstChild("RightFoot") then character.RightFoot.CanCollide = true end
         
-        fakeReviveConnections["mainStepped"] = RunService.RenderStepped:Connect(function()
+        Script.FakeRevive.Connections["mainStepped"] = RunService.RenderStepped:Connect(function()
             -- deivid gonna get mad at this line :content:
             if character:FindFirstChild("Humanoid") then character.Humanoid.WalkSpeed = 15 + Options.SpeedSlider.Value end
             
@@ -4358,13 +4321,13 @@ Toggles.FakeRevive:OnChanged(function(value)
                     for _, v in pairs(character:GetChildren()) do if v:IsA("BasePart") then totalParts = totalParts + 1 end end
                     if totalParts <= 2 then
                         task.spawn(usePreviewCharacter)
-                        fakeReviveConnections["mainStepped"]:Disconnect()
+                        Script.FakeRevive.Connections["mainStepped"]:Disconnect()
 
-                        for _, connection in pairs(fakeReviveConnections) do
+                        for _, connection in pairs(Script.FakeRevive.Connections) do
                             connection:Disconnect()
                         end
                         
-                        table.clear(fakeReviveConnections)
+                        table.clear(Script.FakeRevive.Connections)
                         return
                     end
                 end
@@ -4373,13 +4336,13 @@ Toggles.FakeRevive:OnChanged(function(value)
             if not character:FindFirstChild("HumanoidRootPart") then
                 Library:Notify("You have completely lost Network Ownership of your character which resulted of breaking Fake Death.", 5);
                 task.spawn(usePreviewCharacter, false)
-                fakeReviveConnections["mainStepped"]:Disconnect()
+                Script.FakeRevive.Connections["mainStepped"]:Disconnect()
 
-                for _, connection in pairs(fakeReviveConnections) do
+                for _, connection in pairs(Script.FakeRevive.Connections) do
                     connection:Disconnect()
                 end
                 
-                table.clear(fakeReviveConnections)
+                table.clear(Script.FakeRevive.Connections)
                 return
             end
             
@@ -4415,7 +4378,7 @@ Toggles.FakeRevive:OnChanged(function(value)
             end
         end)
 
-        Library:GiveSignal(fakeReviveConnections["mainStepped"])
+        Library:GiveSignal(Script.FakeRevive.Connections["mainStepped"])
 
         task.wait(0.1)
         local function fixUI()
@@ -4462,11 +4425,11 @@ Toggles.FakeRevive:OnChanged(function(value)
         if mainGameSrc then mainGameSrc.dead = false end
         
         ProximityPromptService.Enabled = true
-        fakeReviveConnections["ProximityPromptEnabler"] = ProximityPromptService:GetPropertyChangedSignal("Enabled"):Connect(function()
+        Script.FakeRevive.Connections["ProximityPromptEnabler"] = ProximityPromptService:GetPropertyChangedSignal("Enabled"):Connect(function()
             ProximityPromptService.Enabled = true
         end)
 
-        Library:GiveSignal(fakeReviveConnections["ProximityPromptEnabler"])
+        Library:GiveSignal(Script.FakeRevive.Connections["ProximityPromptEnabler"])
 
         workspace.Gravity = 90
 
@@ -4478,43 +4441,43 @@ Toggles.FakeRevive:OnChanged(function(value)
                     roomDetectPart.Size = Vector3.new(roomDetectPart.Size.X, roomDetectPart.Size.Y * 250, roomDetectPart.Size.Z)
 
                     local touchEvent = roomDetectPart.Touched:Connect(function(hit)
-                        if hit.Parent == localPlayer.Character and not fakeReviveDebounce then
-                            fakeReviveDebounce = true
+                        if hit.Parent == localPlayer.Character and not Script.FakeRevive.Debounce then
+                            Script.FakeRevive.Debounce = true
                             localPlayer:SetAttribute("CurrentRoom", tonumber(room.Name))
                             
                             task.wait(0.075)
-                            fakeReviveDebounce = false
+                            Script.FakeRevive.Debounce = false
                         end
                     end)
                     
-                    table.insert(fakeReviveConnections, touchEvent)
+                    table.insert(Script.FakeRevive.Connections, touchEvent)
                     Library:GiveSignal(touchEvent)
                 end
             end)
         end
 
-        fakeReviveConnections["CurrentRoomFix"] = workspace.CurrentRooms.ChildAdded:Connect(function(room)
+        Script.FakeRevive.Connections["CurrentRoomFix"] = workspace.CurrentRooms.ChildAdded:Connect(function(room)
             local roomDetectPart = room:WaitForChild(room.Name, math.huge)
 
             if roomDetectPart then
                 roomDetectPart.Size = Vector3.new(roomDetectPart.Size.X, roomDetectPart.Size.Y * 100, roomDetectPart.Size.Z)
 
                 local touchEvent = roomDetectPart.Touched:Connect(function(hit)
-                    if hit.Parent == localPlayer.Character and not fakeReviveDebounce then
-                        fakeReviveDebounce = true
+                    if hit.Parent == localPlayer.Character and not Script.FakeRevive.Debounce then
+                        Script.FakeRevive.Debounce = true
                         localPlayer:SetAttribute("CurrentRoom", tonumber(room.Name))
 
                         task.wait(0.075)
-                        fakeReviveDebounce = false
+                        Script.FakeRevive.Debounce = false
                     end
                 end)
                 
-                table.insert(fakeReviveConnections, touchEvent)
+                table.insert(Script.FakeRevive.Connections, touchEvent)
                 Library:GiveSignal(touchEvent)
             end
         end)
 
-        Library:GiveSignal(fakeReviveConnections["CurrentRoomFix"])
+        Library:GiveSignal(Script.FakeRevive.Connections["CurrentRoomFix"])
 
         Script.Functions.Alert({
             Title = "Fake Revive",
@@ -5270,7 +5233,7 @@ Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
     
     if isMines then
-        task.delay(0.5, Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+        task.spawn(Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
     end
 end))
 
@@ -5294,14 +5257,14 @@ end))
 
 Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
     task.delay(1, Script.Functions.SetupCharacterConnection, newCharacter)
-    if fakeReviveEnabled then
-        fakeReviveEnabled = false
+    if Script.FakeRevive.Enabled then
+        Script.FakeRevive.Enabled = false
 
-        for _, connection in pairs(fakeReviveConnections) do
+        for _, connection in pairs(Script.FakeRevive.Connections) do
             connection:Disconnect()
         end
         
-        table.clear(fakeReviveConnections)
+        table.clear(Script.FakeRevive.Connections)
 
         if Toggles.FakeRevive.Value then
             Script.Functions.Alert({
@@ -5819,12 +5782,12 @@ Library:OnUnload(function()
     if mtHook then hookmetamethod(game, "__namecall", mtHook) end
     if _fixDistanceFromCharacter then hookmetamethod(localPlayer, "__namecall", _fixDistanceFromCharacter) end
 
-    if fakeReviveEnabled then
-        for _, connection in pairs(fakeReviveConnections) do
+    if Script.FakeRevive.Enabled then
+        for _, connection in pairs(Script.FakeRevive.Connections) do
             if connection.Connected then connection:Disconnect() end
         end
 
-        table.clear(fakeReviveConnections)
+        table.clear(Script.FakeRevive.Connections)
     end
 
     if getgenv().BloxstrapRPC then
