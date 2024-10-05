@@ -339,6 +339,28 @@ local OtherGroupbox = Tabs.Main:AddRightGroupbox("Other") do
         Rounding = 2,
         Compact = true
     })
+
+
+    OtherGroupbox:AddDivider()
+
+    OtherGroupbox:AddButton("Create Retro Elevator", function()
+        local data = {
+            ["FriendsOnly"] = createElevatorFrame.Settings.FriendsOnly:GetAttribute("Setting"),
+            ["Destination"] = "Hotel",
+            ["Mods"] = {},
+            ["MaxPlayers"] = createElevatorFrame.Settings.MaxPlayers.Toggle.Text
+        }
+
+        for _, modifier in pairs(createElevatorFrame.Modifiers:GetChildren()) do
+            if modifier:GetAttribute("Enabled") then
+                table.insert(data.Mods, modifier.Name)
+            end
+        end
+
+        table.insert(data.Mods, "RetroMode")
+
+        createElevator:FireServer(data)
+    end)
 end
 
 if supportsFileSystem then

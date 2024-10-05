@@ -324,6 +324,7 @@ local isRooms = floor.Value == "Rooms"
 local isHotel = floor.Value == "Hotel"
 local isBackdoor = floor.Value == "Backdoor"
 local isFools = floor.Value == "Fools"
+local isRetro = floor.Value == "Retro"
 
 local floorReplicated = if not isFools then ReplicatedStorage:WaitForChild("FloorReplicated") else nil
 local remotesFolder = if not isFools then ReplicatedStorage:WaitForChild("RemotesFolder") else ReplicatedStorage:WaitForChild("EntityInfo")
@@ -2480,7 +2481,8 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
     AutomationGroupBox:AddToggle("AutoWardrobe", {
         Text = "Auto " .. HidingPlaceName[floor.Value],
         Default = false,
-    Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)"
+        Tooltip = "Might fail with multiple entities (Rush & Ambush, 3+ Rush spawns)",
+        Visible = not isRetro
     }):AddKeyPicker("AutoWardrobeKey", {
         Mode = "Toggle",
         Default = "Q",
@@ -4677,7 +4679,7 @@ Toggles.HidingSpotESP:OnChanged(function(value)
         local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
         if currentRoomModel then
             for _, wardrobe in pairs(currentRoomModel:GetDescendants()) do
-                if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" then
+                if wardrobe:GetAttribute("LoadModule") == "Wardrobe" or wardrobe:GetAttribute("LoadModule") == "Bed" or wardrobe.Name == "Rooms_Locker" or wardrobe.Name == "RetroWardrobe" then
                     Script.Functions.HidingSpotESP(wardrobe)
                 end
             end
@@ -5397,7 +5399,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
                 task.spawn(Script.Functions.ChestESP, asset)
             end
 
-            if Toggles.HidingSpotESP.Value and (asset:GetAttribute("LoadModule") == "Wardrobe" or asset:GetAttribute("LoadModule") == "Bed" or asset.Name == "Rooms_Locker") then
+            if Toggles.HidingSpotESP.Value and (asset:GetAttribute("LoadModule") == "Wardrobe" or asset:GetAttribute("LoadModule") == "Bed" or asset.Name == "Rooms_Locker" or asset.Name == "RetroWardrobe") then
                 Script.Functions.HidingSpotESP(asset)
             end
 
@@ -5598,6 +5600,10 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
         if Toggles.AutoInteract.Value and (Library.IsMobile or Options.AutoInteractKey:GetState()) then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
+                if isRetro and prompt.Parent.Parent.Name == "RetroWardrobe" then
+                    return false
+                end
+
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
 
