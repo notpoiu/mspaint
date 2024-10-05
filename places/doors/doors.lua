@@ -150,7 +150,7 @@ local EntityTable = {
             ["Spawned"] = true
         },
         ["GloombatSwarm"] = {
-            ["Image"] = "108578770251369",
+            ["Image"] = "79221203116470",
             ["Spawned"] = true
         }
     },
