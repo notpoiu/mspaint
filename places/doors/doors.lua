@@ -1953,8 +1953,13 @@ do
                     Time = progressPart
                 })
     
-                local minecartRig = camera:WaitForChild("MinecartRig", math.huge)
-                local minecartRoot = minecartRig:WaitForChild("Root", math.huge)
+                local minecartRig
+                local minecartRoot
+                repeat task.wait(0.1) 
+                    minecartRig = camera:FindFirstChild("MinecartRig")
+                    if not minecartRig then continue end
+                    minecartRoot = minecartRig:FindFirstChild("Root")
+                until minecartRig and minecartRoot
     
                 if workspace:FindFirstChild("_internal_mspaint_minecart_teleport") then workspace:FindFirstChild("_internal_mspaint_minecart_teleport"):Destroy() end
                 task.wait(3)
