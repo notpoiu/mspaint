@@ -73,7 +73,10 @@ task.spawn(function()
         return
     end
 
-    if not isfolder("mspaint/addons") then return end
+    if not isfolder("mspaint/addons") then
+        makefolder("mspaint/addons")
+        return
+    end
     
     repeat task.wait() until getgenv().mspaint_loaded == true
 
@@ -160,7 +163,7 @@ task.spawn(function()
     local gameAddonPath = getGameAddonPath(scriptPath)
     local AddonTab, LastGroupbox = nil, "Right"
 
-    for _, file in pairs(listfiles("mspaint\\addons")) do
+    for _, file in pairs(listfiles("mspaint/addons")) do
         if file:sub(#file - 3) ~= ".lua" and file:sub(#file - 4) ~= ".luau" then continue end
 
         local success, errorMessage = pcall(function()
