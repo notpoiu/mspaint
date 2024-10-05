@@ -171,7 +171,7 @@ task.spawn(function()
 
     for _, file in pairs(listfiles("mspaint/addons")) do
         print("[mspaint] Loading addon '" .. string.gsub(file, "mspaint/addons/", "") .. "'...")
-        if file:sub(#file - 3) ~= ".lua" and file:sub(#file - 4) ~= ".luau" then continue end
+        if file:sub(#file - 3) ~= ".lua" and file:sub(#file - 4) ~= ".luau" and file:sub(#file - 7) ~= ".lua.txt" then continue end
 
         local success, errorMessage = pcall(function()
             local fileContent = readfile(file)
