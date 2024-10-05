@@ -211,6 +211,7 @@ local HidingPlaceName = {
     ["Hotel"] = "Closet",
     ["Backdoor"] = "Closet",
     ["Fools"] = "Closet",
+    ["Retro"] = "Closet",
 
     ["Rooms"] = "Locker",
     ["Mines"] = "Locker"
