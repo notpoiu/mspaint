@@ -151,7 +151,7 @@ end
 
 executorSupport["_ExecutorName"] = executorName
 for name, result in pairs(executorSupport) do
-    print(name .. ":", result)
+    print(name .. ":", tostring(result))
 end
 
 getgenv().ExecutorSupport = executorSupport
