@@ -37,7 +37,7 @@ if not getgenv().BloxstrapRPC then
             data = data
         })
         
-        --print("[BloxstrapRPC] " .. json)
+        print("[BloxstrapRPC] " .. json)
     end
 
     function BloxstrapRPC.SetRichPresence(data: RichPresence)
