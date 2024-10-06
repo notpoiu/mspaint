@@ -5955,14 +5955,14 @@ MenuGroup:AddToggle("KeybindMenuOpen", { Default = false, Text = "Open Keybind M
 MenuGroup:AddToggle("ShowCustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(Value) Library.ShowCustomCursor = Value end})
 MenuGroup:AddDivider()
 MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
-MenuGroup:AddButton("Join Discord Server", function()
+MenuGroup:AddButton("Join Discord", function()
     local Inviter = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Discord%20Inviter/Source.lua"))()
     Inviter.Join("https://discord.com/invite/cfyMptntHr")
     Inviter.Prompt({
         name = "mspaint",
         invite = "https://discord.com/invite/cfyMptntHr",
     })
-end):AddButton("Copy Discord Server", function()
+end):AddButton("Copy Link", function()
     if setclipboard then
         setclipboard("https://discord.com/invite/cfyMptntHr")
     end
