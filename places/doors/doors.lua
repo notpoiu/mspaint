@@ -5962,6 +5962,10 @@ MenuGroup:AddButton("Join Discord Server", function()
         name = "mspaint",
         invite = "https://discord.com/invite/cfyMptntHr",
     })
+end):AddButton("Copy Discord Server", function()
+    if setclipboard then
+        setclipboard("https://discord.com/invite/cfyMptntHr")
+    end
 end)
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
 
