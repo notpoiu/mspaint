@@ -439,7 +439,7 @@ if supportsFileSystem then
     
             Script.Functions.Alert("Overrided preset: " .. Options.Elevator_PresetList.Value)
     
-            Script.Functions.File.CreatePreset(Options.Elevator_PresetList.Value, HttpService:JSONEncode(presetData))
+            Script.Functions.File.CreatePreset(Options.Elevator_PresetList.Value, presetData)
             
             Script.Functions.File.LoadPresets()
             Options.Elevator_PresetList:SetValues(Script.ElevatorPresets)
