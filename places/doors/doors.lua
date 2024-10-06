@@ -2691,6 +2691,14 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
         Visible = not isFools
     })
 
+    BypassGroupBox:AddToggle("InfCrucifix", {
+        Text = "Infinite Crucifix",
+        Default = false,
+        Visible = not isFools,
+        Tooltip = "Very risky, might kill you.",
+        Risky = true
+    })
+
     BypassGroupBox:AddToggle("FakeRevive", {
         Text = "Fake Revive",
         Default = false
@@ -5014,7 +5022,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
         local toolId = equippedTool and equippedTool:GetAttribute("ID")
 
         if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
-            task.wait(isChestBox and 0.15 or 0)
+            task.wait(isChestBox and 0.25 or 0)
             remotesFolder.DropItem:FireServer(equippedTool)
 
             task.spawn(function()
@@ -5134,7 +5142,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
             end
         end
 
-        if (child.Name == "RushMoving" or child.Name == "AmbushMoving") and Toggles.InfItems.Value and alive and character then
+        if (child.Name == "RushMoving" or child.Name == "AmbushMoving") and Toggles.InfCrucifix.Value and alive and character then
             task.wait(1.5)
             
             local hasStoppedMoving = false --entity has stoped
@@ -5155,7 +5163,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
             local entityName = child.Name
 
             local crucifixConnection; crucifixConnection = RunService.RenderStepped:Connect(function(deltaTime)
-                if not Toggles.InfItems.Value or not alive or not character then crucifixConnection:Disconnect() return end
+                if not Toggles.InfCrucifix.Value or not alive or not character then crucifixConnection:Disconnect() return end
 
                 local currentTimer = tick()
                 frameCount += 1 
