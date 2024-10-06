@@ -3481,6 +3481,13 @@ task.spawn(function()
                             if not moveToFinished or not Toggles.AutoRooms.Value then
                                 humanoid:MoveTo(waypoint.Position)
                                 
+                                local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
+                                local isEntitySpawned = (entity and entity.PrimaryPart.Position.Y > -10)
+
+                                if isEntitySpawned and not rootPart.Anchored then
+                                    break
+                                end
+
                                 task.delay(1.5, function()
                                     if moveToFinished then return end
                                     if (not Toggles.AutoRooms.Value or Library.Unloaded) then return moveToCleanup() end
