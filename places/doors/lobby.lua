@@ -542,6 +542,9 @@ MenuGroup:AddButton("Join Discord", function()
 end):AddButton("Copy Link", function()
     if setclipboard then
         setclipboard("https://discord.com/invite/cfyMptntHr")
+        Library:Notify("Copied discord link to clipboard!")
+    else
+        Library:Notify("Discord link: https://discord.com/invite/cfyMptntHr", 10)
     end
 end)
 MenuGroup:AddButton("Unload", function() Library:Unload() end)
