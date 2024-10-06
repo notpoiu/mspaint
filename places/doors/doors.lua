@@ -45,6 +45,7 @@ local Script = {
         SideEntity = {},
         Gold = {},
         Guiding = {},
+        DroppedItem = {},
         Item = {},
         Objective = {},
         Player = {},
@@ -153,6 +154,10 @@ local EntityTable = {
         },
         ["GloombatSwarm"] = {
             ["Image"] = "79221203116470",
+            ["Spawned"] = true
+        },
+        ["HaltRoom"] = {
+            ["Image"] = "11331795398",
             ["Spawned"] = true
         }
     },
@@ -939,9 +944,9 @@ do
         })
     end
     
-    function Script.Functions.ItemESP(item)
+    function Script.Functions.ItemESP(item, dropped)
         Script.Functions.ESP({
-            Type = "Item",
+            Type = dropped and "DroppedItem" or "Item",
             Object = item,
             Text = Script.Functions.GetShortName(item.Name),
             Color = Options.ItemEspColor.Value
@@ -2040,6 +2045,16 @@ do
     end
     
     function Script.Functions.SetupRoomConnection(room)
+        if Options.NotifyEntity.Value["Halt Room"] and room:GetAttribute("RawName") == "HaltHallway" then
+            Script.Functions.Alert({
+                Title = "ENTITIES",
+                Description = "Halt will spawn in next room!",
+                Image = EntityTable.NotifyReason["HaltRoom"].Image,
+
+                Warning = true
+            })
+        end
+
         for _, child in pairs(room:GetDescendants()) do
             task.spawn(function()
                 if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
@@ -2063,7 +2078,7 @@ do
     
     function Script.Functions.SetupDropConnection(drop)
         if Toggles.ItemESP.Value then
-            Script.Functions.ItemESP(drop)
+            Script.Functions.ItemESP(drop, true)
         end
     
         task.spawn(function()
@@ -2843,7 +2858,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
         NotifyTab:AddDropdown("NotifyEntity", {
             AllowNull = true,
-            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
             Default = {},
             Multi = true,
 
@@ -4593,7 +4608,7 @@ Toggles.ItemESP:OnChanged(function(value)
     if value then
         for _, item in pairs(workspace.Drops:GetChildren()) do
             if Script.Functions.ItemCondition(item) then
-                Script.Functions.ItemESP(item)
+                Script.Functions.ItemESP(item, true)
             end
         end
 
@@ -4606,6 +4621,10 @@ Toggles.ItemESP:OnChanged(function(value)
             end
         end
     else
+        for _, esp in pairs(Script.ESPTable.DroppedItem) do
+            esp.Destroy()
+        end
+
         for _, esp in pairs(Script.ESPTable.Item) do
             esp.Destroy()
         end
@@ -4613,6 +4632,14 @@ Toggles.ItemESP:OnChanged(function(value)
 end)
 
 Options.ItemEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.DroppedItem) do
+        esp.Update({
+            FillColor = value,
+            OutlineColor = value,
+            TextColor = value,
+        })
+    end
+
     for _, esp in pairs(Script.ESPTable.Item) do
         esp.Update({
             FillColor = value,
@@ -5057,7 +5084,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         Script.Functions.EntityESP(child)  
                     end
 
-                    if Options.NotifyEntity.Value[shortName] == true then
+                    if Options.NotifyEntity.Value[shortName] then
                         Script.Functions.Alert({
                             Title = "ENTITIES",
                             Description = shortName .. " has spawned!",
@@ -5614,7 +5641,6 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 if prompt.Parent:GetAttribute("JeffShop") then continue end
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
-                if prompt:FindFirstAncestorOfClass("Model") and prompt:FindFirstAncestorOfClass("Model").Name == "DoorFake" then continue end
 
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
