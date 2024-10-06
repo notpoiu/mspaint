@@ -952,7 +952,7 @@ do
     end
     
     function Script.Functions.ChestESP(chest)
-        local text = chest.Name:gsub("Box", ""):gsub("_Vine", ""):gsub("_Small", "")
+        local text = chest.Name:gsub("Box", ""):gsub("_Vine", ""):gsub("_Small", ""):gsub("Locked", "")
         local locked = chest:GetAttribute("Locked")
         local state = if locked then "[Locked]" else ""
     
@@ -5024,7 +5024,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
         local toolId = equippedTool and equippedTool:GetAttribute("ID")
 
         if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
-            task.wait(isChestBox and 0.2 or 0)
+            task.wait(isChestBox and 0.1 or 0)
             remotesFolder.DropItem:FireServer(equippedTool)
 
             task.spawn(function()
