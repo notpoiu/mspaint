@@ -152,6 +152,10 @@ local EntityTable = {
         ["GloombatSwarm"] = {
             ["Image"] = "79221203116470",
             ["Spawned"] = true
+        },
+        ["HaltRoom"] = {
+            ["Image"] = "11331795398",
+            ["Spawned"] = true
         }
     },
     ["NoCheck"] = {
@@ -2038,6 +2042,16 @@ do
     end
     
     function Script.Functions.SetupRoomConnection(room)
+        if Options.NotifyEntity.Value["Halt Room"] and room:GetAttribute("RawName") == "HaltHallway" then
+            Script.Functions.Alert({
+                Title = "ENTITIES",
+                Description = "Halt will spawn in next room!",
+                Image = EntityTable.NotifyReason["HaltRoom"].Image,
+
+                Warning = true
+            })
+        end
+
         for _, child in pairs(room:GetDescendants()) do
             task.spawn(function()
                 if Toggles.DeleteSeek.Value and rootPart and child.Name == "Collision" then
@@ -2841,7 +2855,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
         NotifyTab:AddDropdown("NotifyEntity", {
             AllowNull = true,
-            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
             Default = {},
             Multi = true,
 
@@ -5055,7 +5069,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         Script.Functions.EntityESP(child)  
                     end
 
-                    if Options.NotifyEntity.Value[shortName] == true then
+                    if Options.NotifyEntity.Value[shortName] then
                         Script.Functions.Alert({
                             Title = "ENTITIES",
                             Description = shortName .. " has spawned!",
