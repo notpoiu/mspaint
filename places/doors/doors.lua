@@ -43,6 +43,7 @@ local Script = {
         SideEntity = {},
         Gold = {},
         Guiding = {},
+        DroppedItem = {},
         Item = {},
         Objective = {},
         Player = {},
@@ -941,9 +942,9 @@ do
         })
     end
     
-    function Script.Functions.ItemESP(item)
+    function Script.Functions.ItemESP(item, dropped)
         Script.Functions.ESP({
-            Type = "Item",
+            Type = dropped and "DroppedItem" or "Item",
             Object = item,
             Text = Script.Functions.GetShortName(item.Name),
             Color = Options.ItemEspColor.Value
@@ -2075,7 +2076,7 @@ do
     
     function Script.Functions.SetupDropConnection(drop)
         if Toggles.ItemESP.Value then
-            Script.Functions.ItemESP(drop)
+            Script.Functions.ItemESP(drop, true)
         end
     
         task.spawn(function()
@@ -4605,7 +4606,7 @@ Toggles.ItemESP:OnChanged(function(value)
     if value then
         for _, item in pairs(workspace.Drops:GetChildren()) do
             if Script.Functions.ItemCondition(item) then
-                Script.Functions.ItemESP(item)
+                Script.Functions.ItemESP(item, true)
             end
         end
 
@@ -4618,6 +4619,10 @@ Toggles.ItemESP:OnChanged(function(value)
             end
         end
     else
+        for _, esp in pairs(Script.ESPTable.DroppedItem) do
+            esp.Destroy()
+        end
+
         for _, esp in pairs(Script.ESPTable.Item) do
             esp.Destroy()
         end
@@ -4625,6 +4630,14 @@ Toggles.ItemESP:OnChanged(function(value)
 end)
 
 Options.ItemEspColor:OnChanged(function(value)
+    for _, esp in pairs(Script.ESPTable.DroppedItem) do
+        esp.Update({
+            FillColor = value,
+            OutlineColor = value,
+            TextColor = value,
+        })
+    end
+
     for _, esp in pairs(Script.ESPTable.Item) do
         esp.Update({
             FillColor = value,
