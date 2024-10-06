@@ -2699,6 +2699,8 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
         Risky = true
     })
 
+    BypassGroupBox:AddDivider()
+
     BypassGroupBox:AddToggle("FakeRevive", {
         Text = "Fake Revive",
         Default = false
