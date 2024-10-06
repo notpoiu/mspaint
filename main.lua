@@ -37,7 +37,7 @@ if not getgenv().BloxstrapRPC then
             data = data
         })
         
-        print("[BloxstrapRPC] " .. json)
+        --print("[BloxstrapRPC] " .. json)
     end
 
     function BloxstrapRPC.SetRichPresence(data: RichPresence)
@@ -169,6 +169,21 @@ task.spawn(function()
     
     local AddonTab, LastGroupbox = nil, "Right"
 
+    local function createAddonTab(hasAddons: boolean)
+        if AddonTab ~= nil then return end -- tab was already created
+        local addonsText = "This tab is for UN-OFFICIAL addons made for mspaint. We are not responsible for what addons you will use. You are putting yourself AT RISK since you are executing third-party scripts."
+        if not hasAddons then
+            addonsText = "Your addons FOLDER is empty!"
+        end
+        AddonTab = getgenv().Library.Window:AddTab("Addons [BETA]")
+        AddonTab:UpdateWarningBox({
+            Visible = true,
+            Title = "WARNING",
+            Text = addonsText
+        })
+    end
+
+    local containAddonsLoaded = false
     for _, file in pairs(listfiles("mspaint/addons")) do
         print("[mspaint] Loading addon '" .. string.gsub(file, "mspaint/addons/", "") .. "'...")
         if file:sub(#file - 3) ~= ".lua" and file:sub(#file - 4) ~= ".luau" and file:sub(#file - 7) ~= ".lua.txt" then continue end
@@ -202,14 +217,7 @@ task.spawn(function()
                 addon.Title = addon.Name;
             end
             
-            if not AddonTab then
-                AddonTab = getgenv().Library.Window:AddTab("Addons [BETA]")
-                AddonTab:UpdateWarningBox({
-                    Visible = true,
-                    Title = "WARNING",
-                    Text = "This tab is for UN-OFFICIAL addons made for mspaint. We are not responsible for what addons you will use. You are putting yourself AT RISK since you are executing third-party scripts."
-                })
-            end
+            if not AddonTab then createAddonTab(true) end
 
             local AddonGroupbox = LastGroupbox == "Right" and AddonTab:AddLeftGroupbox(addon.Title) or AddonTab:AddRightGroupbox(addon.Title);
             LastGroupbox = LastGroupbox == "Right" and "Left" or "Right";
@@ -231,6 +239,9 @@ task.spawn(function()
 
         if not success then
             warn("[mspaint] Failed to load addon '" .. string.gsub(file, "mspaint/addons/", "") .. "':", errorMessage)
+        else
+            containAddonsLoaded = true
         end
     end
+    createAddonTab(containAddonsLoaded)
 end)
