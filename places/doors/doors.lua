@@ -2695,7 +2695,7 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
         Text = "Infinite Crucifix",
         Default = false,
         Visible = not isFools,
-        Tooltip = "Very risky, might kill you.",
+        Tooltip = "Very risky, you might die/lose the crucifix",
         Risky = true
     })
 
