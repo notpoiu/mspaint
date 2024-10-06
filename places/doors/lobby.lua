@@ -215,7 +215,7 @@ function Script.Functions.File.LoadPresets()
 
             table.insert(Script.ElevatorPresets, name)
         else
-            print("Failed to load preset: " .. file)
+            Script.Functions.Alert("Failed to load preset: " .. file)
         end
     end
 
