@@ -1095,6 +1095,13 @@ do
     end
 
     function Script.Functions.ChildCheck(child)
+        local isAnimationJunk = (child.Name == "AnimSaves" or child:IsA("KeyframeSequence") or child.Name == "Keyframe")
+        local isIrrelevantChild = (child:IsA("JointInstance") or child:IsA("Attachment") or child:IsA("Constraint"))
+        if isAnimationJunk or isIrrelevantChild then
+            if isAnimationJunk then child:Destroy() end
+            return
+        end
+        
         if Script.Functions.PromptCondition(child) then
             task.defer(function()
                 if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
