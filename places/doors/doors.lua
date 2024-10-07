@@ -5060,7 +5060,7 @@ Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
     if isBackdoor or isRooms or isRetro then return end
 
     local hideTime = Script.Functions.CalculateHideTime(currentRoom) or math.huge
-    local finalTime = tick() + (math.floor(hideTime * 100) / 100)
+    local finalTime = tick() + hideTime
 
     if Toggles.NotifyHideTime.Value and hideTime ~= math.huge then
         while character:GetAttribute("Hiding") and alive and not Library.Unloaded and Toggles.NotifyHideTime.Value do
