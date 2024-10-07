@@ -284,6 +284,7 @@ local PromptTable = {
 
         Parent = {
             "KeyObtainFake",
+            "MinesAnchor",
             "Padlock"
         },
 
