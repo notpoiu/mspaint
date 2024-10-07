@@ -3522,7 +3522,18 @@ task.spawn(function()
                                 local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
                                 local isEntitySpawned = (entity and entity.PrimaryPart.Position.Y > -10)
 
-                                if isEntitySpawned and not rootPart.Anchored then
+                                if isEntitySpawned and not rootPart.Anchored and pathfindingGoal.Parent.Name ~= "Rooms_Locker" then
+                                    waypointConnection:Disconnect()
+
+                                    if not Toggles.AutoRooms.Value then
+                                        _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                                        break
+                                    else
+                                        if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
+                                            _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i):Destroy()
+                                        end
+                                    end
+                                    
                                     break
                                 end
 
