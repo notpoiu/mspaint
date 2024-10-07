@@ -942,14 +942,19 @@ do
             end
         elseif child.Name == "WaterPump" then
             local wheel = child:WaitForChild("Wheel", 5)
+            local onFrame = child:FindFirstChild("OnFrame", true)
     
-            if wheel then
-                Script.Functions.ESP({
+            if wheel and (onFrame and onFrame.Visible) then
+                local pumpEsp = Script.Functions.ESP({
                     Type = "Objective",
                     Object = wheel,
                     Text = "Water Pump",
                     Color = Options.ObjectiveEspColor.Value
                 })
+                
+                onFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+                    if pumpEsp then pumpEsp.Destroy() end
+                end)
             end
         end
     end
