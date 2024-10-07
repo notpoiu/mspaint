@@ -5031,7 +5031,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
         local toolId = equippedTool and equippedTool:GetAttribute("ID")
 
         if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
-            task.wait(isChestBox and 0.1 or 0)
+            task.wait(isChestBox and 0.05 or 0)
             remotesFolder.DropItem:FireServer(equippedTool)
 
             task.spawn(function()
