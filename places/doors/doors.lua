@@ -1097,13 +1097,13 @@ do
 
     function Script.Functions.ChildCheck(child)
         -- optimization (ty lsplash)
-        if (child.Name == "AnimSaves" or child.ClassName == "KeyframeSequence" or child.Name == "Keyframe") then
+        if (child.Name == "AnimSaves" or child.Name == "Keyframe" or child:IsA("KeyframeSequence")) then
             child:Destroy()
             return
         end
         
         -- skip
-        if (child.ClassName ~= "Model" and not child.ClassName:match("Part") and child.ClassName ~= "Decal" and child.ClassName ~= "ProximityPrompt") then
+        if not (child:IsA("ProximityPrompt") or child:IsA("Model") or child:IsA("BasePart") or child:IsA("Decal")) then
             return
         end
                 
