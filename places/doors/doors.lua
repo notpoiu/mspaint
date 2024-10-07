@@ -69,6 +69,7 @@ local Script = {
         AnchorFinished = {},
         AutoWardrobeEntities = {},
         Bridges = {},
+        CollisionSize = Vector3.new(5.5, 3, 3),
         FlyBody = nil,
         Guidance = {},
         PaintingDebounce = false,
@@ -2336,6 +2337,7 @@ do
                 collisionClone.CollisionCrouch:Destroy()
             end
     
+            Script.Temp.CollisionSize = collisionClone.Size
             collisionClone.Parent = character
         end
     
@@ -2690,8 +2692,8 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddDropdown("SpeedBypassMethod", {
         AllowNull = false,
-        Values = {"Massless", --[["Size"]]},
-        Default = "Massless",
+        Values = {"Size", "Massless"},
+        Default = "Size",
         Multi = false,
 
         Text = "Speed Bypass Method"
@@ -4003,45 +4005,33 @@ function Script.Functions.SpeedBypass()
     if speedBypassing then return end
     speedBypassing = true
 
-    local SpeedBypassMethod = Options.SpeedBypassMethod.Value
-
-    local function cleanup()
-        -- reset if changed speed bypass method
-        speedBypassing = false
-
-        if collisionClone then
-            if SpeedBypassMethod == "Massless" then
-                collisionClone.Massless = true
-            elseif SpeedBypassMethod == "Size" then
-                collisionClone.Size = Vector3.new(3, 5.5, 3)
-            end
-            
-            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod and not Script.FakeRevive.Enabled then
-                Script.Functions.SpeedBypass()
-            end
-        end
-    end
-
     task.spawn(function()
-        if SpeedBypassMethod == "Massless" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
+        while Toggles.SpeedBypass.Value and collisionClone and not Library.Unloaded and not Script.FakeRevive.Enabled do
+            if Options.SpeedBypassMethod.Value == "Massless" then
                 collisionClone.Massless = not collisionClone.Massless
+            elseif Options.SpeedBypassMethod.Value == "Size" then
+                collisionClone.Size = Script.Temp.CollisionSize / 2
                 task.wait(Options.SpeedBypassDelay.Value)
+                collisionClone.Size = Script.Temp.CollisionSize
             end
-    
-            cleanup()
-        elseif SpeedBypassMethod == "Size" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
-                collisionClone.Size = Vector3.new(3, 5.5, 3)
-                task.wait(Options.SpeedBypassDelay.Value)
-                collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
-                task.wait(Options.SpeedBypassDelay.Value)
-            end
-    
-            cleanup()
+
+            task.wait(Options.SpeedBypassDelay.Value)
+        end
+
+        speedBypassing = false
+        if collisionClone then
+            collisionClone.Massless = true
+            collisionClone.Size = Script.Temp.CollisionSize
         end
     end)
 end
+
+Options.SpeedBypassMethod:OnChanged(function()
+    if collisionClone then
+        collisionClone.Massless = true
+        collisionClone.Size = Script.Temp.CollisionSize
+    end
+end)
 
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
