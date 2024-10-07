@@ -294,6 +294,19 @@ local PromptTable = {
     }
 }
 
+local HideTimeValues = {
+    {min = 1, max = 5, a = -1/6, b = 1, c = 20},
+    {min = 6, max = 19, a = -1/13, b = 6, c = 19},
+    {min = 19, max = 22, a = -1/4, b = 19, c = 18},
+    {min = 23, max = 26, a = 1/3, b = 23, c = 18},
+    {min = 26, max = 30, a = -1/4, b = 26, c = 19},
+    {min = 30, max = 35, a = -1/3, b = 30, c = 18},
+    {min = 36, max = 60, a = -1/12, b = 36, c = 18},
+    {min = 60, max = 90, a = -1/30, b = 60, c = 16},
+    {min = 90, max = 99, a = -1/6, b = 90, c = 15}
+}
+
+
 local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 --// Exploits Variables \\--
@@ -453,19 +466,39 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
 
     UITextSizeConstraint.MaxTextSize = 35
 
-    function Script.Functions.Captions(caption: string)
-        if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
-        TextLabel.Text = caption
-    end
-
     function Script.Functions.HideCaptions()
         _mspaint_custom_captions.Parent = ReplicatedStorage
+    end
+
+    local CaptionsLastUsed = os.time()
+    function Script.Functions.Captions(caption: string)
+        CaptionsLastUsed = os.time()
+        if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
+        
+        TextLabel.Text = caption
+
+        task.spawn(function()
+            task.wait(5)
+            if os.time() - CaptionsLastUsed >= 5 then
+                Script.Functions.HideCaptions()
+            end
+        end)
     end
 end
 
 --// Functions \\--
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Functions.CalculateHideTime(room: number)
+    for _, range in ipairs(HideTimeValues) do
+        if room >= range.min and room <= range.max then
+            return math.round(range.a * (room - range.b) + range.c)
+        end
+    end    
+
+    return nil
 end
 
 function Script.Functions.RandomString()
@@ -2884,6 +2917,11 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Text = "Notify Oxygen",
             Default = false,
         })
+
+        NotifyTab:AddToggle("NotifyHideTime", {
+            Text = "Notify Hide Time",
+            Default = false,
+        })
     end
 
     local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
@@ -3150,7 +3188,7 @@ task.spawn(function()
         
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
             Mines_VisualGroupBox:AddToggle("MinecartPathVisualiser", {
-                Text = "Show Correct Minecart Path",
+                Text = "Visualize Correct Seek Path",
                 Default = false
             })
         end
@@ -3483,11 +3521,29 @@ task.spawn(function()
                             if not moveToFinished or not Toggles.AutoRooms.Value then
                                 humanoid:MoveTo(waypoint.Position)
                                 
+                                local entity = (workspace:FindFirstChild("A60") or workspace:FindFirstChild("A120"))
+                                local isEntitySpawned = (entity and entity.PrimaryPart.Position.Y > -10)
+
+                                if isEntitySpawned and not rootPart.Anchored and pathfindingGoal.Parent.Name ~= "Rooms_Locker" then
+                                    waypointConnection:Disconnect()
+
+                                    if not Toggles.AutoRooms.Value then
+                                        _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                                        break
+                                    else
+                                        if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
+                                            _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i):Destroy()
+                                        end
+                                    end
+
+                                    break
+                                end
+
                                 task.delay(1.5, function()
                                     if moveToFinished then return end
                                     if (not Toggles.AutoRooms.Value or Library.Unloaded) then return moveToCleanup() end
 
-                                    repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
+                                    repeat task.wait(.25) until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
 
                                     Script.Functions.Alert({
                                         Title = "Auto Rooms",
@@ -5013,6 +5069,27 @@ if isBackdoor then
     end))
 end
 
+Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
+    if isBackdoor or isRooms or isRetro then return end
+
+    local hideTime = Script.Functions.CalculateHideTime(currentRoom) or math.huge
+    local finalTime = tick() + math.round(hideTime)
+
+    if Toggles.NotifyHideTime.Value and hideTime ~= math.huge then
+        while character:GetAttribute("Hiding") and alive and not Library.Unloaded and Toggles.NotifyHideTime.Value do
+            local remainingTime = math.max(0, finalTime - tick())
+
+            if ExecutorSupport["firesignal"] then
+                firesignal(remotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
+            else
+                Script.Functions.Captions(string.format("%.1f", remainingTime))
+            end
+
+            task.wait()
+        end
+    end
+end))
+
 Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
     if player ~= localPlayer or not character or isFools then return end
     
@@ -5026,7 +5103,7 @@ Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(promp
         local toolId = equippedTool and equippedTool:GetAttribute("ID")
 
         if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
-            task.wait(isChestBox and 0.1 or 0)
+            task.wait(isChestBox and 0.05 or 0)
             remotesFolder.DropItem:FireServer(equippedTool)
 
             task.spawn(function()
