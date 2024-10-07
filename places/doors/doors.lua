@@ -3186,7 +3186,7 @@ task.spawn(function()
         
         local Mines_VisualGroupBox = Tabs.Floor:AddRightGroupbox("Visuals") do
             Mines_VisualGroupBox:AddToggle("MinecartPathVisualiser", {
-                Text = "Show Correct Minecart Path",
+                Text = "Visualize Correct Seek Path",
                 Default = false
             })
         end
