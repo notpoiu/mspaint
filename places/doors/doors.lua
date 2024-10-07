@@ -5059,11 +5059,11 @@ end
 
 Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
     local hideTime = Script.Functions.CalculateHideTime(currentRoom) or 0
-    local finalTime = os.time() + (math.floor(hideTime * 100) / 100)
+    local finalTime = tick() + (math.floor(hideTime * 100) / 100)
 
     if Toggles.NotifyHideTime.Value then
         while character:GetAttribute("Hiding") and alive and not Library.Unloaded and Toggles.NotifyHideTime.Value do
-            local remainingTime = finalTime - os.time()
+            local remainingTime = finalTime - tick()
 
             if ExecutorSupport["firesignal"] then
                 firesignal(remotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
