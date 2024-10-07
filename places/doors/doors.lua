@@ -292,6 +292,19 @@ local PromptTable = {
     }
 }
 
+local HideTimeValues = {
+    {min = 1, max = 6, a = -1/6, b = 1, c = 20},
+    {min = 6, max = 19, a = -1/13, b = 6, c = 19},
+    {min = 19, max = 23, a = -1/4, b = 19, c = 18},
+    {min = 23, max = 26, a = 1/3, b = 23, c = 18},
+    {min = 26, max = 30, a = -1/4, b = 26, c = 19},
+    {min = 30, max = 36, a = -1/3, b = 30, c = 18},
+    {min = 36, max = 60, a = -1/12, b = 36, c = 18},
+    {min = 60, max = 90, a = -1/30, b = 60, c = 16},
+    {min = 90, max = 98, a = -1/6, b = 90, c = 15}
+}
+
+
 local RBXGeneral = TextChatService.TextChannels.RBXGeneral
 
 --// Exploits Variables \\--
@@ -477,25 +490,11 @@ getgenv()._internal_unload_mspaint = function()
 end
 
 function Script.Functions.CalculateHideTime(room: number)
-    if room >= 1 and room <= 6 then
-        return (-1/6) * (room - 1) + 20
-    elseif room > 6 and room <= 19 then
-        return (-1/13) * (room - 6) + 19
-    elseif room > 19 and room <= 23 then
-        return (-1/4) * (room - 19) + 18
-    elseif room > 23 and room <= 26 then
-        return (1/3) * (room - 23) + 18
-    elseif room > 26 and room <= 30 then
-        return (-1/4) * (room - 26) + 19
-    elseif room > 30 and room <= 36 then
-        return (-2/6) * (room - 30) + 18
-    elseif room > 36 and room <= 60 then
-        return (-2/24) * (room - 36) + 18
-    elseif room > 60 and room <= 90 then
-        return (-1/30) * (room - 60) + 16
-    elseif room > 90 and room <= 96 then
-        return (-1/6) * (room - 90) + 15
-    end
+    for _, range in ipairs(HideTimeValues) do
+        if room > range.min and room <= range.max then
+            return math.round(range.a * (room - range.b) + range.c)
+        end
+    end    
 
     return nil
 end
@@ -5058,10 +5057,12 @@ if isBackdoor then
 end
 
 Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
-    local hideTime = Script.Functions.CalculateHideTime(currentRoom) or 0
+    if isBackdoor or isRooms or isRetro then return end
+
+    local hideTime = Script.Functions.CalculateHideTime(currentRoom) or math.huge
     local finalTime = tick() + (math.floor(hideTime * 100) / 100)
 
-    if Toggles.NotifyHideTime.Value then
+    if Toggles.NotifyHideTime.Value and hideTime ~= math.huge then
         while character:GetAttribute("Hiding") and alive and not Library.Unloaded and Toggles.NotifyHideTime.Value do
             local remainingTime = math.max(0, finalTime - tick())
 
