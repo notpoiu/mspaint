@@ -1145,11 +1145,9 @@ do
     
             if child.Name == "Snare" and Toggles.AntiSnare.Value then
                 child:WaitForChild("Hitbox", 5).CanTouch = false
-            end
-            if child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
+            elseif child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
                 child:WaitForChild("Hitbox", 5).CanTouch = false
-            end
-            if (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
+            elseif (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
                 Script.Functions.DisableDupe(child, true, child:GetAttribute("LoadModule") == "SpaceSideroom")
             end
     
@@ -1201,6 +1199,8 @@ do
                     clone.Parent = child.Parent
                     
                     table.insert(Script.Temp.Bridges, clone)
+                elseif Toggles.AntiSeekFlood.Value and child.Name == "SeekFloodline" then
+                    child.CanCollide = true
                 end
             end
         elseif child:IsA("Decal") and Toggles.AntiLag.Value then
@@ -3106,6 +3106,11 @@ task.spawn(function()
                 Text = "Anti-Bridge Fall",
                 Default = false
             })
+
+            Mines_AntiEntityGroupBox:AddToggle("AntiSeekFlood", {
+                Text = "Anti-Seek Flood",
+                Default = false
+            })
         end
 
         local Mines_AutomationGroupBox = Tabs.Floor:AddRightGroupbox("Automation") do
@@ -3319,6 +3324,17 @@ task.spawn(function()
             else
                 for _, bridge in pairs(Script.Temp.Bridges) do
                     bridge:Destroy()
+                end
+            end
+        end)
+
+        Toggles.AntiSeekFlood:OnChanged(function(value)
+            local room = workspace.CurrentRooms:FindFirstChild("100")
+            
+            if room and room:FindFirstChild("_DamHandler") then
+                local seekFlood = room._DamHandler:FindFirstChild("SeekFloodline")
+                if seekFlood then
+                    seekFlood.CanCollide = value
                 end
             end
         end)
