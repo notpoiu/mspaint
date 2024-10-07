@@ -71,6 +71,7 @@ local Script = {
         AnchorFinished = {},
         AutoWardrobeEntities = {},
         Bridges = {},
+        CollisionSize = Vector3.new(5.5, 3, 3),
         FlyBody = nil,
         Guidance = {},
         PaintingDebounce = false,
@@ -2338,6 +2339,7 @@ do
                 collisionClone.CollisionCrouch:Destroy()
             end
     
+            Script.Temp.CollisionSize = collisionClone.Size
             collisionClone.Parent = character
         end
     
@@ -2692,8 +2694,8 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddDropdown("SpeedBypassMethod", {
         AllowNull = false,
-        Values = {"Massless", --[["Size"]]},
-        Default = "Massless",
+        Values = {"Size", "Massless"},
+        Default = "Size",
         Multi = false,
 
         Text = "Speed Bypass Method"
@@ -3432,9 +3434,16 @@ task.spawn(function()
             _internal_mspaint_pathfinding_nodes.Name = "_internal_mspaint_pathfinding_nodes"
         end
 
+        local _internal_mspaint_pathfinding_block = Instance.new("Folder", Workspace) do
+            _internal_mspaint_pathfinding_block.Name = "_internal_mspaint_pathfinding_block"
+        end
+
         Toggles.ShowAutoRoomsPathNodes:OnChanged(function(value)
             for _, node in pairs(_internal_mspaint_pathfinding_nodes:GetChildren()) do
                 node.Transparency = value and 0.5 or 1
+            end
+            for _, nodeBlock in pairs(_internal_mspaint_pathfinding_block:GetChildren()) do
+                nodeBlock.Transparency = value and 0.9 or 1
             end
         end)
 
@@ -3468,10 +3477,35 @@ task.spawn(function()
 
             if value then
                 Toggles.AntiA90:SetValue(true)
+                local lastRoomValue = 0
+
+                local function createNewBlockedPoint(point: PathWaypoint)
+                    local block = Instance.new("Part", _internal_mspaint_pathfinding_block)
+                    local pathMod = Instance.new("PathfindingModifier", block)
+                    pathMod.Label = "_ms_pathBlock"
+
+                    block.Name = "_mspaint_blocked_path"
+                    block.Shape = Enum.PartType.Block
+
+                    local sizeY = 10
+                    
+                    block.Size = Vector3.new(1, sizeY, 1)
+                    block.Color = Color3.fromRGB(255, 130, 30)
+                    block.Material = Enum.Material.Neon
+                    block.Position = point.Position + Vector3.new(0, sizeY / 2, 0)
+                    block.Anchored = true
+                    block.CanCollide = false
+                    block.Transparency = Toggles.ShowAutoRoomsPathNodes.Value and 0.9 or 1
+                end
 
                 local function doAutoRooms()
                     local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
+                    if latestRoom.Value ~= lastRoomValue then
+                        _internal_mspaint_pathfinding_block:ClearAllChildren()
+                        lastRoomValue = latestRoom.Value
+                    end
+                    
                     Script.Functions.Log({
                         Title = "Auto Rooms",
                         Description = "Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...",
@@ -3481,7 +3515,10 @@ task.spawn(function()
                         AgentCanJump = false,
                         AgentCanClimb = false,
                         WaypointSpacing = 2,
-                        AgentRadius = 1
+                        AgentRadius = 1,
+                        Costs = {
+                            _ms_pathBlock = 8 --cost will increase the more stuck you get.
+                        }
                     })
 
                     Script.Functions.Log({
@@ -3491,11 +3528,12 @@ task.spawn(function()
 
                     path:ComputeAsync(rootPart.Position - Vector3.new(0, 2.5, 0), pathfindingGoal.Position)
                     local waypoints = path:GetWaypoints()
+                    local waypointAmount = #waypoints
 
                     if path.Status == Enum.PathStatus.Success then
                         Script.Functions.Log({
                             Title = "Auto Rooms",
-                            Description = "Computed path successfully with " .. #waypoints .. " waypoints!",
+                            Description = "Computed path successfully with " .. waypointAmount .. " waypoints!",
                         }, Toggles.AutoRoomsDebug.Value)
 
                         _internal_mspaint_pathfinding_nodes:ClearAllChildren()
@@ -3513,11 +3551,11 @@ task.spawn(function()
                             end
                         end
 
+                        local lastWaypoint = nil
                         for i, waypoint in pairs(waypoints) do
                             local moveToFinished = false
                             local recalculate = false
                             local waypointConnection = humanoid.MoveToFinished:Connect(function() moveToFinished = true end)
-
                             if not moveToFinished or not Toggles.AutoRooms.Value then
                                 humanoid:MoveTo(waypoint.Position)
                                 
@@ -3529,6 +3567,7 @@ task.spawn(function()
 
                                     if not Toggles.AutoRooms.Value then
                                         _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                                        _internal_mspaint_pathfinding_block:ClearAllChildren()
                                         break
                                     else
                                         if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3552,15 +3591,24 @@ task.spawn(function()
                                     })
 
                                     recalculate = true
+                                    if lastWaypoint == nil and waypointAmount > 1 then
+                                        waypoint = waypoints[i+1]
+                                    else
+                                        waypoint = waypoints[i-1]
+                                    end
+
+                                    createNewBlockedPoint(waypoint)
                                 end)
                             end
 
                             repeat task.wait() until moveToFinished or not Toggles.AutoRooms.Value or recalculate or Library.Unloaded
+                            lastWaypoint = waypoint
 
                             waypointConnection:Disconnect()
 
                             if not Toggles.AutoRooms.Value then
                                 _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                                _internal_mspaint_pathfinding_block:ClearAllChildren()
                                 break
                             else
                                 if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3595,6 +3643,7 @@ task.spawn(function()
                 
                 -- Unload Auto Rooms
                 _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                _internal_mspaint_pathfinding_block:ClearAllChildren()
                 moveToCleanup()
             end
         end)
@@ -3958,45 +4007,33 @@ function Script.Functions.SpeedBypass()
     if speedBypassing then return end
     speedBypassing = true
 
-    local SpeedBypassMethod = Options.SpeedBypassMethod.Value
-
-    local function cleanup()
-        -- reset if changed speed bypass method
-        speedBypassing = false
-
-        if collisionClone then
-            if SpeedBypassMethod == "Massless" then
-                collisionClone.Massless = true
-            elseif SpeedBypassMethod == "Size" then
-                collisionClone.Size = Vector3.new(3, 5.5, 3)
-            end
-            
-            if Toggles.SpeedBypass.Value and Options.SpeedBypassMethod.Value ~= SpeedBypassMethod and not Script.FakeRevive.Enabled then
-                Script.Functions.SpeedBypass()
-            end
-        end
-    end
-
     task.spawn(function()
-        if SpeedBypassMethod == "Massless" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
+        while Toggles.SpeedBypass.Value and collisionClone and not Library.Unloaded and not Script.FakeRevive.Enabled do
+            if Options.SpeedBypassMethod.Value == "Massless" then
                 collisionClone.Massless = not collisionClone.Massless
+            elseif Options.SpeedBypassMethod.Value == "Size" then
+                collisionClone.Size = Script.Temp.CollisionSize / 2
                 task.wait(Options.SpeedBypassDelay.Value)
+                collisionClone.Size = Script.Temp.CollisionSize
             end
-    
-            cleanup()
-        elseif SpeedBypassMethod == "Size" then
-            while Toggles.SpeedBypass.Value and collisionClone and Options.SpeedBypassMethod.Value == SpeedBypassMethod and not Library.Unloaded and not Script.FakeRevive.Enabled do
-                collisionClone.Size = Vector3.new(3, 5.5, 3)
-                task.wait(Options.SpeedBypassDelay.Value)
-                collisionClone.Size = Vector3.new(1.5, 2.75, 1.5)
-                task.wait(Options.SpeedBypassDelay.Value)
-            end
-    
-            cleanup()
+
+            task.wait(Options.SpeedBypassDelay.Value)
+        end
+
+        speedBypassing = false
+        if collisionClone then
+            collisionClone.Massless = true
+            collisionClone.Size = Script.Temp.CollisionSize
         end
     end)
 end
+
+Options.SpeedBypassMethod:OnChanged(function()
+    if collisionClone then
+        collisionClone.Massless = true
+        collisionClone.Size = Script.Temp.CollisionSize
+    end
+end)
 
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
@@ -5996,6 +6033,9 @@ Library:OnUnload(function()
     if isRooms then
         if workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes") then
             workspace:FindFirstChild("_internal_mspaint_pathfinding_nodes"):Destroy()
+        end
+        if workspace:FindFirstChild("_internal_mspaint_pathfinding_block") then
+            workspace:FindFirstChild("_internal_mspaint_pathfinding_block"):Destroy()
         end
     end
 
