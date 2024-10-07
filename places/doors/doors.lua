@@ -293,15 +293,15 @@ local PromptTable = {
 }
 
 local HideTimeValues = {
-    {min = 1, max = 6, a = -1/6, b = 1, c = 20},
+    {min = 1, max = 5, a = -1/6, b = 1, c = 20},
     {min = 6, max = 19, a = -1/13, b = 6, c = 19},
-    {min = 19, max = 23, a = -1/4, b = 19, c = 18},
+    {min = 19, max = 22, a = -1/4, b = 19, c = 18},
     {min = 23, max = 26, a = 1/3, b = 23, c = 18},
     {min = 26, max = 30, a = -1/4, b = 26, c = 19},
-    {min = 30, max = 36, a = -1/3, b = 30, c = 18},
+    {min = 30, max = 35, a = -1/3, b = 30, c = 18},
     {min = 36, max = 60, a = -1/12, b = 36, c = 18},
     {min = 60, max = 90, a = -1/30, b = 60, c = 16},
-    {min = 90, max = 98, a = -1/6, b = 90, c = 15}
+    {min = 90, max = 99, a = -1/6, b = 90, c = 15}
 }
 
 
