@@ -3474,6 +3474,26 @@ task.spawn(function()
             if value then
                 Toggles.AntiA90:SetValue(true)
                 local lastRoomValue = 0
+
+                local function createNewBlockedPoint(point: PathWaypoint)
+                    local block = Instance.new("Part", _internal_mspaint_pathfinding_block)
+                    local pathMod = Instance.new("PathfindingModifier", block)
+                    pathMod.Label = "_ms_pathBlock"
+
+                    block.Name = "_mspaint_blocked_path"
+                    block.Shape = Enum.PartType.Block
+
+                    local sizeY = 10
+                    
+                    block.Size = Vector3.new(1, sizeY, 1)
+                    block.Color = Color3.fromRGB(255, 130, 30)
+                    block.Material = Enum.Material.Neon
+                    block.Position = point.Position + Vector3.new(0, sizeY / 2, 0)
+                    block.Anchored = true
+                    block.CanCollide = false
+                    block.Transparency = Toggles.ShowAutoRoomsPathNodes.Value and 0.9 or 1
+                end
+
                 local function doAutoRooms()
                     local pathfindingGoal = Script.Functions.GetAutoRoomsPathfindingGoal()
 
@@ -3487,25 +3507,6 @@ task.spawn(function()
                         Description = "Calculated Objective Successfully!\nObjective: " .. pathfindingGoal.Parent.Name .. "\nCreating path...",
                     }, Toggles.AutoRoomsDebug.Value)
 
-                    local function createNewBlockedPoint(point: PathWaypoint)
-                        print("[Auto Rooms] Path is now being ignored!")
-
-                        local block = Instance.new("Part", _internal_mspaint_pathfinding_block)
-                        local pathMod = Instance.new("PathfindingModifier", block)
-                        pathMod.Label = "_ms_pathBlock"
-
-                        block.Name = "_mspaint_blocked_path"
-                        block.Shape = Enum.PartType.Block
-                        local sizeY = 10
-                        block.Size = Vector3.new(1, sizeY, 1)
-                        block.Color = Color3.fromRGB(255, 130, 30)
-                        block.Material = Enum.Material.Neon
-                        block.Position = point.Position + Vector3.new(0, sizeY / 2, 0)
-                        block.Anchored = true
-                        block.CanCollide = false
-                        block.Transparency = Toggles.ShowAutoRoomsPathNodes.Value and 0.9 or 1
-                        return block.Name
-                    end
                     local path = PathfindingService:CreatePath({
                         AgentCanJump = false,
                         AgentCanClimb = false,
@@ -3591,6 +3592,7 @@ task.spawn(function()
                                     else
                                         waypoint = waypoints[i-1]
                                     end
+
                                     createNewBlockedPoint(waypoint)
                                 end)
                             end
