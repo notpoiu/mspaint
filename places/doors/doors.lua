@@ -451,19 +451,53 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
 
     UITextSizeConstraint.MaxTextSize = 35
 
-    function Script.Functions.Captions(caption: string)
-        if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
-        TextLabel.Text = caption
-    end
-
     function Script.Functions.HideCaptions()
         _mspaint_custom_captions.Parent = ReplicatedStorage
+    end
+
+    local CaptionsLastUsed = os.time()
+    function Script.Functions.Captions(caption: string)
+        CaptionsLastUsed = os.time()
+        if _mspaint_custom_captions.Parent == ReplicatedStorage then _mspaint_custom_captions.Parent = gethui() or game:GetService("CoreGui") or playerGui end
+        
+        TextLabel.Text = caption
+
+        task.spawn(function()
+            task.wait(5)
+            if os.time() - CaptionsLastUsed >= 5 then
+                Script.Functions.HideCaptions()
+            end
+        end)
     end
 end
 
 --// Functions \\--
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Functions.CalculateHideTime(room: number)
+    if room >= 1 and room <= 6 then
+        return (-1/6) * (room - 1) + 20
+    elseif room > 6 and room <= 19 then
+        return (-1/13) * (room - 6) + 19
+    elseif room > 19 and room <= 23 then
+        return (-1/4) * (room - 19) + 18
+    elseif room > 23 and room <= 26 then
+        return (1/3) * (room - 23) + 18
+    elseif room > 26 and room <= 30 then
+        return (-1/4) * (room - 26) + 19
+    elseif room > 30 and room <= 36 then
+        return (-2/6) * (room - 30) + 18
+    elseif room > 36 and room <= 60 then
+        return (-2/24) * (room - 36) + 18
+    elseif room > 60 and room <= 90 then
+        return (-1/30) * (room - 60) + 16
+    elseif room > 90 and room <= 96 then
+        return (-1/6) * (room - 90) + 15
+    end
+
+    return nil
 end
 
 function Script.Functions.RandomString()
@@ -2882,6 +2916,11 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Text = "Notify Oxygen",
             Default = false,
         })
+
+        NotifyTab:AddToggle("NotifyHideTime", {
+            Text = "Notify Hide Time",
+            Default = false,
+        })
     end
 
     local NotifySettingsTab = NotifyTabBox:AddTab("Settings") do
@@ -5017,6 +5056,25 @@ if isBackdoor then
         end
     end))
 end
+
+Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
+    local hideTime = Script.Functions.CalculateHideTime(currentRoom) or 0
+    local finalTime = os.time() + (math.floor(hideTime * 100) / 100)
+
+    if Toggles.NotifyHideTime.Value then
+        while character:GetAttribute("Hiding") and alive and not Library.Unloaded and Toggles.NotifyHideTime.Value do
+            local remainingTime = finalTime - os.time()
+
+            if ExecutorSupport["firesignal"] then
+                firesignal(remotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
+            else
+                Script.Functions.Captions(string.format("%.1f", remainingTime))
+            end
+
+            task.wait()
+        end
+    end
+end))
 
 Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
     if player ~= localPlayer or not character or isFools then return end
