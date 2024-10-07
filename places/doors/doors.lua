@@ -5487,7 +5487,8 @@ Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
 end))
 
 Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
-    if (state == Enum.TeleportState.RequestedFromServer or state == state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value then
+    if (state == Enum.TeleportState.RequestedFromServer or state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value and not getgenv().queued_to_teleport then
+        getgenv().queued_to_teleport = true
         queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
     end
 end))
