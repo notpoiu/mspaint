@@ -33,6 +33,7 @@ local Script = {
         Door = {},
         Humanoid = {},
         Player = {},
+        Pump = {},
         RootPart = {},
     },
 
@@ -945,14 +946,20 @@ do
             local onFrame = child:FindFirstChild("OnFrame", true)
     
             if wheel and (onFrame and onFrame.Visible) then
+                local pumpIdx = Script.Functions.RandomString()
+
                 local pumpEsp = Script.Functions.ESP({
                     Type = "Objective",
                     Object = wheel,
                     Text = "Water Pump",
-                    Color = Options.ObjectiveEspColor.Value
+                    Color = Options.ObjectiveEspColor.Value,
+
+                    OnDestroy = function()
+                        if Script.FeatureConnections.Pump[pumpIdx] then Script.FeatureConnections.Pump[pumpIdx]:Disconnect() end
+                    end
                 })
-                
-                onFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+
+                Script.FeatureConnections.Pump[pumpIdx] = onFrame:GetPropertyChangedSignal("Visible"):Connect(function()
                     if pumpEsp then pumpEsp.Destroy() end
                 end)
             end
