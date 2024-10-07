@@ -1096,7 +1096,7 @@ do
 
     function Script.Functions.ChildCheck(child)
         -- optimization (ty lsplash)
-        if (child.Name == "AnimSaves" or child:IsA("KeyframeSequence") or child.Name == "Keyframe") then
+        if (child.Name == "AnimSaves" or child.ClassName == "KeyframeSequence" or child.Name == "Keyframe") then
             child:Destroy()
             return
         end
