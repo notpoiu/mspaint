@@ -286,6 +286,7 @@ local PromptTable = {
 
         Parent = {
             "KeyObtainFake",
+            "MinesAnchor",
             "Padlock"
         },
 
@@ -1097,6 +1098,17 @@ do
     end
 
     function Script.Functions.ChildCheck(child)
+        -- optimization (ty lsplash)
+        if (child.Name == "AnimSaves" or child.ClassName == "KeyframeSequence" or child.Name == "Keyframe") then
+            child:Destroy()
+            return
+        end
+        
+        -- skip
+        if (child.ClassName ~= "Model" and not child.ClassName:match("Part") and child.ClassName ~= "Decal" and child.ClassName ~= "ProximityPrompt") then
+            return
+        end
+                
         if Script.Functions.PromptCondition(child) then
             task.defer(function()
                 if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
@@ -2694,8 +2706,8 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddDropdown("SpeedBypassMethod", {
         AllowNull = false,
-        Values = {"Size", "Massless"},
-        Default = "Size",
+        Values = {"Massless", --[["Size"]]},
+        Default = "Massless",
         Multi = false,
 
         Text = "Speed Bypass Method"
