@@ -3533,7 +3533,7 @@ task.spawn(function()
                                             _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i):Destroy()
                                         end
                                     end
-                                    
+
                                     break
                                 end
 
@@ -3541,7 +3541,7 @@ task.spawn(function()
                                     if moveToFinished then return end
                                     if (not Toggles.AutoRooms.Value or Library.Unloaded) then return moveToCleanup() end
 
-                                    repeat task.wait() until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
+                                    repeat task.wait(.25) until (not character:GetAttribute("Hiding") and not character.PrimaryPart.Anchored)
 
                                     Script.Functions.Alert({
                                         Title = "Auto Rooms",
