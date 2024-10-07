@@ -491,7 +491,7 @@ end
 
 function Script.Functions.CalculateHideTime(room: number)
     for _, range in ipairs(HideTimeValues) do
-        if room > range.min and room <= range.max then
+        if room >= range.min and room <= range.max then
             return math.round(range.a * (room - range.b) + range.c)
         end
     end    
