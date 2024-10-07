@@ -3504,12 +3504,21 @@ task.spawn(function()
         end))
 
         Toggles.AutoRooms:OnChanged(function(value)
+            local hasResetFailsafe = false
+
+            local function nodeCleanup()
+                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                _internal_mspaint_pathfinding_block:ClearAllChildren()
+                hasResetFailsafe = true
+            end
+
             local function moveToCleanup()
                 if humanoid then
                     humanoid:Move(rootPart.Position)
                     humanoid.WalkToPart = nil
                     humanoid.WalkToPoint = rootPart.Position
                 end
+                nodeCleanup()
             end
 
             if value then
@@ -3568,6 +3577,24 @@ task.spawn(function()
                     local waypointAmount = #waypoints
 
                     if path.Status == Enum.PathStatus.Success then
+                        hasResetFailsafe = true
+                        task.spawn(function()
+                            task.wait(0.1)
+                            hasResetFailsafe = false
+                            if humanoid and collision then
+                                local checkFloor = humanoid.FloorMaterial
+                                local isStuck = checkFloor == Enum.Material.Air or checkFloor == Enum.Material.Concrete
+                                if isStuck then
+                                    repeat task.wait()
+                                        collision.CanCollide = false
+                                        collision.CollisionCrouch.CanCollide = true
+                                    until not isStuck or hasResetFailsafe
+                                    collision.CanCollide = true
+                                end
+                                hasResetFailsafe = true
+                            end
+                        end)
+
                         Script.Functions.Log({
                             Title = "Auto Rooms",
                             Description = "Computed path successfully with " .. waypointAmount .. " waypoints!",
@@ -3603,8 +3630,7 @@ task.spawn(function()
                                     waypointConnection:Disconnect()
 
                                     if not Toggles.AutoRooms.Value then
-                                        _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                                        _internal_mspaint_pathfinding_block:ClearAllChildren()
+                                        nodeCleanup()
                                         break
                                     else
                                         if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3644,8 +3670,7 @@ task.spawn(function()
                             waypointConnection:Disconnect()
 
                             if not Toggles.AutoRooms.Value then
-                                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                                _internal_mspaint_pathfinding_block:ClearAllChildren()
+                                nodeCleanup()
                                 break
                             else
                                 if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3679,8 +3704,6 @@ task.spawn(function()
                 end
                 
                 -- Unload Auto Rooms
-                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                _internal_mspaint_pathfinding_block:ClearAllChildren()
                 moveToCleanup()
             end
         end)
