@@ -66,7 +66,7 @@ loadstring(game:HttpGet(baseURL .. scriptPath))()
 
 
 -- Addons (this is BETA, expect stuff to change) --
-if getgenv().mspaint_disable_addons then return end
+if getgenv().mspaint_disable_addons or getgenv().mspaint_addons_activated then return end
 task.spawn(function()
     local supportsFileSystem = (ExecutorSupport["isfile"] and ExecutorSupport["delfile"] and ExecutorSupport["listfiles"] and ExecutorSupport["writefile"] and ExecutorSupport["makefolder"] and ExecutorSupport["isfolder"])
     
@@ -74,6 +74,8 @@ task.spawn(function()
         warn("[mspaint] Your executor doesn't support the FileSystem API. Addons will not work.")
         return
     end
+
+    getgenv().mspaint_addons_activated = true
 
     if not isfolder("mspaint/addons") then
         print("[mspaint] Addons folder doesn't exist. Creating...")
