@@ -27,7 +27,6 @@ end
 
 --// Variables \\--
 local Script = {
-    Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     FeatureConnections = {
         Character = {},
@@ -37,6 +36,14 @@ local Script = {
         Player = {},
         Pump = {},
         RootPart = {},
+    },
+
+    CustomControls = {
+        GamepadMoveVector = Vector3.zero,
+        ThumbstickMoveVector = Vector3.zero,
+        ThumbstickRadius = 15,
+        TouchInput = nil,
+        TouchStartPosition = nil,
     },
 
     ESPTable = {
@@ -513,14 +520,14 @@ function Script.Functions.RandomString()
 end
 
 function Script.Functions.EnforceTypes(args, template)
-    args = type(args) == "table" and args or {}
+    args = if typeof(args) == "table" then args else {}
 
     for key, value in pairs(template) do
         local argValue = args[key]
 
-        if argValue == nil or (value ~= nil and type(argValue) ~= type(value)) then
+        if argValue == nil or (value ~= nil and typeof(argValue) ~= typeof(value)) then
             args[key] = value
-        elseif type(value) == "table" then
+        elseif typeof(value) == "table" then
             args[key] = Script.Functions.EnforceTypes(argValue, value)
         end
     end
@@ -551,7 +558,7 @@ function Script.Functions.UpdateRPC()
 
     BloxstrapRPC.SetRichPresence({
         details = "Playing DOORS [ mspaint v2 ]",
-        state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. (PrettyFloorName[floor.Value] and PrettyFloorName[floor.Value] or ("The " .. floor.Value) ) .. ")",
+        state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. if PrettyFloorName[floor.Value] then PrettyFloorName[floor.Value] else ("The " .. floor.Value)  .. ")",
         largeImage = {
             hoverText = "Using mspaint v2"
         },
@@ -730,7 +737,7 @@ do
         end
     
         if getPositionFromCamera and (camera or workspace.CurrentCamera) then
-            local cameraPosition = camera and camera.CFrame.Position or workspace.CurrentCamera.CFrame.Position
+            local cameraPosition = if camera then camera.CFrame.Position else workspace.CurrentCamera.CFrame.Position
     
             return (cameraPosition - position).Magnitude
         end
@@ -768,6 +775,17 @@ do
         end
     
         return false
+    end
+
+    function Script.Functions.GetMoveVector(): Vector3
+        local x, z = 0, 0
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then z -= 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then z += 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then x -= 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then x += 1 end
+
+        return Vector3.new(x, 0, z) + Script.CustomControls.ThumbstickMoveVector + Script.CustomControls.GamepadMoveVector
     end
 end
 
@@ -1470,7 +1488,7 @@ do
 
                 local entityDeleted = (entity == nil or entity.Parent == nil)
                 local inView = Script.Functions.IsInViewOfPlayer(entity.PrimaryPart, distanceEntity + (addMoreDist == true and 15 or 0), exclusion)
-                local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < distanceEntity + (addMoreDist == true and 15 or 0);
+                local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < distanceEntity + (addMoreDist == true and 15 or 0)
     
                 isSafe = entityDeleted == true and true or (inView == false and isClose == false);
                 if isSafe == false then break end
@@ -2053,7 +2071,7 @@ do
     --If ESP Toggle is changed, you can call this function directly.
     function Script.Functions.Minecart.DrawNodes()
         local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
-        local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
+        local espRealColor = if pathESP_enabled then MinecartPathNodeColor.Green else MinecartPathNodeColor.Disabled
         
         for idx, path: tPathfind in ipairs(MinecartPathfind) do
             if path.esp and pathESP_enabled then continue end -- if status is unchanged.
@@ -2171,8 +2189,9 @@ do
     
                     if Toggles.NotifyPadlock.Value and count < 5 then
                         Script.Functions.Alert({
-                            Title = "Library Code",
+                            Title = "Padlock Code",
                             Description = string.format("Library Code: %s", output),
+                            Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                         })
     
                         if Toggles.NotifyChat.Value and count == 0 then
@@ -2431,7 +2450,7 @@ do
                         Script.Functions.Alert({
                             Title = "Padlock Code",
                             Description = string.format("Library Code: %s", output),
-                            Reason = (tonumber(code) and "Solved the library padlock code" or "You are still missing some books"),
+                            Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                         })
     
                         if Toggles.NotifyChat.Value and count == 0 then
@@ -2983,55 +3002,74 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     end
 end
 
-local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
-    SelfGroupBox:AddToggle("ThirdPerson", {
-        Text = "Third Person",
-        Default = false
-    }):AddKeyPicker("ThirdPersonKey", {
-        Default = "V",
-        Text = "Third Person",
-        Mode = "Toggle",
-        SyncToggleState = not Library.IsMobile -- ????
-    })
+local SelfTabBox = Tabs.Visuals:AddRightTabbox() do
+    local SelfTab = SelfTabBox:AddTab("Self") do
+        SelfTab:AddToggle("ThirdPerson", {
+            Text = "Third Person",
+            Default = false
+        }):AddKeyPicker("ThirdPersonKey", {
+            Default = "V",
+            Text = "Third Person",
+            Mode = "Toggle",
+            SyncToggleState = not Library.IsMobile -- ????
+        })
+        
+        SelfTab:AddSlider("FOV", {
+            Text = "Field of View",
+            Default = 70,
+            Min = 70,
+            Max = 120,
+            Rounding = 0
+        })
+        
+        SelfTab:AddToggle("NoCamBob", {
+            Text = "No Camera Bobbing",
+            Default = false,
+            Visible = ExecutorSupport["require"]
+        })
     
-    SelfGroupBox:AddSlider("FOV", {
-        Text = "Field of View",
-        Default = 70,
-        Min = 70,
-        Max = 120,
-        Rounding = 0
-    })
+        SelfTab:AddToggle("NoCamShake", {
+            Text = "No Camera Shake",
+            Default = false,
+            Visible = ExecutorSupport["require"]
+        })
     
-    SelfGroupBox:AddToggle("NoCamBob", {
-        Text = "No Camera Bobbing",
-        Default = false,
-        Visible = ExecutorSupport["require"]
-    })
-
-    SelfGroupBox:AddToggle("NoCamShake", {
-        Text = "No Camera Shake",
-        Default = false,
-        Visible = ExecutorSupport["require"]
-    })
-
-    SelfGroupBox:AddToggle("NoCutscenes", {
-        Text = "No Cutscenes",
-        Default = false,
-    })
-
-    SelfGroupBox:AddToggle("TranslucentHidingSpot", {
-        Text = "Translucent " .. HidingPlaceName[floor.Value],
-        Default = false
-    })
+        SelfTab:AddToggle("NoCutscenes", {
+            Text = "No Cutscenes",
+            Default = false,
+        })
     
-    SelfGroupBox:AddSlider("HidingTransparency", {
-        Text = "Hiding Transparency",
-        Default = 0.5,
-        Min = 0,
-        Max = 1,
-        Rounding = 1,
-        Compact = true,
-    })
+        SelfTab:AddToggle("TranslucentHidingSpot", {
+            Text = "Translucent " .. HidingPlaceName[floor.Value],
+            Default = false
+        })
+        
+        SelfTab:AddSlider("HidingTransparency", {
+            Text = "Hiding Transparency",
+            Default = 0.5,
+            Min = 0,
+            Max = 1,
+            Rounding = 1,
+            Compact = true,
+        })
+    end
+
+    local EffectsTab = SelfTabBox:AddTab("Effects") do
+        EffectsTab:AddToggle("NoGlitchEffect", {
+            Text = "No Glitch Effect",
+            Default = false
+        })
+
+        EffectsTab:AddToggle("NoVoidEffect", {
+            Text = "No Void Effect",
+            Default = false
+        })
+
+        EffectsTab:AddToggle("NoSpiderJumpscare", {
+            Text = "No Spider Jumpscare",
+            Default = false
+        })
+    end
 end
 
 --// Floor \\--
@@ -3959,6 +3997,11 @@ Toggles.Fly:OnChanged(function(value)
         Script.Connections["Fly"] = RunService.RenderStepped:Connect(function()
             local velocity = Vector3.zero
 
+            local moveVector = Script.Functions.GetMoveVector()
+            velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
+
+            --[[
+
             if controlModule then
                 local moveVector = controlModule:GetMoveVector()
                 velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
@@ -3967,7 +4010,7 @@ Toggles.Fly:OnChanged(function(value)
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
-            end
+            end]]
 
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then velocity -= camera.CFrame.UpVector end
@@ -4011,7 +4054,7 @@ Toggles.AntiHalt:OnChanged(function(value)
     local module = entityModules:FindFirstChild("Shade") or entityModules:FindFirstChild("_Shade")
 
     if module then
-        module.Name = value and "_Shade" or "Shade"
+        module.Name = if value then "_Shade" else "Shade"
     end
 end)
 
@@ -4020,7 +4063,7 @@ Toggles.AntiScreech:OnChanged(function(value)
     local module = mainGame:FindFirstChild("Screech", true) or mainGame:FindFirstChild("_Screech", true)
 
     if module then
-        module.Name = value and "_Screech" or "Screech"
+        module.Name = if value then "_Screech" else "Screech"
     end
 end)
 
@@ -5054,10 +5097,10 @@ Toggles.AntiLag:OnChanged(function(value)
         end
     end
 
-    workspace.Terrain.WaterReflectance = value and 0 or 1
-    workspace.Terrain.WaterTransparency = value and 0 or 1
-    workspace.Terrain.WaterWaveSize = value and 0 or 0.05
-    workspace.Terrain.WaterWaveSpeed = value and 0 or 8
+    workspace.Terrain.WaterReflectance = if value then 0 else 1
+    workspace.Terrain.WaterTransparency = if value then 0 else 1
+    workspace.Terrain.WaterWaveSize = if value then 0 else 0.05
+    workspace.Terrain.WaterWaveSpeed = if value then 0 else 8
     Lighting.GlobalShadows = not value
 end)
 
@@ -5118,6 +5161,33 @@ Toggles.TranslucentHidingSpot:OnChanged(function(value)
                 break
             end
         end
+    end
+end)
+
+Toggles.NoGlitchEffect:OnChanged(function(value)
+    if not entityModules then return end
+    local module = entityModules:FindFirstChild("Glitch") or entityModules:FindFirstChild("_Glitch")
+
+    if module then
+        module.Name = if value then "_Glitch" else "Glitch"
+    end
+end)
+
+Toggles.NoVoidEffect:OnChanged(function(value)
+    if not entityModules then return end
+    local module = entityModules:FindFirstChild("Void") or entityModules:FindFirstChild("_Void")
+
+    if module then
+        module.Name = if value then "_Void" else "Void"
+    end
+end)
+
+Toggles.NoSpiderJumpscare:OnChanged(function(value)
+    if not mainGame then return end
+    local module = mainGame:FindFirstChild("SpiderJumpscare", true) or mainGame:FindFirstChild("_SpiderJumpscare", true)
+
+    if module then
+        module.Name = if value then "_SpiderJumpscare" else "SpiderJumpscare"
     end
 end)
 
@@ -5749,6 +5819,42 @@ Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProce
     end
 end))
 
+Library:GiveSignal(UserInputService.InputChanged:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.UserInputType == Enum.UserInputType.Gamepad1 and input.KeyCode == Enum.KeyCode.Thumbstick1  then
+        Script.CustomControls.GamepadMoveVector = Vector3.new(input.Position.X, 0, -input.Position.Y)
+    end
+end))
+
+Library:GiveSignal(UserInputService.TouchStarted:Connect(function(input)
+    Script.CustomControls.TouchInput = input
+    Script.CustomControls.TouchStartPosition = input.Position
+end))
+
+Library:GiveSignal(UserInputService.TouchMoved:Connect(function(input)
+    if input ~= Script.CustomControls.TouchInput then return end
+    
+    if Script.CustomControls.TouchStartPosition and input.Position then
+        local moveDirection = (input.Position - Script.CustomControls.TouchStartPosition).Unit
+        local distance = (input.Position - Script.CustomControls.TouchStartPosition).Magnitude
+
+        if distance > Script.CustomControls.ThumbstickRadius then
+            distance = Script.CustomControls.ThumbstickRadius
+        end
+
+        local adjustedDistance = distance / Script.CustomControls.ThumbstickRadius
+        Script.CustomControls.ThumbstickMoveVector = Vector3.new(moveDirection.X * adjustedDistance, 0, moveDirection.Y * adjustedDistance)
+    end
+end))
+
+Library:GiveSignal(UserInputService.TouchEnded:Connect(function(input)
+    if input ~= Script.CustomControls.TouchInput then return end
+    
+    Script.CustomControls.ThumbstickMoveVector = Vector3.new(0, 0, 0)
+    Script.CustomControls.TouchInput = nil
+end))
+
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
     if not Toggles.ShowCustomCursor.Value and Library.Toggled then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
@@ -6060,18 +6166,30 @@ Library:OnUnload(function()
     end
 
     if entityModules then
-        local module = entityModules:FindFirstChild("_Shade")
+        local haltModule = entityModules:FindFirstChild("_Shade")
+        local glitchModule = entityModules:FindFirstChild("_Glitch")
+        local voidModule = entityModules:FindFirstChild("_Void")
 
-        if module then
-            module.Name = "Shade"
+        if haltModule then
+            haltModule.Name = "Shade"
+        end
+        if glitchModule then
+            glitchModule.Name = "Glitch"
+        end
+        if voidModule then
+            voidModule.Name = "Void"
         end
     end
 
     if mainGame then
-        local module = mainGame:FindFirstChild("_Screech", true)
+        local screechModule = mainGame:FindFirstChild("_Screech", true)
+        local spiderModule = mainGame:FindFirstChild("_SpiderJumpscare", true)
 
-        if module then
-            module.Name = "Screech"
+        if screechModule then
+            screechModule.Name = "Screech"
+        end
+        if spiderModule then
+            spiderModule.Name = "SpiderJumpscare"
         end
     end
 
