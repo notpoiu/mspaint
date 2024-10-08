@@ -518,14 +518,14 @@ function Script.Functions.RandomString()
 end
 
 function Script.Functions.EnforceTypes(args, template)
-    args = type(args) == "table" and args or {}
+    args = typeof(args) == "table" and args or {}
 
     for key, value in pairs(template) do
         local argValue = args[key]
 
-        if argValue == nil or (value ~= nil and type(argValue) ~= type(value)) then
+        if argValue == nil or (value ~= nil and typeof(argValue) ~= typeof(value)) then
             args[key] = value
-        elseif type(value) == "table" then
+        elseif typeof(value) == "table" then
             args[key] = Script.Functions.EnforceTypes(argValue, value)
         end
     end
