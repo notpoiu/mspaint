@@ -25,7 +25,6 @@ end
 
 --// Variables \\--
 local Script = {
-    Binded = {}, -- ty geo for idea :smartindividual:
     Connections = {},
     FeatureConnections = {
         Character = {},
@@ -35,6 +34,14 @@ local Script = {
         Player = {},
         Pump = {},
         RootPart = {},
+    },
+
+    CustomControls = {
+        GamepadMoveVector = Vector3.zero,
+        ThumbstickMoveVector = Vector3.zero,
+        ThumbstickRadius = 15,
+        TouchInput = nil,
+        TouchStartPosition = nil,
     },
 
     ESPTable = {
@@ -766,6 +773,17 @@ do
         end
     
         return false
+    end
+
+    function Script.Functions.GetMoveVector(): Vector3
+        local x, z = 0, 0
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then z -= 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then z += 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then x -= 1 end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then x += 1 end
+
+        return Vector3.new(x, 0, z) + Script.CustomControls.ThumbstickMoveVector + Script.CustomControls.GamepadMoveVector
     end
 end
 
@@ -3957,6 +3975,11 @@ Toggles.Fly:OnChanged(function(value)
         Script.Connections["Fly"] = RunService.RenderStepped:Connect(function()
             local velocity = Vector3.zero
 
+            local moveVector = Script.Functions.GetMoveVector()
+            velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
+
+            --[[
+
             if controlModule then
                 local moveVector = controlModule:GetMoveVector()
                 velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
@@ -3965,7 +3988,7 @@ Toggles.Fly:OnChanged(function(value)
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
-            end
+            end]]
 
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then velocity -= camera.CFrame.UpVector end
@@ -5745,6 +5768,42 @@ Library:GiveSignal(UserInputService.InputBegan:Connect(function(input, gameProce
             end
         end
     end
+end))
+
+Library:GiveSignal(UserInputService.InputChanged:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.UserInputType == Enum.UserInputType.Gamepad1 and input.KeyCode == Enum.KeyCode.Thumbstick1  then
+        Script.CustomControls.GamepadMoveVector = Vector3.new(input.Position.X, 0, -input.Position.Y)
+    end
+end))
+
+Library:GiveSignal(UserInputService.TouchStarted:Connect(function(input)
+    Script.CustomControls.TouchInput = input
+    Script.CustomControls.TouchStartPosition = input.Position
+end))
+
+Library:GiveSignal(UserInputService.TouchMoved:Connect(function(input)
+    if input ~= Script.CustomControls.TouchInput then return end
+    
+    if Script.CustomControls.TouchStartPosition and input.Position then
+        local moveDirection = (input.Position - Script.CustomControls.TouchStartPosition).Unit
+        local distance = (input.Position - Script.CustomControls.TouchStartPosition).Magnitude
+
+        if distance > Script.CustomControls.ThumbstickRadius then
+            distance = Script.CustomControls.ThumbstickRadius
+        end
+
+        local adjustedDistance = distance / Script.CustomControls.ThumbstickRadius
+        Script.CustomControls.ThumbstickMoveVector = Vector3.new(moveDirection.X * adjustedDistance, 0, moveDirection.Y * adjustedDistance)
+    end
+end))
+
+Library:GiveSignal(UserInputService.TouchEnded:Connect(function(input)
+    if input ~= Script.CustomControls.TouchInput then return end
+    
+    Script.CustomControls.ThumbstickMoveVector = Vector3.new(0, 0, 0)
+    Script.CustomControls.TouchInput = nil
 end))
 
 Library:GiveSignal(RunService.RenderStepped:Connect(function()
