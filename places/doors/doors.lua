@@ -2999,55 +2999,74 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     end
 end
 
-local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
-    SelfGroupBox:AddToggle("ThirdPerson", {
-        Text = "Third Person",
-        Default = false
-    }):AddKeyPicker("ThirdPersonKey", {
-        Default = "V",
-        Text = "Third Person",
-        Mode = "Toggle",
-        SyncToggleState = not Library.IsMobile -- ????
-    })
+local SelfTabBox = Tabs.Visuals:AddRightTabbox() do
+    local SelfTab = SelfTabBox:AddTab("Self") do
+        SelfTab:AddToggle("ThirdPerson", {
+            Text = "Third Person",
+            Default = false
+        }):AddKeyPicker("ThirdPersonKey", {
+            Default = "V",
+            Text = "Third Person",
+            Mode = "Toggle",
+            SyncToggleState = not Library.IsMobile -- ????
+        })
+        
+        SelfTab:AddSlider("FOV", {
+            Text = "Field of View",
+            Default = 70,
+            Min = 70,
+            Max = 120,
+            Rounding = 0
+        })
+        
+        SelfTab:AddToggle("NoCamBob", {
+            Text = "No Camera Bobbing",
+            Default = false,
+            Visible = ExecutorSupport["require"]
+        })
     
-    SelfGroupBox:AddSlider("FOV", {
-        Text = "Field of View",
-        Default = 70,
-        Min = 70,
-        Max = 120,
-        Rounding = 0
-    })
+        SelfTab:AddToggle("NoCamShake", {
+            Text = "No Camera Shake",
+            Default = false,
+            Visible = ExecutorSupport["require"]
+        })
     
-    SelfGroupBox:AddToggle("NoCamBob", {
-        Text = "No Camera Bobbing",
-        Default = false,
-        Visible = ExecutorSupport["require"]
-    })
-
-    SelfGroupBox:AddToggle("NoCamShake", {
-        Text = "No Camera Shake",
-        Default = false,
-        Visible = ExecutorSupport["require"]
-    })
-
-    SelfGroupBox:AddToggle("NoCutscenes", {
-        Text = "No Cutscenes",
-        Default = false,
-    })
-
-    SelfGroupBox:AddToggle("TranslucentHidingSpot", {
-        Text = "Translucent " .. HidingPlaceName[floor.Value],
-        Default = false
-    })
+        SelfTab:AddToggle("NoCutscenes", {
+            Text = "No Cutscenes",
+            Default = false,
+        })
     
-    SelfGroupBox:AddSlider("HidingTransparency", {
-        Text = "Hiding Transparency",
-        Default = 0.5,
-        Min = 0,
-        Max = 1,
-        Rounding = 1,
-        Compact = true,
-    })
+        SelfTab:AddToggle("TranslucentHidingSpot", {
+            Text = "Translucent " .. HidingPlaceName[floor.Value],
+            Default = false
+        })
+        
+        SelfTab:AddSlider("HidingTransparency", {
+            Text = "Hiding Transparency",
+            Default = 0.5,
+            Min = 0,
+            Max = 1,
+            Rounding = 1,
+            Compact = true,
+        })
+    end
+
+    local EffectsTab = SelfTabBox:AddTab("Effects") do
+        EffectsTab:AddToggle("NoGlitchEffect", {
+            Text = "No Glitch Effect",
+            Default = false
+        })
+
+        EffectsTab:AddToggle("NoVoidEffect", {
+            Text = "No Void Effect",
+            Default = false
+        })
+
+        EffectsTab:AddToggle("NoSpiderJumpscare", {
+            Text = "No Spider Jumpscare",
+            Default = false
+        })
+    end
 end
 
 --// Floor \\--
@@ -4032,7 +4051,7 @@ Toggles.AntiHalt:OnChanged(function(value)
     local module = entityModules:FindFirstChild("Shade") or entityModules:FindFirstChild("_Shade")
 
     if module then
-        module.Name = value and "_Shade" or "Shade"
+        module.Name = if value then "_Shade" else "Shade"
     end
 end)
 
@@ -4041,7 +4060,7 @@ Toggles.AntiScreech:OnChanged(function(value)
     local module = mainGame:FindFirstChild("Screech", true) or mainGame:FindFirstChild("_Screech", true)
 
     if module then
-        module.Name = value and "_Screech" or "Screech"
+        module.Name = if value then "_Screech" else "Screech"
     end
 end)
 
@@ -5075,10 +5094,10 @@ Toggles.AntiLag:OnChanged(function(value)
         end
     end
 
-    workspace.Terrain.WaterReflectance = value and 0 or 1
-    workspace.Terrain.WaterTransparency = value and 0 or 1
-    workspace.Terrain.WaterWaveSize = value and 0 or 0.05
-    workspace.Terrain.WaterWaveSpeed = value and 0 or 8
+    workspace.Terrain.WaterReflectance = if value then 0 else 1
+    workspace.Terrain.WaterTransparency = if value then 0 else 1
+    workspace.Terrain.WaterWaveSize = if value then 0 else 0.05
+    workspace.Terrain.WaterWaveSpeed = if value then 0 else 8
     Lighting.GlobalShadows = not value
 end)
 
@@ -5139,6 +5158,33 @@ Toggles.TranslucentHidingSpot:OnChanged(function(value)
                 break
             end
         end
+    end
+end)
+
+Toggles.NoGlitchEffect:OnChanged(function(value)
+    if not entityModules then return end
+    local module = entityModules:FindFirstChild("Glitch") or entityModules:FindFirstChild("_Glitch")
+
+    if module then
+        module.Name = if value then "_Glitch" else "Glitch"
+    end
+end)
+
+Toggles.NoVoidEffect:OnChanged(function(value)
+    if not entityModules then return end
+    local module = entityModules:FindFirstChild("Void") or entityModules:FindFirstChild("_Void")
+
+    if module then
+        module.Name = if value then "_Void" else "Void"
+    end
+end)
+
+Toggles.NoSpiderJumpscare:OnChanged(function(value)
+    if not mainGame then return end
+    local module = mainGame:FindFirstChild("SpiderJumpscare", true) or mainGame:FindFirstChild("_SpiderJumpscare", true)
+
+    if module then
+        module.Name = if value then "_SpiderJumpscare" else "SpiderJumpscare"
     end
 end)
 
@@ -6117,18 +6163,30 @@ Library:OnUnload(function()
     end
 
     if entityModules then
-        local module = entityModules:FindFirstChild("_Shade")
+        local haltModule = entityModules:FindFirstChild("_Shade")
+        local glitchModule = entityModules:FindFirstChild("_Glitch")
+        local voidModule = entityModules:FindFirstChild("_Void")
 
-        if module then
-            module.Name = "Shade"
+        if haltModule then
+            haltModule.Name = "Shade"
+        end
+        if glitchModule then
+            glitchModule.Name = "Glitch"
+        end
+        if voidModule then
+            voidModule.Name = "Void"
         end
     end
 
     if mainGame then
-        local module = mainGame:FindFirstChild("_Screech", true)
+        local screechModule = mainGame:FindFirstChild("_Screech", true)
+        local spiderModule = mainGame:FindFirstChild("_SpiderJumpscare", true)
 
-        if module then
-            module.Name = "Screech"
+        if screechModule then
+            screechModule.Name = "Screech"
+        end
+        if spiderModule then
+            spiderModule.Name = "SpiderJumpscare"
         end
     end
 
