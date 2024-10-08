@@ -35,6 +35,7 @@ local Script = {
         Door = {},
         Humanoid = {},
         Player = {},
+        Pump = {},
         RootPart = {},
     },
 
@@ -286,7 +287,6 @@ local PromptTable = {
 
         Parent = {
             "KeyObtainFake",
-            "MinesAnchor",
             "Padlock"
         },
 
@@ -945,14 +945,25 @@ do
             end
         elseif child.Name == "WaterPump" then
             local wheel = child:WaitForChild("Wheel", 5)
+            local onFrame = child:FindFirstChild("OnFrame", true)
     
-            if wheel then
-                Script.Functions.ESP({
+            if wheel and (onFrame and onFrame.Visible) then
+                local pumpIdx = Script.Functions.RandomString()
+
+                local pumpEsp = Script.Functions.ESP({
                     Type = "Objective",
                     Object = wheel,
                     Text = "Water Pump",
-                    Color = Options.ObjectiveEspColor.Value
+                    Color = Options.ObjectiveEspColor.Value,
+
+                    OnDestroy = function()
+                        if Script.FeatureConnections.Pump[pumpIdx] then Script.FeatureConnections.Pump[pumpIdx]:Disconnect() end
+                    end
                 })
+
+                Script.FeatureConnections.Pump[pumpIdx] = onFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+                    if pumpEsp then pumpEsp.Destroy() end
+                end)
             end
         end
     end
@@ -1099,13 +1110,13 @@ do
 
     function Script.Functions.ChildCheck(child)
         -- optimization (ty lsplash)
-        if (child.Name == "AnimSaves" or child.ClassName == "KeyframeSequence" or child.Name == "Keyframe") then
+        if (child.Name == "AnimSaves" or child.Name == "Keyframe" or child:IsA("KeyframeSequence")) then
             child:Destroy()
             return
         end
         
         -- skip
-        if (child.ClassName ~= "Model" and not child.ClassName:match("Part") and child.ClassName ~= "Decal" and child.ClassName ~= "ProximityPrompt") then
+        if not (child:IsA("ProximityPrompt") or child:IsA("Model") or child:IsA("BasePart") or child:IsA("Decal")) then
             return
         end
                 
@@ -1148,11 +1159,9 @@ do
     
             if child.Name == "Snare" and Toggles.AntiSnare.Value then
                 child:WaitForChild("Hitbox", 5).CanTouch = false
-            end
-            if child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
+            elseif child.Name == "GiggleCeiling" and Toggles.AntiGiggle.Value then
                 child:WaitForChild("Hitbox", 5).CanTouch = false
-            end
-            if (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
+            elseif (child:GetAttribute("LoadModule") == "DupeRoom" or child:GetAttribute("LoadModule") == "SpaceSideroom") and Toggles.AntiDupe.Value then
                 Script.Functions.DisableDupe(child, true, child:GetAttribute("LoadModule") == "SpaceSideroom")
             end
     
@@ -1204,6 +1213,8 @@ do
                     clone.Parent = child.Parent
                     
                     table.insert(Script.Temp.Bridges, clone)
+                elseif Toggles.AntiSeekFlood.Value and child.Name == "SeekFloodline" then
+                    child.CanCollide = true
                 end
             end
         elseif child:IsA("Decal") and Toggles.AntiLag.Value then
@@ -3109,6 +3120,11 @@ task.spawn(function()
                 Text = "Anti-Bridge Fall",
                 Default = false
             })
+
+            Mines_AntiEntityGroupBox:AddToggle("AntiSeekFlood", {
+                Text = "Anti-Seek Flood",
+                Default = false
+            })
         end
 
         local Mines_AutomationGroupBox = Tabs.Floor:AddRightGroupbox("Automation") do
@@ -3326,6 +3342,17 @@ task.spawn(function()
             end
         end)
 
+        Toggles.AntiSeekFlood:OnChanged(function(value)
+            local room = workspace.CurrentRooms:FindFirstChild("100")
+            
+            if room and room:FindFirstChild("_DamHandler") then
+                local seekFlood = room._DamHandler:FindFirstChild("SeekFloodline")
+                if seekFlood then
+                    seekFlood.CanCollide = value
+                end
+            end
+        end)
+
         Toggles.MinecartPathVisualiser:OnChanged(function(value)
             Script.Functions.Minecart.DrawNodes()
         end)
@@ -3479,12 +3506,21 @@ task.spawn(function()
         end))
 
         Toggles.AutoRooms:OnChanged(function(value)
+            local hasResetFailsafe = false
+
+            local function nodeCleanup()
+                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
+                _internal_mspaint_pathfinding_block:ClearAllChildren()
+                hasResetFailsafe = true
+            end
+
             local function moveToCleanup()
                 if humanoid then
                     humanoid:Move(rootPart.Position)
                     humanoid.WalkToPart = nil
                     humanoid.WalkToPoint = rootPart.Position
                 end
+                nodeCleanup()
             end
 
             if value then
@@ -3543,6 +3579,24 @@ task.spawn(function()
                     local waypointAmount = #waypoints
 
                     if path.Status == Enum.PathStatus.Success then
+                        hasResetFailsafe = true
+                        task.spawn(function()
+                            task.wait(0.1)
+                            hasResetFailsafe = false
+                            if humanoid and collision then
+                                local checkFloor = humanoid.FloorMaterial
+                                local isStuck = checkFloor == Enum.Material.Air or checkFloor == Enum.Material.Concrete
+                                if isStuck then
+                                    repeat task.wait()
+                                        collision.CanCollide = false
+                                        collision.CollisionCrouch.CanCollide = true
+                                    until not isStuck or hasResetFailsafe
+                                    collision.CanCollide = true
+                                end
+                                hasResetFailsafe = true
+                            end
+                        end)
+
                         Script.Functions.Log({
                             Title = "Auto Rooms",
                             Description = "Computed path successfully with " .. waypointAmount .. " waypoints!",
@@ -3578,8 +3632,7 @@ task.spawn(function()
                                     waypointConnection:Disconnect()
 
                                     if not Toggles.AutoRooms.Value then
-                                        _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                                        _internal_mspaint_pathfinding_block:ClearAllChildren()
+                                        nodeCleanup()
                                         break
                                     else
                                         if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3619,8 +3672,7 @@ task.spawn(function()
                             waypointConnection:Disconnect()
 
                             if not Toggles.AutoRooms.Value then
-                                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                                _internal_mspaint_pathfinding_block:ClearAllChildren()
+                                nodeCleanup()
                                 break
                             else
                                 if _internal_mspaint_pathfinding_nodes:FindFirstChild("_internal_node_" .. i) then
@@ -3654,8 +3706,6 @@ task.spawn(function()
                 end
                 
                 -- Unload Auto Rooms
-                _internal_mspaint_pathfinding_nodes:ClearAllChildren()
-                _internal_mspaint_pathfinding_block:ClearAllChildren()
                 moveToCleanup()
             end
         end)
@@ -5462,7 +5512,8 @@ Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
 end))
 
 Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
-    if (state == Enum.TeleportState.RequestedFromServer or state == state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value then
+    if (state == Enum.TeleportState.RequestedFromServer or state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value and not getgenv().queued_to_teleport then
+        getgenv().queued_to_teleport = true
         queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
     end
 end))
@@ -5765,19 +5816,19 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
         if Toggles.AutoInteract.Value and (Library.IsMobile or Options.AutoInteractKey:GetState()) then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
-                if isRetro and prompt.Parent.Parent.Name == "RetroWardrobe" then
-                    return false
-                end
+                if not prompt.parent then return false end
+
+                if prompt.Parent:GetAttribute("JeffShop") then return false end
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then return false end 
+                if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then return false end
+                if prompt.Parent.Name == "MinesAnchor" then return false end
+
+                if isRetro and prompt.Parent.Parent.Name == "RetroWardrobe" then return false end
 
                 return PromptTable.Aura[prompt.Name] ~= nil
             end)
 
             for _, prompt: ProximityPrompt in pairs(prompts) do
-                if not prompt.Parent then continue end
-                if prompt.Parent:GetAttribute("JeffShop") then continue end
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then continue end 
-                if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then continue end
-
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
