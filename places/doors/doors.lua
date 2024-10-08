@@ -3002,6 +3002,12 @@ local SelfGroupBox = Tabs.Visuals:AddRightGroupbox("Self") do
         Rounding = 0
     })
     
+    SelfGroupBox:AddToggle("NoCamBob", {
+        Text = "No Camera Bobbing",
+        Default = false,
+        Visible = ExecutorSupport["require"]
+    })
+
     SelfGroupBox:AddToggle("NoCamShake", {
         Text = "No Camera Shake",
         Default = false,
@@ -5756,6 +5762,11 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             camera.CFrame = mainGameSrc.finalCamCFrame * CFrame.new(1.5, -0.5, 6.5)
         end
         mainGameSrc.fovtarget = Options.FOV.Value
+
+        if Toggles.NoCamBob.Value then
+            mainGameSrc.bobspring.Position = Vector3.new()
+            mainGameSrc.spring.Position = Vector3.new()
+        end
 
         if Toggles.NoCamShake.Value then
             mainGameSrc.csgo = CFrame.new()
