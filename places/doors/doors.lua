@@ -518,7 +518,7 @@ function Script.Functions.RandomString()
 end
 
 function Script.Functions.EnforceTypes(args, template)
-    args = typeof(args) == "table" and args or {}
+    args = if typeof(args) == "table" then args else {}
 
     for key, value in pairs(template) do
         local argValue = args[key]
@@ -556,7 +556,7 @@ function Script.Functions.UpdateRPC()
 
     BloxstrapRPC.SetRichPresence({
         details = "Playing DOORS [ mspaint v2 ]",
-        state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. (PrettyFloorName[floor.Value] and PrettyFloorName[floor.Value] or ("The " .. floor.Value) ) .. ")",
+        state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. if PrettyFloorName[floor.Value] then PrettyFloorName[floor.Value] else ("The " .. floor.Value)  .. ")",
         largeImage = {
             hoverText = "Using mspaint v2"
         },
@@ -735,7 +735,7 @@ do
         end
     
         if getPositionFromCamera and (camera or workspace.CurrentCamera) then
-            local cameraPosition = camera and camera.CFrame.Position or workspace.CurrentCamera.CFrame.Position
+            local cameraPosition = if camera then camera.CFrame.Position else workspace.CurrentCamera.CFrame.Position
     
             return (cameraPosition - position).Magnitude
         end
@@ -1486,7 +1486,7 @@ do
 
                 local entityDeleted = (entity == nil or entity.Parent == nil)
                 local inView = Script.Functions.IsInViewOfPlayer(entity.PrimaryPart, distanceEntity + (addMoreDist == true and 15 or 0), exclusion)
-                local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < distanceEntity + (addMoreDist == true and 15 or 0);
+                local isClose = Script.Functions.DistanceFromCharacter(entity:GetPivot().Position) < distanceEntity + (addMoreDist == true and 15 or 0)
     
                 isSafe = entityDeleted == true and true or (inView == false and isClose == false);
                 if isSafe == false then break end
@@ -2069,7 +2069,7 @@ do
     --If ESP Toggle is changed, you can call this function directly.
     function Script.Functions.Minecart.DrawNodes()
         local pathESP_enabled = Toggles.MinecartPathVisualiser.Value
-        local espRealColor = pathESP_enabled and MinecartPathNodeColor.Green or MinecartPathNodeColor.Disabled
+        local espRealColor = if pathESP_enabled then MinecartPathNodeColor.Green else MinecartPathNodeColor.Disabled
         
         for idx, path: tPathfind in ipairs(MinecartPathfind) do
             if path.esp and pathESP_enabled then continue end -- if status is unchanged.
@@ -2187,8 +2187,9 @@ do
     
                     if Toggles.NotifyPadlock.Value and count < 5 then
                         Script.Functions.Alert({
-                            Title = "Library Code",
+                            Title = "Padlock Code",
                             Description = string.format("Library Code: %s", output),
+                            Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                         })
     
                         if Toggles.NotifyChat.Value and count == 0 then
@@ -2447,7 +2448,7 @@ do
                         Script.Functions.Alert({
                             Title = "Padlock Code",
                             Description = string.format("Library Code: %s", output),
-                            Reason = (tonumber(code) and "Solved the library padlock code" or "You are still missing some books"),
+                            Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                         })
     
                         if Toggles.NotifyChat.Value and count == 0 then
