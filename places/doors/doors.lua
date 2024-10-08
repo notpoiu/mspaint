@@ -2564,7 +2564,17 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         SyncToggleState = Library.IsMobile
     })
 
+    AutomationGroupBox:AddDropdown("AutoInteractIgnore", {
+        AllowNull = true,
+        Values = {"Jeff Items", "Unlock w/ Lockpick", "Gold", "Light Source Items", "Skull Prompt"},
+        Default = {"Jeff Items"},
+        Multi = true,
+
+        Text = "Ignore List"
+    })
+
     AutomationGroupBox:AddDivider()
+
     AutomationGroupBox:AddToggle("AutoWardrobeNotif", {
         Text = "Auto " .. HidingPlaceName[floor.Value] .. " Notifications",
         Default = false
@@ -2605,6 +2615,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
         })
 
         AutomationGroupBox:AddDivider()
+
         AutomationGroupBox:AddDropdown("AutoBreakerSolverMethod", {
             AllowNull = false,
             Values = {"Legit", "Exploit"},
@@ -5931,9 +5942,14 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
         if Toggles.AutoInteract.Value and (Library.IsMobile or Options.AutoInteractKey:GetState()) then
             local prompts = Script.Functions.GetAllPromptsWithCondition(function(prompt)
-                if not prompt.parent then return false end
+                if not prompt.Parent then return false end
 
-                if prompt.Parent:GetAttribute("JeffShop") then return false end
+                if Options.AutoInteractIgnore.Value["Jeff Items"] and prompt.Parent:GetAttribute("JeffShop") then return false end
+                if Options.AutoInteractIgnore.Value["Unlock w/ Lockpick"] and (prompt.Name == "UnlockPrompt" or prompt.Parent:GetAttribute("Locked")) and character:FindFirstChild("Lockpick") then return false end
+                if Options.AutoInteractIgnore.Value["Gold"] and prompt.Name == "LootPrompt" then return false end
+                if Options.AutoInteractIgnore.Value["Light Source Items"] and prompt.Parent:GetAttribute("Tool_LightSource") then return false end
+                if Options.AutoInteractIgnore.Value["Skull Prompt"] and prompt.Name == "SkullPrompt" then return false end
+
                 if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then return false end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then return false end
                 if prompt.Parent.Name == "MinesAnchor" then return false end
