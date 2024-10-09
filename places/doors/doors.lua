@@ -2984,6 +2984,15 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Default = false,
         })
 
+        NotifySettingsTab:AddInput("NotifyEntityMessage", {
+            Default = "has spawned!",
+            Numeric = false,
+            Finished = true,
+            ClearTextOnFocus = false,
+
+            Text = "Entity Notifier Message"
+        })
+
         NotifySettingsTab:AddDivider()
         
         NotifySettingsTab:AddToggle("NotifySound", {
@@ -5358,7 +5367,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     if Options.NotifyEntity.Value[shortName] then
                         Script.Functions.Alert({
                             Title = "ENTITIES",
-                            Description = shortName .. " has spawned!",
+                            Description = string.format("%s %s", shortName, Options.NotifyEntityMessage.Value),
                             Reason = (not EntityTable.NotifyReason[child.Name].Spawned and "Go find a hiding place!" or nil),
                             Image = EntityTable.NotifyReason[child.Name].Image,
 
@@ -5366,7 +5375,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
                         })
 
                         if Toggles.NotifyChat.Value then
-                            RBXGeneral:SendAsync(shortName .. " has spawned!")
+                            RBXGeneral:SendAsync(string.format("%s %s", shortName, Options.NotifyEntityMessage.Value))
                         end
                     end
                 end
@@ -5374,7 +5383,7 @@ Library:GiveSignal(workspace.ChildAdded:Connect(function(child)
         elseif EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
             Script.Functions.Alert({
                 Title = "ENTITIES",
-                Description = shortName .. " has spawned!",
+                Description = string.format("%s %s", shortName, Options.NotifyEntityMessage.Value),
                 Reason = (not EntityTable.NotifyReason[child.Name].Spawned and "Go find a hiding place!" or nil),
                 Image = EntityTable.NotifyReason[child.Name].Image,
 
