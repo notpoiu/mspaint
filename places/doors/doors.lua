@@ -5959,7 +5959,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 if Options.AutoInteractIgnore.Value["Light Source Items"] and prompt.Parent:GetAttribute("Tool_LightSource") then return false end
                 if Options.AutoInteractIgnore.Value["Skull Prompt"] and prompt.Name == "SkullPrompt" then return false end
 
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and ((character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery") or character:FindFirstChildOfClass("Tool") == nil) then return false end 
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and (character:FindFirstChildOfClass("Tool") and (character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" or character:FindFirstChildOfClass("Tool"):GetAttribute("StorageProp") ~= "Battery")) then return false end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then return false end
                 if prompt.Parent.Name == "MinesAnchor" then return false end
 
