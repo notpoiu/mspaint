@@ -80,7 +80,7 @@ local Script = {
         CollisionSize = Vector3.new(5.5, 3, 3),
         FlyBody = nil,
         Guidance = {},
-        PaintingDebounce = false,
+        PaintingDebounce = {},
         UsedBreakers = {},
     },
 
@@ -5964,33 +5964,24 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
-                        -- painting checks
                         if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") then
-                            if Script.Temp.PaintingDebounce then return end
-                            
+                            if Script.Temp.PaintingDebounce[prompt] then return end
+
                             local currentPainting = character:FindFirstChild("Prop")
-                            if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
-                                return firePrompt(prompt)
+                            local slotPainting = prompt.Parent:FindFirstChild("Prop")
+
+                            local currentHint = (currentPainting and currentPainting:GetAttribute("Hint"))
+                            local slotHint = (slotPainting and slotPainting:GetAttribute("Hint"))
+                            local promptHint = prompt.Parent:GetAttribute("Hint")
+
+                            print(currentHint, slotHint, promptHint)
+                            if slotHint ~= promptHint and (currentHint == promptHint or slotPainting) then
+                                Script.Temp.PaintingDebounce[prompt] = true
+                                firePrompt(prompt)
+                                task.wait(0.3)
+                                Script.Temp.PaintingDebounce[prompt] = false    
                             end
-
-                            if prompt.Parent:FindFirstChild("Prop") then 
-                                if prompt.Parent:GetAttribute("Hint") == prompt.Parent.Prop:GetAttribute("Hint") then
-                                    return
-                                end
-                            end
-
-                            if prompt.Parent:GetAttribute("Hint") == currentPainting:GetAttribute("Hint") then
-                                Script.Temp.PaintingDebounce = true
-
-                                local oldHint = currentPainting:GetAttribute("Hint")
-                                repeat task.wait()
-                                    firePrompt(prompt)
-                                until not character:FindFirstChild("Prop") or character:FindFirstChild("Prop"):GetAttribute("Hint") ~= oldHint
-
-                                task.wait(0.15)
-                                Script.Temp.PaintingDebounce = false
-                            end                            
-                            
+        
                             return
                         end
                         
