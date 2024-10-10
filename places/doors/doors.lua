@@ -2329,7 +2329,7 @@ do
     
             Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
                 local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
-    
+
                 if rootPart.Anchored and Toggles.LagbackDetection.Value and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
                     Script.Lagback.Anchors += 1
                     Script.Lagback.LastAnchored = os.time()
@@ -2379,7 +2379,6 @@ do
                 collisionClone.CollisionCrouch:Destroy()
             end
     
-            Script.Temp.CollisionSize = collisionClone.Size
             collisionClone.Parent = character
         end
     
@@ -2743,21 +2742,12 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
 end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
-    BypassGroupBox:AddDropdown("SpeedBypassMethod", {
-        AllowNull = false,
-        Values = {"Massless", --[["Size"]]},
-        Default = "Massless",
-        Multi = false,
-
-        Text = "Speed Bypass Method"
-    })
-    
     BypassGroupBox:AddSlider("SpeedBypassDelay", {
         Text = "Bypass Delay",
-        Default = 0.21,
-        Min = 0.2,
-        Max = 0.22,
-        Rounding = 2,
+        Default = 0.23,
+        Min = 0.22,
+        Max = 0.25,
+        Rounding = 3,
         Compact = true
     })
 
@@ -4133,36 +4123,21 @@ Toggles.UpsideDown:OnChanged(function(value)
 end)
 
 function Script.Functions.SpeedBypass()
-    if speedBypassing then return end
+    if speedBypassing or not collisionClone then return end
     speedBypassing = true
 
     task.spawn(function()
         while Toggles.SpeedBypass.Value and collisionClone and not Library.Unloaded and not Script.FakeRevive.Enabled do
-            if Options.SpeedBypassMethod.Value == "Massless" then
-                collisionClone.Massless = not collisionClone.Massless
-            elseif Options.SpeedBypassMethod.Value == "Size" then
-                collisionClone.Size = Script.Temp.CollisionSize / 2
-                task.wait(Options.SpeedBypassDelay.Value)
-                collisionClone.Size = Script.Temp.CollisionSize
-            end
-
+            collisionClone.Massless = not collisionClone.Massless
             task.wait(Options.SpeedBypassDelay.Value)
         end
 
         speedBypassing = false
         if collisionClone then
             collisionClone.Massless = true
-            collisionClone.Size = Script.Temp.CollisionSize
         end
     end)
 end
-
-Options.SpeedBypassMethod:OnChanged(function()
-    if collisionClone then
-        collisionClone.Massless = true
-        collisionClone.Size = Script.Temp.CollisionSize
-    end
-end)
 
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
