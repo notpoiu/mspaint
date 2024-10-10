@@ -82,7 +82,7 @@ local Script = {
         CollisionSize = Vector3.new(5.5, 3, 3),
         FlyBody = nil,
         Guidance = {},
-        PaintingDebounce = false,
+        PaintingDebounce = {},
         UsedBreakers = {},
     },
 
@@ -778,6 +778,8 @@ do
     end
 
     function Script.Functions.GetMoveVector(): Vector3
+        if controlModule then return controlModule:GetMoveVector() end
+
         local x, z = 0, 0
 
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then z -= 1 end
@@ -1207,8 +1209,10 @@ do
                     end
                 end
             end
-        elseif child:IsA("BasePart") then        
-            if child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
+        elseif child:IsA("BasePart") then
+            if tonumber(child.Name) and child.Name == child.Parent.Name then
+                child.Size *= Vector3.new(1, 100, 1)
+            elseif child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
                 child.CanTouch = false
             end
     
@@ -2331,7 +2335,7 @@ do
     
             Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
                 local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
-    
+
                 if rootPart.Anchored and Toggles.LagbackDetection.Value and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
                     Script.Lagback.Anchors += 1
                     Script.Lagback.LastAnchored = os.time()
@@ -2365,6 +2369,12 @@ do
                     end
                 end
             end)
+
+            Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
+                if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
+                    localPlayer:SetAttribute("CurrentRoom", tonumber(touchedPart.Name))
+                end
+            end)
         end
     
         collision = character:WaitForChild("Collision")
@@ -2381,7 +2391,6 @@ do
                 collisionClone.CollisionCrouch:Destroy()
             end
     
-            Script.Temp.CollisionSize = collisionClone.Size
             collisionClone.Parent = character
         end
     
@@ -2568,7 +2577,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
     AutomationGroupBox:AddDropdown("AutoInteractIgnore", {
         AllowNull = true,
-        Values = {"Jeff Items", "Unlock w/ Lockpick", "Gold", "Light Source Items", "Skull Prompt"},
+        Values = {"Jeff Items", "Unlock w/ Lockpick", "Paintings", "Gold", "Light Source Items", "Skull Prompt"},
         Default = {"Jeff Items"},
         Multi = true,
 
@@ -2745,24 +2754,6 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
 end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
-    BypassGroupBox:AddDropdown("SpeedBypassMethod", {
-        AllowNull = false,
-        Values = {"Massless", --[["Size"]]},
-        Default = "Massless",
-        Multi = false,
-
-        Text = "Speed Bypass Method"
-    })
-    
-    BypassGroupBox:AddSlider("SpeedBypassDelay", {
-        Text = "Bypass Delay",
-        Default = 0.21,
-        Min = 0.2,
-        Max = 0.22,
-        Rounding = 2,
-        Compact = true
-    })
-
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
         Default = false
@@ -2771,6 +2762,15 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddToggle("LagbackDetection", {
         Text = "Lagback Detection",
         Default = false
+    })
+
+    BypassGroupBox:AddSlider("SpeedBypassDelay", {
+        Text = "Speed Bypass Delay",
+        Default = 0.23,
+        Min = 0.22,
+        Max = 0.25,
+        Rounding = 3,
+        Compact = true
     })
 
     BypassGroupBox:AddDivider()
@@ -4020,18 +4020,6 @@ Toggles.Fly:OnChanged(function(value)
             local moveVector = Script.Functions.GetMoveVector()
             velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
 
-            --[[
-
-            if controlModule then
-                local moveVector = controlModule:GetMoveVector()
-                velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
-            else
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then velocity += camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
-            end]]
-
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then velocity -= camera.CFrame.UpVector end
             
@@ -4135,36 +4123,21 @@ Toggles.UpsideDown:OnChanged(function(value)
 end)
 
 function Script.Functions.SpeedBypass()
-    if speedBypassing then return end
+    if speedBypassing or not collisionClone then return end
     speedBypassing = true
 
     task.spawn(function()
         while Toggles.SpeedBypass.Value and collisionClone and not Library.Unloaded and not Script.FakeRevive.Enabled do
-            if Options.SpeedBypassMethod.Value == "Massless" then
-                collisionClone.Massless = not collisionClone.Massless
-            elseif Options.SpeedBypassMethod.Value == "Size" then
-                collisionClone.Size = Script.Temp.CollisionSize / 2
-                task.wait(Options.SpeedBypassDelay.Value)
-                collisionClone.Size = Script.Temp.CollisionSize
-            end
-
+            collisionClone.Massless = not collisionClone.Massless
             task.wait(Options.SpeedBypassDelay.Value)
         end
 
         speedBypassing = false
         if collisionClone then
             collisionClone.Massless = true
-            collisionClone.Size = Script.Temp.CollisionSize
         end
     end)
 end
-
-Options.SpeedBypassMethod:OnChanged(function()
-    if collisionClone then
-        collisionClone.Massless = true
-        collisionClone.Size = Script.Temp.CollisionSize
-    end
-end)
 
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
@@ -5286,30 +5259,33 @@ Library:GiveSignal(remotesFolder.HideMonster.OnClientEvent:Connect(function()
 end))
 
 Library:GiveSignal(ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    if player ~= localPlayer or not character or isFools then return end
+    if not Toggles.InfItems.Value or player ~= localPlayer or not character or isFools then return end
     
     local isDoorLock = prompt.Name == "UnlockPrompt" and prompt.Parent.Name == "Lock" and not prompt.Parent.Parent:GetAttribute("Opened")
     local isSkeletonDoor = prompt.Name == "SkullPrompt" and prompt.Parent.Name == "SkullLock" and not (prompt.Parent:FindFirstChild("Door") and prompt.Parent.Door.Transparency == 1)
-    local isChestBox = prompt.Name == "ActivateEventPrompt" and prompt.Parent.Name == "ChestBoxLocked" and prompt.Parent:GetAttribute("Locked")
+    local isChestBox = prompt.Name == "ActivateEventPrompt" and prompt.Parent:GetAttribute("Locked") and (prompt.Parent.Name:match("Chest") or prompt.Parent:GetAttribute("LockAttribute") == "CanCutVines" or prompt.Parent.Name == "CuttableVines")
     local isRoomsDoorLock = prompt.Parent.Parent.Parent.Name == "RoomsDoor_Entrance" and prompt.Enabled
     
     if isDoorLock or isSkeletonDoor or isChestBox or isRoomsDoorLock then
         local equippedTool = character:FindFirstChildOfClass("Tool")
         local toolId = equippedTool and equippedTool:GetAttribute("ID")
 
-        if Toggles.InfItems.Value and equippedTool and equippedTool:GetAttribute("UniversalKey") then
-            task.wait(isChestBox and 0.05 or 0)
+        if equippedTool and (equippedTool:GetAttribute("UniversalKey") or equippedTool:GetAttribute("CanCutVines")) then
+            if not isChestBox then task.wait() end
             remotesFolder.DropItem:FireServer(equippedTool)
 
             task.spawn(function()
-                equippedTool.Destroying:Wait() 
-                task.wait(0.15)
+                workspace.Drops.ChildAdded:Wait()
+                task.wait(0.05)
 
                 local itemPickupPrompt = Script.Functions.GetNearestPromptWithCondition(function(prompt)
-                    return prompt.Name == "ModulePrompt" and prompt.Parent:GetAttribute("Tool_ID") == toolId
+                    return prompt.Name == "ModulePrompt" and prompt:IsDescendantOf(workspace.Drops)
                 end)
 
                 if itemPickupPrompt then
+                    if isChestBox then
+                        firePrompt(prompt)
+                    end
                     firePrompt(itemPickupPrompt)
                 end
             end)
@@ -5609,8 +5585,13 @@ end))
 
 Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
     if (state == Enum.TeleportState.RequestedFromServer or state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value and not getgenv().queued_to_teleport then
+        local executeString = [[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]]
+        if getgenv().mspaint_dev_mode then
+            executeString = [[getgenv().mspaint_dev_mode = true; loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/dev/main.lua"))()]]
+        end
+        
         getgenv().queued_to_teleport = true
-        queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
+        queue_on_teleport(executeString)
     end
 end))
 
@@ -5628,6 +5609,8 @@ if workspace.CurrentRooms:FindFirstChild(currentRoom) then
     task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
 end
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
+    if currentRoom == localPlayer:GetAttribute("CurrentRoom") then return end
+
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
@@ -5957,11 +5940,12 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                 if Options.AutoInteractIgnore.Value["Jeff Items"] and prompt.Parent:GetAttribute("JeffShop") then return false end
                 if Options.AutoInteractIgnore.Value["Unlock w/ Lockpick"] and (prompt.Name == "UnlockPrompt" or prompt.Parent:GetAttribute("Locked")) and character:FindFirstChild("Lockpick") then return false end
+                if Options.AutoInteractIgnore.Value["Paintings"] and prompt.Name == "PropPrompt" then return false end
                 if Options.AutoInteractIgnore.Value["Gold"] and prompt.Name == "LootPrompt" then return false end
-                if Options.AutoInteractIgnore.Value["Light Source Items"] and prompt.Parent:GetAttribute("Tool_LightSource") then return false end
+                if Options.AutoInteractIgnore.Value["Light Source Items"] and prompt.Parent:GetAttribute("Tool_LightSource") and not prompt.Parent:GetAttribute("Tool_CanCutVines") then return false end
                 if Options.AutoInteractIgnore.Value["Skull Prompt"] and prompt.Name == "SkullPrompt" then return false end
 
-                if prompt.Parent:GetAttribute("PropType") == "Battery" and (character:FindFirstChildOfClass("Tool") and (character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") ~= "Battery" or character:FindFirstChildOfClass("Tool"):GetAttribute("StorageProp") ~= "Battery")) then return false end 
+                if prompt.Parent:GetAttribute("PropType") == "Battery" and not (character:FindFirstChildOfClass("Tool") and (character:FindFirstChildOfClass("Tool"):GetAttribute("RechargeProp") == "Battery" or character:FindFirstChildOfClass("Tool"):GetAttribute("StorageProp") == "Battery")) then return false end 
                 if prompt.Parent:GetAttribute("PropType") == "Heal" and humanoid and humanoid.Health == humanoid.MaxHealth then return false end
                 if prompt.Parent.Name == "MinesAnchor" then return false end
 
@@ -5974,33 +5958,24 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                 task.spawn(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
-                        -- painting checks
-                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") and character then
-                            if Script.Temp.PaintingDebounce then return end
-                            
+                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") then
+                            if Script.Temp.PaintingDebounce[prompt] then return end
+
                             local currentPainting = character:FindFirstChild("Prop")
-                            if not currentPainting and prompt.Parent:FindFirstChild("Prop") and prompt.Parent:GetAttribute("Hint") ~= prompt.Parent.Prop:GetAttribute("Hint") then
-                                return firePrompt(prompt)
+                            local slotPainting = prompt.Parent:FindFirstChild("Prop")
+
+                            local currentHint = (currentPainting and currentPainting:GetAttribute("Hint"))
+                            local slotHint = (slotPainting and slotPainting:GetAttribute("Hint"))
+                            local promptHint = prompt.Parent:GetAttribute("Hint")
+
+                            print(currentHint, slotHint, promptHint)
+                            if slotHint ~= promptHint and (currentHint == promptHint or slotPainting) then
+                                Script.Temp.PaintingDebounce[prompt] = true
+                                firePrompt(prompt)
+                                task.wait(0.3)
+                                Script.Temp.PaintingDebounce[prompt] = false    
                             end
-
-                            if prompt.Parent:FindFirstChild("Prop") then 
-                                if prompt.Parent:GetAttribute("Hint") == prompt.Parent.Prop:GetAttribute("Hint") then
-                                    return
-                                end
-                            end
-
-                            if prompt.Parent:GetAttribute("Hint") == currentPainting:GetAttribute("Hint") then
-                                Script.Temp.PaintingDebounce = true
-
-                                local oldHint = currentPainting:GetAttribute("Hint")
-                                repeat task.wait()
-                                    firePrompt(prompt)
-                                until not character:FindFirstChild("Prop") or character:FindFirstChild("Prop"):GetAttribute("Hint") ~= oldHint
-
-                                task.wait(0.15)
-                                Script.Temp.PaintingDebounce = false
-                            end                            
-                            
+        
                             return
                         end
                         
