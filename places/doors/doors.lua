@@ -5585,8 +5585,13 @@ end))
 
 Library:GiveSignal(localPlayer.OnTeleport:Connect(function(state)
     if (state == Enum.TeleportState.RequestedFromServer or state == Enum.TeleportState.Started) and Toggles.ExecuteOnTeleport.Value and not getgenv().queued_to_teleport then
+        local executeString = [[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]]
+        if getgenv().mspaint_dev_mode then
+            executeString = [[getgenv().mspaint_dev_mode() = true; loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/dev/main.lua"))()]]
+        end
+        
         getgenv().queued_to_teleport = true
-        queue_on_teleport([[loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/main.lua"))()]])
+        queue_on_teleport(executeString)
     end
 end))
 
