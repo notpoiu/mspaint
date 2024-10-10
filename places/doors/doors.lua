@@ -5933,6 +5933,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
 
                 if Options.AutoInteractIgnore.Value["Jeff Items"] and prompt.Parent:GetAttribute("JeffShop") then return false end
                 if Options.AutoInteractIgnore.Value["Unlock w/ Lockpick"] and (prompt.Name == "UnlockPrompt" or prompt.Parent:GetAttribute("Locked")) and character:FindFirstChild("Lockpick") then return false end
+                if Options.AutoInteractIgnore.Value["Paintings"] and prompt.Name == "PropPrompt" then return false end
                 if Options.AutoInteractIgnore.Value["Gold"] and prompt.Name == "LootPrompt" then return false end
                 if Options.AutoInteractIgnore.Value["Light Source Items"] and prompt.Parent:GetAttribute("Tool_LightSource") and not prompt.Parent:GetAttribute("Tool_CanCutVines") then return false end
                 if Options.AutoInteractIgnore.Value["Skull Prompt"] and prompt.Name == "SkullPrompt" then return false end
@@ -5951,7 +5952,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
                         -- painting checks
-                        if not Options.AutoInteractIgnore.Value["Paintings"] and prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") then
+                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") then
                             if Script.Temp.PaintingDebounce then return end
                             
                             local currentPainting = character:FindFirstChild("Prop")
