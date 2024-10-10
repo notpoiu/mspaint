@@ -1205,8 +1205,10 @@ do
                     end
                 end
             end
-        elseif child:IsA("BasePart") then        
-            if child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
+        elseif child:IsA("BasePart") then
+            if tonumber(child.Name) and child.Name == child.Parent.Name then
+                child.Size *= Vector3.new(1, 100, 1)
+            elseif child.Name == "Egg" and Toggles.AntiGloomEgg.Value then
                 child.CanTouch = false
             end
     
@@ -2361,6 +2363,12 @@ do
                             Description = "Fixed Lagback!"
                         })
                     end
+                end
+            end)
+
+            Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
+                if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
+                    localPlayer:SetAttribute("CurrentRoom", tonumber(touchedPart.Name))
                 end
             end)
         end
