@@ -2750,15 +2750,6 @@ local TrollingGroupBox = Tabs.Exploits:AddLeftGroupbox("Trolling") do
 end
 
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
-    BypassGroupBox:AddSlider("SpeedBypassDelay", {
-        Text = "Bypass Delay",
-        Default = 0.23,
-        Min = 0.22,
-        Max = 0.25,
-        Rounding = 3,
-        Compact = true
-    })
-
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
         Default = false
@@ -2767,6 +2758,15 @@ local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddToggle("LagbackDetection", {
         Text = "Lagback Detection",
         Default = false
+    })
+
+    BypassGroupBox:AddSlider("SpeedBypassDelay", {
+        Text = "Speed Bypass Delay",
+        Default = 0.23,
+        Min = 0.22,
+        Max = 0.25,
+        Rounding = 3,
+        Compact = true
     })
 
     BypassGroupBox:AddDivider()
