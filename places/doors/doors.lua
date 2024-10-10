@@ -776,6 +776,8 @@ do
     end
 
     function Script.Functions.GetMoveVector(): Vector3
+        if controlModule then return controlModule:GetMoveVector() end
+
         local x, z = 0, 0
 
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then z -= 1 end
@@ -4015,18 +4017,6 @@ Toggles.Fly:OnChanged(function(value)
 
             local moveVector = Script.Functions.GetMoveVector()
             velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
-
-            --[[
-
-            if controlModule then
-                local moveVector = controlModule:GetMoveVector()
-                velocity = -((camera.CFrame.LookVector * moveVector.Z) - (camera.CFrame.RightVector * moveVector.X))
-            else
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then velocity += camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then velocity -= camera.CFrame.LookVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then velocity += camera.CFrame.RightVector end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then velocity -= camera.CFrame.RightVector end
-            end]]
 
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then velocity += camera.CFrame.UpVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then velocity -= camera.CFrame.UpVector end
