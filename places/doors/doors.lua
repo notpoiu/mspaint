@@ -2565,7 +2565,7 @@ local AutomationGroupBox = Tabs.Main:AddRightGroupbox("Automation") do
 
     AutomationGroupBox:AddDropdown("AutoInteractIgnore", {
         AllowNull = true,
-        Values = {"Jeff Items", "Unlock w/ Lockpick", "Gold", "Light Source Items", "Skull Prompt"},
+        Values = {"Jeff Items", "Unlock w/ Lockpick", "Paintings", "Gold", "Light Source Items", "Skull Prompt"},
         Default = {"Jeff Items"},
         Multi = true,
 
@@ -5951,7 +5951,7 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
                     -- checks if distance can interact with prompt and if prompt can be interacted again
                     if Script.Functions.DistanceFromCharacter(prompt.Parent) < prompt.MaxActivationDistance and (not prompt:GetAttribute("Interactions" .. localPlayer.Name) or PromptTable.Aura[prompt.Name] or table.find(PromptTable.AuraObjects, prompt.Parent.Name)) then
                         -- painting checks
-                        if prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") and character then
+                        if not Options.AutoInteractIgnore.Value["Paintings"] and prompt.Parent.Name == "Slot" and prompt.Parent:GetAttribute("Hint") then
                             if Script.Temp.PaintingDebounce then return end
                             
                             local currentPainting = character:FindFirstChild("Prop")
