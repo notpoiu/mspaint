@@ -5617,6 +5617,8 @@ if workspace.CurrentRooms:FindFirstChild(currentRoom) then
     task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
 end
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
+    if currentRoom == localPlayer:GetAttribute("CurrentRoom") then return end
+
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
