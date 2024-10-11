@@ -449,6 +449,10 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
     Frame.BorderSizePixel = 2
     Frame.Position = UDim2.new(0.5, 0, 0.8, 0)
     Frame.Size = UDim2.new(0, 200, 0, 75)
+    Library:AddToRegistry(Frame, {
+        BackgroundColor3 = "MainColor",
+        BorderColor3 = "AccentColor"
+    })
 
     TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     TextLabel.BackgroundTransparency = 1.000
@@ -461,6 +465,9 @@ local _mspaint_custom_captions = Instance.new("ScreenGui") do
     TextLabel.TextScaled = true
     TextLabel.TextSize = 14
     TextLabel.TextWrapped = true
+    Library:AddToRegistry(TextLabel, {
+        TextColor3 = "FontColor"
+    })
 
     UITextSizeConstraint.MaxTextSize = 35
 
