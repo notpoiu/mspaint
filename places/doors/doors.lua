@@ -326,7 +326,6 @@ local humanoid: Humanoid
 local rootPart: BasePart
 local collision
 local collisionClone
-local velocityLimiter
 
 --// DOORS Variables \\--
 local entityModules = ReplicatedStorage:WaitForChild("ClientModules"):WaitForChild("EntityModules")
@@ -2274,11 +2273,11 @@ do
             Script.FeatureConnections.Humanoid["Jump"] = humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
                 if not Toggles.SpeedBypass.Value and latestRoom.Value < 100 and not Script.FakeRevive.Enabled then
                     if humanoid.JumpHeight > 0 then
-                        lastSpeed = Options.SpeedSlider.Value
-                        Options.SpeedSlider:SetMax(3)
+                        lastSpeed = Options.WalkSpeed.Value
+                        Options.WalkSpeed:SetMax(18)
                     elseif lastSpeed > 0 then
-                        Options.SpeedSlider:SetMax(7)
-                        Options.SpeedSlider:SetValue(lastSpeed)
+                        Options.WalkSpeed:SetMax(22)
+                        Options.WalkSpeed:SetValue(lastSpeed)
                         lastSpeed = 0
                     end
                 end
@@ -2287,10 +2286,6 @@ do
             Script.FeatureConnections.Humanoid["Died"] = humanoid.Died:Connect(function()
                 if collisionClone then
                     collisionClone:Destroy()
-                end
-    
-                if velocityLimiter then
-                    velocityLimiter:Destroy()
                 end
             end)
     
@@ -2321,13 +2316,6 @@ do
                 local existingProperties = rootPart.CustomPhysicalProperties
                 rootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
             end
-    
-            velocityLimiter = Instance.new("LinearVelocity", character)
-            velocityLimiter.Enabled = false
-            velocityLimiter.MaxForce = math.huge
-            velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
-            velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
-            velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
 
             Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
                 if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
@@ -2366,7 +2354,7 @@ do
                             ladderEsp.Destroy()
                         end
     
-                        Options.SpeedSlider:SetMax(45)
+                        Options.WalkSpeed:SetMax(75)
                         Options.FlySpeed:SetMax(75)
     
                         Script.Functions.Alert({
@@ -2434,26 +2422,41 @@ end
 --// Main \\--
 
 local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
-    PlayerGroupBox:AddSlider("SpeedSlider", {
-        Text = "Speed Boost",
-        Default = 0,
-        Min = 0,
-        Max = 7,
-        Rounding = 1
+    PlayerGroupBox:AddToggle("EnableSpeedHack", {
+        Text = "Enable Speed Hack",
+        Default = false
     })
 
-    PlayerGroupBox:AddSlider("VelocityLimiter", {
-        Text = "Velocity Limiter",
-        Default = 25,
+    PlayerGroupBox:AddSlider("WalkSpeed", {
+        Text = "Walk Speed",
+        Default = 15,
         Min = 0,
-        Max = 25,
-        Rounding = 1
+        Max = 22,
+        Rounding = 0,
+        Compact = true
+    })
+
+    PlayerGroupBox:AddSlider("LadderSpeed", {
+        Text = "Ladder Speed",
+        Default = 15,
+        Min = 0,
+        Max = 100,
+        Rounding = 0,
+        Compact = true
+    })
+
+    PlayerGroupBox:AddToggle("EnableJump", {
+        Text = "Enable Jump",
+        Default = false,
+        Visible = not isFools
     })
 
     PlayerGroupBox:AddToggle("NoAccel", {
         Text = "No Acceleration",
         Default = false
     })
+
+    PlayerGroupBox:AddDivider()
 
     PlayerGroupBox:AddToggle("InstaInteract", {
         Text = "Instant Interact",
@@ -2466,12 +2469,6 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
     })
 
     PlayerGroupBox:AddDivider()
-
-    PlayerGroupBox:AddToggle("EnableJump", {
-        Text = "Enable Jump",
-        Default = false,
-        Visible = not isFools,
-    })
 
     PlayerGroupBox:AddToggle("Noclip", {
         Text = "Noclip",
@@ -3109,11 +3106,6 @@ task.spawn(function()
         end)
     elseif isMines then
         local Mines_MovementGroupBox = Tabs.Floor:AddLeftGroupbox("Movement") do
-            Mines_MovementGroupBox:AddToggle("FastLadder", {
-                Text = "Fast Ladder",
-                Default = false
-            })
-
             Mines_MovementGroupBox:AddSlider("MaxSlopeAngle", {
                 Text = "Max Floor Angle",
                 Default = 45,
@@ -3293,7 +3285,7 @@ task.spawn(function()
                     remotesFolder.ClimbLadder:FireServer()
                     bypassed = false
                     
-                    Options.SpeedSlider:SetMax(Toggles.SpeedBypass.Value and 45 or (Toggles.EnableJump.Value and 3 or 7))
+                    Options.WalkSpeed:SetMax(Toggles.SpeedBypass.Value and 75 or (Toggles.EnableJump.Value and 18 or 22))
                     Options.FlySpeed:SetMax(Toggles.SpeedBypass.Value and 75 or 22)
                 end
             end
@@ -3953,8 +3945,8 @@ Toggles.EnableJump:OnChanged(function(value)
         character:SetAttribute("CanJump", value)
     end
 
-    if not value and not Toggles.SpeedBypass.Value and Options.SpeedSlider.Max ~= 7 and not Script.FakeRevive.Enabled then
-        Options.SpeedSlider:SetMax(7)
+    if not value and not Toggles.SpeedBypass.Value and Options.WalkSpeed.Max ~= 22 and not Script.FakeRevive.Enabled then
+        Options.WalkSpeed:SetMax(22)
     end
 end)
 
@@ -4101,16 +4093,16 @@ end
 
 Toggles.SpeedBypass:OnChanged(function(value)
     if value then
-        Options.SpeedSlider:SetMax(45)
+        Options.WalkSpeed:SetMax(75)
         Options.FlySpeed:SetMax(75)
         
         Script.Functions.SpeedBypass()
     else
         if Script.FakeRevive.Enabled then return end
 
-        local speed = if bypassed then 45 elseif Toggles.EnableJump.Value then 3 else 7
+        local speed = if bypassed then 75 elseif Toggles.EnableJump.Value then 18 else 22
 
-        Options.SpeedSlider:SetMax(speed)
+        Options.WalkSpeed:SetMax(speed)
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
     end
 end)
@@ -4165,7 +4157,7 @@ Toggles.FakeRevive:OnChanged(function(value)
         end
 
         Toggles.SpeedBypass:SetValue(false)
-        Options.SpeedSlider:SetMax(45)
+        Options.WalkSpeed:SetMax(75)
         Options.FlySpeed:SetMax(75)
 
         Script.FakeRevive.Enabled = true
@@ -4499,8 +4491,7 @@ Toggles.FakeRevive:OnChanged(function(value)
         
         Script.FakeRevive.Connections["mainStepped"] = RunService.RenderStepped:Connect(function()
             -- deivid gonna get mad at this line :content:
-            if character:FindFirstChild("Humanoid") then character.Humanoid.WalkSpeed = 15 + Options.SpeedSlider.Value end
-            
+            if character:FindFirstChild("Humanoid") then character.Humanoid.WalkSpeed = Options.WalkSpeed.Value end
 
             if rootPart and rootPart.Position.Y < -150 then
                 rootPart.Position = workspace.SpawnLocation.Position
@@ -5534,9 +5525,9 @@ Library:GiveSignal(localPlayer.CharacterAdded:Connect(function(newCharacter)
         end
 
         if isMines and Toggles.EnableJump.Value then
-            Options.SpeedSlider:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 3)
+            Options.WalkSpeed:SetMax((Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 18)
         else
-            Options.SpeedSlider:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 45 or 7)
+            Options.WalkSpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
         end
 
         Options.FlySpeed:SetMax((isMines and Toggles.TheMinesAnticheatBypass.Value and bypassed) and 75 or 22)
@@ -5588,7 +5579,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
             LinoriaMessage = "Halt has broken anticheat bypass, please go on a ladder again to fix it.",
         })
 
-        Options.SpeedSlider:SetMax(Toggles.SpeedBypass.Value and 45 or (Toggles.EnableJump.Value and 3 or 7))
+        Options.WalkSpeed:SetMax(Toggles.SpeedBypass.Value and 75 or (Toggles.EnableJump.Value and 18 or 22))
         Options.FlySpeed:SetMax(Toggles.SpeedBypass.Value and 75 or 22)
     end
 
@@ -5853,21 +5844,12 @@ Library:GiveSignal(RunService.RenderStepped:Connect(function()
             character.Head.LocalTransparencyModifier = isThirdPersonEnabled and 0 or 1
         end
 
-        local speedBoostAssignObj = if isFools then humanoid else character
-        if isMines and Toggles.FastLadder.Value and character:GetAttribute("Climbing") then
-            character:SetAttribute("SpeedBoostBehind", 50)
-        else
-            speedBoostAssignObj:SetAttribute("SpeedBoostBehind", Options.SpeedSlider.Value)
+        if humanoid and Toggles.EnableSpeedHack.Value then
+            humanoid.WalkSpeed = if character:GetAttribute("Climbing") then Options.LadderSpeed.Value else Options.WalkSpeed.Value
         end
 
         if rootPart then
             rootPart.CanCollide = not Toggles.Noclip.Value
-
-            if rootPart.AssemblyLinearVelocity.Magnitude > (Options.VelocityLimiter.Value * 10) then
-                velocityLimiter.Enabled = true
-            else
-                velocityLimiter.Enabled = false
-            end
         end
         
         if collision then
@@ -6113,10 +6095,6 @@ Library:OnUnload(function()
 
         local speedBoostAssignObj = isFools and humanoid or character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
-
-        if velocityLimiter then
-            velocityLimiter:Destroy()
-        end
     end
 
     if alive then
