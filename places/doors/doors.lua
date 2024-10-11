@@ -834,6 +834,11 @@ do
                 From = Options.ESPTracerStart.Value,
                 Color = ESPManager.Color
             },
+            Arrow = {
+                Enabled = Toggles.ESPArrow.Value,
+                CenterOffset = Options.ESPArrowCenterOffset.Value,
+                Color = ESPManager.Color
+            },
     
             OnDestroy = ESPManager.OnDestroy or function()
                 if ESPManager.Object.PrimaryPart and ESPManager.Invisible then ESPManager.Object.PrimaryPart.Transparency = 1 end
@@ -2823,26 +2828,18 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     end
 
     local ESPSettingsTab = ESPTabBox:AddTab("Settings") do
+        ESPSettingsTab:AddToggle("ESPRainbow", {
+            Text = "Rainbow ESP",
+            Default = false,
+        })
+
+        ESPSettingsTab:AddDivider()
+
         ESPSettingsTab:AddToggle("ESPHighlight", {
             Text = "Enable Highlight",
             Default = true,
         })
 
-        ESPSettingsTab:AddToggle("ESPTracer", {
-            Text = "Enable Tracer",
-            Default = true,
-        })
-    
-        ESPSettingsTab:AddToggle("ESPRainbow", {
-            Text = "Rainbow ESP",
-            Default = false,
-        })
-    
-        ESPSettingsTab:AddToggle("ESPDistance", {
-            Text = "Show Distance",
-            Default = true
-        })
-    
         ESPSettingsTab:AddSlider("ESPFillTransparency", {
             Text = "Fill Transparency",
             Default = 0.75,
@@ -2858,6 +2855,13 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
             Max = 1,
             Rounding = 2
         })
+
+        ESPSettingsTab:AddDivider()
+
+        ESPSettingsTab:AddToggle("ESPDistance", {
+            Text = "Show Distance",
+            Default = true
+        })
     
         ESPSettingsTab:AddSlider("ESPTextSize", {
             Text = "Text Size",
@@ -2865,6 +2869,13 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
             Min = 16,
             Max = 26,
             Rounding = 0
+        })
+    
+        ESPSettingsTab:AddDivider()
+
+        ESPSettingsTab:AddToggle("ESPTracer", {
+            Text = "Enable Tracer",
+            Default = true,
         })
 
         ESPSettingsTab:AddDropdown("ESPTracerStart", {
@@ -2874,6 +2885,21 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
             Multi = false,
 
             Text = "Tracer Start Position"
+        })
+
+        ESPSettingsTab:AddDivider()
+
+        ESPSettingsTab:AddToggle("ESPArrow", {
+            Text = "Enable Arrow",
+            Default = true,
+        })
+
+        ESPSettingsTab:AddSlider("ESPArrowCenterOffset", {
+            Text = "Arrow Center Offset",
+            Default = 300,
+            Min = 0,
+            Max = 500,
+            Rounding = 0
         })
     end
 end
@@ -4939,26 +4965,16 @@ Options.GuidingLightEspColor:OnChanged(function(value)
     end
 end)
 
-Toggles.ESPHighlight:OnChanged(function(value)
-    warn("changing highlight to", value)
+Toggles.ESPRainbow:OnChanged(function(value)
+    ESPLibrary.Rainbow.Set(value)
+end)
 
+Toggles.ESPHighlight:OnChanged(function(value)
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
             esp.SetVisible(value, false)
         end
     end
-end)
-
-Toggles.ESPTracer:OnChanged(function(value)
-    ESPLibrary.Tracers.Set(value)
-end)
-
-Toggles.ESPRainbow:OnChanged(function(value)
-    ESPLibrary.Rainbow.Set(value)
-end)
-
-Toggles.ESPDistance:OnChanged(function(value)
-    ESPLibrary.Distance.Set(value)
 end)
 
 Options.ESPFillTransparency:OnChanged(function(value)
@@ -4977,6 +4993,10 @@ Options.ESPOutlineTransparency:OnChanged(function(value)
     end
 end)
 
+Toggles.ESPDistance:OnChanged(function(value)
+    ESPLibrary.Distance.Set(value)
+end)
+
 Options.ESPTextSize:OnChanged(function(value)
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
@@ -4985,10 +5005,26 @@ Options.ESPTextSize:OnChanged(function(value)
     end
 end)
 
+Toggles.ESPTracer:OnChanged(function(value)
+    ESPLibrary.Tracers.Set(value)
+end)
+
 Options.ESPTracerStart:OnChanged(function(value)
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
             esp.Update({ Tracer = { From = value } })
+        end
+    end
+end)
+
+Toggles.ESPArrow:OnChanged(function(value)
+    ESPLibrary.Arrows.Set(value)
+end)
+
+Options.ESPArrowCenterOffset:OnChanged(function(value)
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Update({ Arrow = { CenterOffset = value } })
         end
     end
 end)
