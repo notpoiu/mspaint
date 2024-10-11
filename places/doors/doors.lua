@@ -2440,7 +2440,7 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
         Text = "Ladder Speed",
         Default = 15,
         Min = 0,
-        Max = 100,
+        Max = 75,
         Rounding = 0,
         Compact = true
     })
