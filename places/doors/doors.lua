@@ -2666,6 +2666,11 @@ end
 --// Exploits \\--
 
 local AntiEntityGroupBox = Tabs.Exploits:AddLeftGroupbox("Anti-Entity") do
+    AntiEntityGroupBox:AddToggle("AntiDread", {
+        Text = "Anti-Dread",
+        Default = false
+    })
+
     AntiEntityGroupBox:AddToggle("AntiHalt", {
         Text = "Anti-Halt",
         Default = false
@@ -4027,6 +4032,16 @@ Options.PromptReachMultiplier:OnChanged(function(value)
 
             prompt.MaxActivationDistance = prompt:GetAttribute("Distance") * value
         end
+    end
+end)
+
+Toggles.AntiDread:OnChanged(function(value)
+    if not mainGame then return end
+    local modules = mainGame:FindFirstChild("Modules", true)
+    local module = modules and (modules:FindFirstChild("Dread", true) or modules:FindFirstChild("_Dread", true))
+
+    if module then
+        module.Name = if value then "_Dread" else "Dread"
     end
 end)
 
@@ -5714,15 +5729,35 @@ Library:GiveSignal(playerGui.ChildAdded:Connect(function(child)
                     end
 
                     if mainGame:WaitForChild("RemoteListener", 5) then
+                        local modules = mainGame:FindFirstChild("Modules", true)
+                        if not modules then return end
+                    
+                        if Toggles.AntiDread.Value then
+                            local module = modules:FindFirstChild("Dread", true)
+    
+                            if module then
+                                module.Name = "_Dread"
+                            end
+                        end
+
                         if Toggles.AntiScreech.Value then
-                            local module = mainGame:FindFirstChild("Screech", true)
+                            local module = modules:FindFirstChild("Screech", true)
     
                             if module then
                                 module.Name = "_Screech"
                             end
                         end
+
+                        if Toggles.NoSpiderJumpscare.Value then
+                            local module = modules:FindFirstChild("SpiderJumpscare", true)
+    
+                            if module then
+                                module.Name = "_SpiderJumpscare"
+                            end
+                        end
+
                         if (isHotel or isRooms) and Toggles.AntiA90.Value then
-                            local module = mainGame:FindFirstChild("A90", true)
+                            local module = modules:FindFirstChild("A90", true)
     
                             if module then
                                 module.Name = "_A90"
@@ -6157,9 +6192,15 @@ Library:OnUnload(function()
     end
 
     if mainGame then
-        local screechModule = mainGame:FindFirstChild("_Screech", true)
-        local spiderModule = mainGame:FindFirstChild("_SpiderJumpscare", true)
+        local modules = mainGame:FindFirstChild("Modules", true)
 
+        local dreadModule = modules and modules:FindFirstChild("_Dread", true)
+        local screechModule = modules and modules:FindFirstChild("_Screech", true)
+        local spiderModule = modules and modules:FindFirstChild("_SpiderJumpscare", true)
+
+        if dreadModule then
+            dreadModule.Name = "Dread"
+        end
         if screechModule then
             screechModule.Name = "Screech"
         end
