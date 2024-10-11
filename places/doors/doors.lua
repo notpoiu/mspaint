@@ -834,6 +834,7 @@ do
                 From = Options.ESPTracerStart.Value,
                 Color = ESPManager.Color
             },
+            
             Arrow = {
                 Enabled = Toggles.ESPArrow.Value,
                 CenterOffset = Options.ESPArrowCenterOffset.Value,
