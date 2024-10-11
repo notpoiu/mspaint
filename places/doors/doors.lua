@@ -64,15 +64,6 @@ local Script = {
         Notifs = {Linoria = {}, Doors = {}}
     },
 
-    Lagback = {
-        Detected = false,
-        Threshold = 1,
-        Anchors = 0,
-        LastAnchored = 0,
-        LastSpeed = 0,
-        LastFlySpeed = 0,
-    },
-
     Temp = {
         AnchorFinished = {},
         AutoWardrobeEntities = {},
@@ -2330,43 +2321,6 @@ do
             velocityLimiter.VectorVelocity = Vector3.new(0, 0, 0)
             velocityLimiter.RelativeTo = Enum.ActuatorRelativeTo.World
             velocityLimiter.Attachment0 = rootPart:WaitForChild("RootAttachment")
-    
-            Script.FeatureConnections.RootPart["Anchored"] = rootPart:GetPropertyChangedSignal("Anchored"):Connect(function()
-                local lastAnchoredDelta = os.time() - Script.Lagback.LastAnchored
-
-                if rootPart.Anchored and Toggles.LagbackDetection.Value and Toggles.SpeedBypass.Value and not Script.Lagback.Detected then
-                    Script.Lagback.Anchors += 1
-                    Script.Lagback.LastAnchored = os.time()
-    
-                    if Script.Lagback.Anchors >= 2 and lastAnchoredDelta <= Script.Lagback.Threshold then
-                        Script.Lagback.Detected = true
-                        Script.Lagback.Anchors = 0
-                        Script.Lagback.LastSpeed = Options.SpeedSlider.Value
-                        Script.Lagback.LastFlySpeed = Options.FlySpeed.Value
-    
-                        Script.Functions.Alert({
-                            Title = "Lagback Detection",
-                            Description = "Fixing Lagback...",
-                        })
-                        Toggles.SpeedBypass:SetValue(false)
-                        local cframeChanged = false
-    
-                        if rootPart.Anchored == true then lastCheck = os.time(); repeat task.wait() until rootPart.Anchored == false or (os.time() - lastCheck) > 5 end
-                        task.spawn(function() lastCheck = os.time(); rootPart:GetPropertyChangedSignal("CFrame"):Wait(); cframeChanged = true; end)
-                        repeat task.wait() until cframeChanged or (os.time() - lastCheck) > 5
-                        if rootPart.Anchored == true then lastCheck = os.time(); repeat task.wait() until rootPart.Anchored == false or (os.time() - lastCheck) > 5 end
-    
-                        Toggles.SpeedBypass:SetValue(true)
-                        Options.SpeedSlider:SetValue(Script.Lagback.LastSpeed)
-                        Options.FlySpeed:SetValue(Script.Lagback.LastFlySpeed)
-                        Script.Lagback.Detected = false
-                        Script.Functions.Alert({
-                            Title = "Lagback Detection",
-                            Description = "Fixed Lagback!"
-                        })
-                    end
-                end
-            end)
 
             Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
                 if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
@@ -2754,11 +2708,6 @@ end
 local BypassGroupBox = Tabs.Exploits:AddRightGroupbox("Bypass") do
     BypassGroupBox:AddToggle("SpeedBypass", {
         Text = "Speed Bypass",
-        Default = false
-    })
-
-    BypassGroupBox:AddToggle("LagbackDetection", {
-        Text = "Lagback Detection",
         Default = false
     })
 
@@ -4126,7 +4075,13 @@ function Script.Functions.SpeedBypass()
 
     task.spawn(function()
         while Toggles.SpeedBypass.Value and collisionClone and not Library.Unloaded and not Script.FakeRevive.Enabled do
-            collisionClone.Massless = not collisionClone.Massless
+            if rootPart.Anchored then
+                collisionClone.Massless = true
+                repeat task.wait() until not rootPart.Anchored
+                task.wait(0.1)
+            else
+                collisionClone.Massless = not collisionClone.Massless
+            end
             task.wait(Options.SpeedBypassDelay.Value)
         end
 
