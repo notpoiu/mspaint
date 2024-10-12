@@ -511,7 +511,7 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
-function Script.Function.NotifyGlitch()
+function Script.Functions.NotifyGlitch()
     if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + VoidThresholdValues[floor.Value] and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
         table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
 
