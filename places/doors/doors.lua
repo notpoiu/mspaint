@@ -75,6 +75,7 @@ local Script = {
         Guidance = {},
         PaintingDebounce = {},
         UsedBreakers = {},
+        VoidGlitchNotifiedRooms = {}
     },
 
     FakeRevive = {
@@ -107,6 +108,15 @@ local SuffixPrefixes = {
 }
 local PrettyFloorName = {
     ["Fools"] = "Super Hard Mode",
+    ["Retro"] = "Retro Mode"
+}
+local FloorImages = {
+    ["Hotel"] = 16875079348,
+    ["Mines"] = 138779629462354,
+    ["Retro"] = 16992279648,
+    ["Rooms"] = 16874821428,
+    ["Fools"] = 17045908353,
+    ["Backdoor"] = 16874352892
 }
 
 
@@ -235,6 +245,15 @@ local SlotsName = {
     "Wide"
 }
 
+local VoidThresholdValues = {
+    ["Hotel"] = 3,
+    ["Mines"] = 3,
+    ["Retro"] = 3,
+    ["Rooms"] = 4,
+    ["Fools"] = 3,
+    ["Backdoor"] = 2,
+}
+
 local PromptTable = {
     GamePrompts = {},
 
@@ -350,6 +369,12 @@ local remotesFolder = if not isFools then ReplicatedStorage:WaitForChild("Remote
 
 --// Player DOORS Variables \\--
 local currentRoom = localPlayer:GetAttribute("CurrentRoom") or 0
+
+if not workspace.CurrentRooms:FindFirstChild(tostring(currentRoom)) then
+    currentRoom = latestRoom.Value
+    localPlayer:SetAttribute("CurrentRoom", currentRoom)
+end
+
 local nextRoom = currentRoom + 1
 
 local mainUI = playerGui:WaitForChild("MainUI")
@@ -497,6 +522,27 @@ getgenv()._internal_unload_mspaint = function()
     Library:Unload()
 end
 
+function Script.Functions.NotifyGlitch()
+    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + VoidThresholdValues[floor.Value] and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
+        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
+
+        local message = "Void/Glitch is coming once the next door is opened."
+
+        if isRooms then
+            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
+            message = "Void/Glitch is coming " .. (if roomsLeft == 0 then "once the next door is opened." else "in " .. roomsLeft .. " rooms") .. "."
+        end
+
+        Script.Functions.Alert({
+            Title = "ENTITIES",
+            Description = message,
+            Reason = "Go to the next room to avoid it.",
+
+            Warning = true
+        })
+    end
+end
+
 function Script.Functions.CalculateHideTime(room: number)
     for _, range in ipairs(HideTimeValues) do
         if room >= range.min and room <= range.max then
@@ -557,6 +603,7 @@ function Script.Functions.UpdateRPC()
         details = "Playing DOORS [ mspaint v2 ]",
         state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. if PrettyFloorName[floor.Value] then PrettyFloorName[floor.Value] else ("The " .. floor.Value)  .. ")",
         largeImage = {
+            assetId = FloorImages[floor.Value] or 16875079348,
             hoverText = "Using mspaint v2"
         },
         smallImage = {
@@ -2326,7 +2373,7 @@ do
             end
 
             Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
-                if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
+                if tonumber(touchedPart.Name) and touchedPart.Name == touchedPart.Parent.Name then
                     localPlayer:SetAttribute("CurrentRoom", tonumber(touchedPart.Name))
                 end
             end)
@@ -2941,7 +2988,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
         NotifyTab:AddDropdown("NotifyEntity", {
             AllowNull = true,
-            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm", "Void/Glitch"},
             Default = {},
             Multi = true,
 
@@ -3510,7 +3557,7 @@ task.spawn(function()
                 return GoalLocker.PrimaryPart
             end
 
-            return workspace.CurrentRooms[latestRoom.Value].Door.Door
+            return workspace.CurrentRooms[latestRoom.Value].RoomExit
         end
 
         local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
@@ -5056,7 +5103,7 @@ Toggles.Fullbright:OnChanged(function(value)
         Lighting.Ambient = Color3.new(1, 1, 1)
     else
         if alive then
-            Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+            Lighting.Ambient = workspace.CurrentRooms[currentRoom]:GetAttribute("Ambient")
         else
             Lighting.Ambient = Color3.new(0, 0, 0)
         end
@@ -5190,7 +5237,6 @@ Toggles.NoSpiderJumpscare:OnChanged(function(value)
 end)
 
 --// Connections \\--
-
 if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
     mtHook = hookmetamethod(game, "__namecall", function(self, ...)
         local args = {...}
@@ -5613,12 +5659,20 @@ end))
 if workspace.CurrentRooms:FindFirstChild(currentRoom) then
     task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
 end
+
+
+Library:GiveSignal(latestRoom:GetPropertyChangedSignal("Value"):Connect(function()
+    Script.Functions.NotifyGlitch()
+end))
+
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
     if currentRoom == localPlayer:GetAttribute("CurrentRoom") then return end
 
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
+
+    Script.Functions.NotifyGlitch()
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
@@ -6172,7 +6226,7 @@ Library:OnUnload(function()
     end
 
     if alive then
-        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+        Lighting.Ambient = workspace.CurrentRooms[currentRoom]:GetAttribute("Ambient")
     else
         Lighting.Ambient = Color3.new(0, 0, 0)
     end
