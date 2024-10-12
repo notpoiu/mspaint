@@ -5617,9 +5617,16 @@ Library:GiveSignal(latestRoom:GetPropertyChangedSignal("Value"):Connect(function
     if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
         table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
 
+        local message = "Void/Glitch is coming once the next door is opened."
+
+        if isRooms then
+            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
+            message = "Void/Glitch is coming in " .. (if roomsLeft == 0 then "the next room" else roomsLeft .. " rooms") .. "."
+        end
+
         Script.Functions.Alert({
             Title = "ENTITIES",
-            Description = "Void/Glitch is coming once the next door is opened.",
+            Description = message,
             Reason = "Go to the next room to avoid it.",
 
             Warning = true
@@ -5636,10 +5643,17 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
 
     if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
         table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
-        
+
+        local message = "Void/Glitch is coming once the next door is opened."
+
+        if isRooms then
+            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
+            message = "Void/Glitch is coming in " .. (if roomsLeft == 0 then "the next room" else roomsLeft .. " rooms") .. "."
+        end
+
         Script.Functions.Alert({
             Title = "ENTITIES",
-            Description = "Void/Glitch is coming once the next door is opened.",
+            Description = message,
             Reason = "Go to the next room to avoid it.",
 
             Warning = true
