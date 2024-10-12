@@ -5650,7 +5650,7 @@ end
 
 
 Library:GiveSignal(latestRoom:GetPropertyChangedSignal("Value"):Connect(function()
-    Script.Function.NotifyGlitch()
+    Script.Functions.NotifyGlitch()
 end))
 
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
@@ -5660,7 +5660,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
 
-    Script.Function.NotifyGlitch()
+    Script.Functions.NotifyGlitch()
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
