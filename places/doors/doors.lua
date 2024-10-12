@@ -106,6 +106,7 @@ local SuffixPrefixes = {
 }
 local PrettyFloorName = {
     ["Fools"] = "Super Hard Mode",
+    ["Retro"] = "Retro Mode"
 }
 local FloorImages = {
     ["Hotel"] = 16875079348,
