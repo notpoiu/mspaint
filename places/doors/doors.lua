@@ -349,6 +349,12 @@ local remotesFolder = if not isFools then ReplicatedStorage:WaitForChild("Remote
 
 --// Player DOORS Variables \\--
 local currentRoom = localPlayer:GetAttribute("CurrentRoom") or 0
+
+if not workspace.CurrentRooms:FindFirstChild(tostring(currentRoom)) then
+    currentRoom = latestRoom.Value
+    localPlayer:SetAttribute("CurrentRoom", currentRoom)
+end
+
 local nextRoom = currentRoom + 1
 
 local mainUI = playerGui:WaitForChild("MainUI")
@@ -2325,7 +2331,7 @@ do
             end
 
             Script.FeatureConnections.RootPart["Touched"] = rootPart.Touched:Connect(function(touchedPart)
-                if tonumber(touchedPart) and touchedPart.Name == touchedPart.Parent.Name then
+                if tonumber(touchedPart.Name) and touchedPart.Name == touchedPart.Parent.Name then
                     localPlayer:SetAttribute("CurrentRoom", tonumber(touchedPart.Name))
                 end
             end)
@@ -3509,7 +3515,7 @@ task.spawn(function()
                 return GoalLocker.PrimaryPart
             end
 
-            return workspace.CurrentRooms[latestRoom.Value].Door.Door
+            return workspace.CurrentRooms[latestRoom.Value].RoomExit
         end
 
         local _internal_mspaint_pathfinding_nodes = Instance.new("Folder", Workspace) do
@@ -5055,7 +5061,7 @@ Toggles.Fullbright:OnChanged(function(value)
         Lighting.Ambient = Color3.new(1, 1, 1)
     else
         if alive then
-            Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+            Lighting.Ambient = workspace.CurrentRooms[currentRoom]:GetAttribute("Ambient")
         else
             Lighting.Ambient = Color3.new(0, 0, 0)
         end
@@ -5189,7 +5195,6 @@ Toggles.NoSpiderJumpscare:OnChanged(function(value)
 end)
 
 --// Connections \\--
-
 if ExecutorSupport["hookmetamethod"] and ExecutorSupport["getnamecallmethod"] then
     mtHook = hookmetamethod(game, "__namecall", function(self, ...)
         local args = {...}
@@ -6212,7 +6217,7 @@ Library:OnUnload(function()
     end
 
     if alive then
-        Lighting.Ambient = workspace.CurrentRooms[localPlayer:GetAttribute("CurrentRoom")]:GetAttribute("Ambient")
+        Lighting.Ambient = workspace.CurrentRooms[currentRoom]:GetAttribute("Ambient")
     else
         Lighting.Ambient = Color3.new(0, 0, 0)
     end
