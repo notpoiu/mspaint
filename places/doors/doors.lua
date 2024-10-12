@@ -234,6 +234,15 @@ local SlotsName = {
     "Wide"
 }
 
+local VoidThresholdValues = {
+    ["Hotel"] = 3,
+    ["Mines"] = 3,
+    ["Retro"] = 3,
+    ["Rooms"] = 4,
+    ["Fools"] = 3,
+    ["Backdoor"] = 2,
+}
+
 local PromptTable = {
     GamePrompts = {},
 
@@ -500,6 +509,27 @@ end
 --// Functions \\--
 getgenv()._internal_unload_mspaint = function()
     Library:Unload()
+end
+
+function Script.Function.NotifyGlitch()
+    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + VoidThresholdValues[floor.Value] and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
+        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
+
+        local message = "Void/Glitch is coming once the next door is opened."
+
+        if isRooms then
+            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
+            message = "Void/Glitch is coming " .. (if roomsLeft == 0 then "once the next door is opened." else "in " .. roomsLeft .. " rooms") .. "."
+        end
+
+        Script.Functions.Alert({
+            Title = "ENTITIES",
+            Description = message,
+            Reason = "Go to the next room to avoid it.",
+
+            Warning = true
+        })
+    end
 end
 
 function Script.Functions.CalculateHideTime(room: number)
@@ -5618,25 +5648,9 @@ if workspace.CurrentRooms:FindFirstChild(currentRoom) then
     task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
 end
 
+
 Library:GiveSignal(latestRoom:GetPropertyChangedSignal("Value"):Connect(function()
-    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
-        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
-
-        local message = "Void/Glitch is coming once the next door is opened."
-
-        if isRooms then
-            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
-            message = "Void/Glitch is coming in " .. (if roomsLeft == 0 then "the next room" else roomsLeft .. " rooms") .. "."
-        end
-
-        Script.Functions.Alert({
-            Title = "ENTITIES",
-            Description = message,
-            Reason = "Go to the next room to avoid it.",
-
-            Warning = true
-        })
-    end
+    Script.Function.NotifyGlitch()
 end))
 
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
@@ -5646,24 +5660,7 @@ Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
 
-    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
-        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
-
-        local message = "Void/Glitch is coming once the next door is opened."
-
-        if isRooms then
-            local roomsLeft = (6 - (latestRoom.Value - currentRoom))
-            message = "Void/Glitch is coming in " .. (if roomsLeft == 0 then "the next room" else roomsLeft .. " rooms") .. "."
-        end
-
-        Script.Functions.Alert({
-            Title = "ENTITIES",
-            Description = message,
-            Reason = "Go to the next room to avoid it.",
-
-            Warning = true
-        })
-    end
+    Script.Function.NotifyGlitch()
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
