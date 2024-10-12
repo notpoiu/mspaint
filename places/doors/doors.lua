@@ -73,6 +73,7 @@ local Script = {
         Guidance = {},
         PaintingDebounce = {},
         UsedBreakers = {},
+        VoidGlitchNotifiedRooms = {}
     },
 
     FakeRevive = {
@@ -2939,7 +2940,7 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
     local NotifyTab = NotifyTabBox:AddTab("Notifier") do
         NotifyTab:AddDropdown("NotifyEntity", {
             AllowNull = true,
-            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm"},
+            Values = {"Blitz", "Lookman", "Rush", "Ambush", "Eyes", "Halt Room", "A60", "A120", "Jeff The Killer", "Gloombat Swarm", "Void/Glitch"},
             Default = {},
             Multi = true,
 
@@ -5611,12 +5612,39 @@ end))
 if workspace.CurrentRooms:FindFirstChild(currentRoom) then
     task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[currentRoom])
 end
+
+Library:GiveSignal(latestRoom:GetPropertyChangedSignal("Value"):Connect(function()
+    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
+        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
+
+        Script.Functions.Alert({
+            Title = "ENTITIES",
+            Description = "Void/Glitch is coming once the next door is opened.",
+            Reason = "Go to the next room to avoid it.",
+
+            Warning = true
+        })
+    end
+end))
+
 Library:GiveSignal(localPlayer:GetAttributeChangedSignal("CurrentRoom"):Connect(function()
     if currentRoom == localPlayer:GetAttribute("CurrentRoom") then return end
 
     currentRoom = localPlayer:GetAttribute("CurrentRoom")
     nextRoom = currentRoom + 1
     task.spawn(Script.Functions.UpdateRPC)
+
+    if Options.NotifyEntity.Value["Void/Glitch"] and latestRoom.Value > currentRoom + 3 and alive and not table.find(Script.Temp.VoidGlitchNotifiedRooms, currentRoom) then
+        table.insert(Script.Temp.VoidGlitchNotifiedRooms, currentRoom)
+        
+        Script.Functions.Alert({
+            Title = "ENTITIES",
+            Description = "Void/Glitch is coming once the next door is opened.",
+            Reason = "Go to the next room to avoid it.",
+
+            Warning = true
+        })
+    end
 
     local currentRoomModel = workspace.CurrentRooms:FindFirstChild(currentRoom)
     local nextRoomModel = workspace.CurrentRooms:FindFirstChild(nextRoom)
