@@ -107,6 +107,14 @@ local SuffixPrefixes = {
 local PrettyFloorName = {
     ["Fools"] = "Super Hard Mode",
 }
+local FloorImages = {
+    ["Hotel"] = "16875079348",
+    ["Mines"] = "138779629462354",
+    ["Retro"] = "16992279648",
+    ["Rooms"] = "16874821428",
+    ["Fools"] = "17045908353",
+    ["Backdoor"] = "16874352892",
+}
 
 
 local EntityTable = {
@@ -592,6 +600,7 @@ function Script.Functions.UpdateRPC()
         details = "Playing DOORS [ mspaint v2 ]",
         state = roomNumberPrefix .. prettifiedRoomNumber .. " (" .. if PrettyFloorName[floor.Value] then PrettyFloorName[floor.Value] else ("The " .. floor.Value)  .. ")",
         largeImage = {
+            assetId = FloorImages[floor.Value] or "16875079348",
             hoverText = "Using mspaint v2"
         },
         smallImage = {
