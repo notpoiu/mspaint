@@ -1,0 +1,46 @@
+name: Pushed
+
+on:
+  push:
+    paths:
+      - '**.luau'
+      - '**.lua'
+      - '**.rbxm'
+      - '**.json'
+  pull_request:
+    paths:
+      - '**.luau'
+      - '**.lua'
+      - '**.rbxm'
+      - '**.json'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Bundle Script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup RoKit
+        uses: CompeyDev/setup-rokit@v0.1.2
+
+      - name: Install Necessary Tools
+        run: |
+          rokit trust rojo-rbx/rojo
+          rokit trust lune-org/lune
+          rokit trust seaofvoices/darklua
+          rokit install
+
+      - name: Bundle
+        run: lune run Build bundle input='default.project.json' minify=true output='Distribution/Script.luau' env-name='Script' darklua-config-path='Build/DarkLua.json' temp-dir-base='Distribution' verbose=true ci-mode=true
+
+      - name: Upload Minified Script to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Script.luau
+          path: Distribution/Script.luau

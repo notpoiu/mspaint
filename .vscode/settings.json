@@ -1,0 +1,22 @@
+{
+    "luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
+    "luau-lsp.sourcemap.enabled": true,
+    "luau-lsp.require.mode": "relativeToFile",
+    "luau-lsp.require.directoryAliases": {
+        "@lune": ".lune"
+    },
+    "luau-lsp.types.definitionFiles": [".vscode/exploitTypes.d.luau"],
+    "luau-lsp.plugin.maximumRequestBodySize": "256mb",
+    "luau-lsp.types.robloxSecurityLevel": "RobloxScriptSecurity",
+    "luau-lsp.sourcemap.autogenerate": true,
+    "luau-lsp.sourcemap.includeNonScripts": true,
+    "luau-lsp.ignoreGlobs": [
+        
+    ],
+    "rerun.command": "lune run Build bundle input='default.project.json' minify=true output='Distribution/Script.luau' env-name='Script' darklua-config-path='Build/DarkLua.json' temp-dir-base='Distribution' verbose=true",
+    "robloxLsp.diagnostics.globals": [
+        "firesignal",
+        "wax",
+        "getgenv"
+    ]
+}
