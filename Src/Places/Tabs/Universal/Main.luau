@@ -110,7 +110,7 @@ end)
 
 Toggles.DisableRobloxVoid:OnChanged(function(value)
     if value then
-        workspace.FallenPartsDestroyHeight = math.huge
+        workspace.FallenPartsDestroyHeight = (0 / 0)
     else
         workspace.FallenPartsDestroyHeight = Script.LastVoidValue
     end
