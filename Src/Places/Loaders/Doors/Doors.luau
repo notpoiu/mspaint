@@ -1055,7 +1055,7 @@ shared.Connect:GiveSignal(shared.UserInputService.InputBegan:Connect(function(in
     if gameProcessed then return end
     if shared.UserInputService:GetFocusedTextBox() then return end
 
-    if Toggles.GrabBananaJeffToggle.Value and Script.IsFools and shared.Library.IsMobile and input.UserInputType == Enum.UserInputType.Touch then
+    if shared.CheckToggle("GrabBananaJeffToggle", true) and shared.Library.IsMobile and input.UserInputType == Enum.UserInputType.Touch then
         if Script.Temp.HoldingItem then
             return Script.Functions.ThrowBananaJeff()
         end
@@ -1241,6 +1241,10 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
                     toolRemote:FireServer()
                 end
             end
+        end
+
+        if Toggles.AnticheatManipulation.Value and (shared.Library.IsMobile or Options.AnticheatManipulationKey:GetState()) then
+            shared.Character:PivotTo(shared.Character:GetPivot() * CFrame.new(0, 0, 1000))
         end
 
         if Script.IsMines then

@@ -13,6 +13,7 @@ Services:GetServices({
     "UserInputService",
     "TextChatService",
     "ProximityPromptService",
+    "PathfindingService",
 
     "Workspace",
     "Lighting",
