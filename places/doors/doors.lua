@@ -389,6 +389,8 @@ local MinecartPathNodeColor = {
     White = Color3.new(1, 1, 1),
 }
 
+local pathfindQueue = {}
+
 --// Types \\--
 type ESP = {
     Color: Color3,
@@ -1797,8 +1799,6 @@ do
 end
 
 --// Pathfind Seek Nodes \\--
-do
-
     local function debugMinecart(...)
         if Toggles.MinecartTeleportDebug.Value == false then return end
         print(...)
@@ -1813,6 +1813,8 @@ do
         --     Reason = ""
         -- })
     end
+
+do
 
     --@Internal nodes sorted by @GetNodes or @Pathfind
     type tSortedNodes = {
@@ -1896,7 +1898,7 @@ do
 
         if not HasAlreadyPathfind(nodeArray) then 
             debugMinecart("[GetNodes] Pathfind not initialized for room: " .. room.Name)
-            Script.Functions.Pathfind(room)
+            Script.Functions.Pathfind(room, true)
             return 
         end
 
@@ -2014,9 +2016,7 @@ do
         debugMinecart("[Teleport] Player already teleported:" .. tostring(hasAlreadyTeleported))
 
         --Setup minecart teleport if room 45 is added.
-        local canInitializeTeleport = false
         if roomNumber == 45 and not hasAlreadyTeleported then
-            canInitializeTeleport = true
             task.spawn(function()
 
                 --Delete old notification
@@ -2037,15 +2037,12 @@ do
                     Time = progressPart
                 })
             end)
-        end
 
-        local MinecartFound = false -- update on next room, not instantly...
-        if hasAlreadyTeleported or canInitializeTeleport then
             debugMinecart("[Teleport] Minecart Teleport initialization room:" .. room.Name)
             --LSplash actually fix your game omg...
             local minecartRigs = {}
             task.spawn(function()
-                while not MinecartFound do
+                while not MinecartFound and not Library.Unloaded do
                     RunService.RenderStepped:Wait()
                     for idx, stuff: Instance in pairs(camera:GetChildren()) do
                         if stuff.Name ~= "MinecartRig" then continue end
@@ -2054,14 +2051,15 @@ do
                         repeat 
                             task.wait()
                         until not stuff:IsDescendantOf(camera) 
+                        debugMinecart("[Teleport] MinecartRig fake removed.")
                         table.remove(minecartRigs, idx)
                     end
                 end
             end)
 
-            while #minecartRigs == 0 do 
-                RunService.RenderStepped:Wait() 
-                debugMinecart("[Teleport] Waiting for minecart...")
+            while #minecartRigs == 0 and not Library.Unloaded do 
+                task.wait(0.5)
+                debugMinecart("[Teleport] Room to Teleport: " .. tostring(latestRoom.Value))
             end
 
             debugMinecart("[Teleport] MinecartRig Found! Initializing Teleport...")
@@ -2076,8 +2074,10 @@ do
 
             task.wait(1.5)
 
-            local startRoomNumber = roomNumber
+            local startRoomNumber = math.min(49, latestRoom.Value)
             while startRoomNumber >= 45 and startRoomNumber <= 49 do
+                if Library.Unloaded then break end
+                
                 debugMinecart("[Teleport] Teleporting to last node on room: " .. startRoomNumber)
                 local GetRoom = workspace.CurrentRooms[startRoomNumber]
                 local nodesList = PathfindGetNodes(GetRoom)
@@ -2118,10 +2118,18 @@ do
     end
 
     --@Return nil. Map the nodes in the __RunnerNodes__ and call features functions (@DrawNode; @Teleport).
-    function Script.Functions.Pathfind(room: Model)
+    function Script.Functions.Pathfind(room: Model, forcePathfind: boolean)
         if not HasNodesToPathfind(room) then return end
 
-        local nodesFolder = room:WaitForChild("RunnerNodes", 5.0)
+        if not forcePathfind then
+            --wait until SendRunnerNodes is trigged
+            local pathTimeout = tick() + 5
+            repeat task.wait()
+            until #pathfindQueue > 0 or tick() > pathTimeout
+            pcall(table.remove, pathfindQueue, 1)
+        end
+
+        local nodesFolder = room:FindFirstChild("RunnerNodes")
         if (nodesFolder == nil) then return end
 
         local nodes = nodesFolder:GetChildren()
@@ -5767,6 +5775,10 @@ Library:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     end
 end))
 
+Library:GiveSignal(remotesFolder.SendRunnerNodes.OnClientEvent:Connect(function(nodetree) --yea let's just not touch on that for now.
+    debugMinecart("[SendRunnerNodes] Nodes created for room: " .. tostring(nextRoom))
+    table.insert(pathfindQueue, nextRoom)
+end))
 
 if camera then task.spawn(Script.Functions.SetupCameraConnection, camera) end
 Library:GiveSignal(workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
