@@ -6,6 +6,7 @@ local Options = shared.Options
 local Script = shared.Script
 local Tabs = Script.Tabs
 
+Script.LastVoidValue = workspace.FallenPartsDestroyHeight
 Script.LastSpeed = if shared.Humanoid then shared.Humanoid.WalkSpeed else 16
 
 --// Main \\--
@@ -42,6 +43,11 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
 
     PlayerGroupBox:AddToggle("InstaInteract", {
         Text = "Instant Interact",
+        Default = false
+    })
+
+    PlayerGroupBox:AddToggle("DisableRobloxVoid", {
+        Text = "Disable Roblox Void",
         Default = false
     })
 
@@ -99,6 +105,14 @@ Toggles.JumpPowerHack:OnChanged(function(value)
         shared.Humanoid.JumpPower = if value then Options.JumpPower.Value else Script.LastJumpPower
     else
         shared.Humanoid.JumpHeight = if value then Options.JumpPower.Value else Script.LastJumpPower
+    end
+end)
+
+Toggles.DisableRobloxVoid:OnChanged(function(value)
+    if value then
+        workspace.FallenPartsDestroyHeight = math.huge
+    else
+        workspace.FallenPartsDestroyHeight = Script.LastVoidValue
     end
 end)
 
