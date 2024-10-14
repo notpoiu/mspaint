@@ -1055,52 +1055,50 @@ shared.Connect:GiveSignal(shared.UserInputService.InputBegan:Connect(function(in
     if gameProcessed then return end
     if shared.UserInputService:GetFocusedTextBox() then return end
 
-    if Toggles.GrabBananaJeffToggle ~= nil then
-        if Script.IsFools and shared.Library.IsMobile and input.UserInputType == Enum.UserInputType.Touch and Toggles.GrabBananaJeffToggle.Value then
-            if Script.Temp.HoldingItem then
-                return Script.Functions.ThrowBananaJeff()
-            end
-    
-            local touchPos = input.Position
-            local ray = workspace.CurrentCamera:ViewportPointToRay(touchPos.X, touchPos.Y)
-            local result = workspace:Raycast(ray.Origin, ray.Direction * 500, RaycastParams.new())
-            
-            local target = result and result.Instance
-    
-            if target and shared.isnetworkowner(target) then
-                if target.Name == "BananaPeel" then
-                    Script.Temp.ItemHoldTrack:Play()
-    
-                    if not target:FindFirstChildOfClass("BodyGyro") then
-                        Instance.new("BodyGyro", target)
-                    end
-    
-                    if not target:GetAttribute("Clip") then target:SetAttribute("Clip", target.CanCollide) end
-    
-                    target.CanTouch = false
-                    target.CanCollide = false
-    
-                    Script.Temp.HoldingItem = target
-                elseif target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
-                    Script.Temp.ItemHoldTrack:Play()
-    
-                    local jeff = target:FindFirstAncestorWhichIsA("Model")
-    
-                    for _, i in ipairs(jeff:GetDescendants()) do
-                        if i:IsA("BasePart") then
-                            if not i:GetAttribute("Clip") then i:SetAttribute("Clip", target.CanCollide) end
-    
-                            i.CanTouch = false
-                            i.CanCollide = false
-                        end
-                    end
-    
-                    if not jeff.PrimaryPart:FindFirstChildOfClass("BodyGyro") then
-                        Instance.new("BodyGyro", jeff.PrimaryPart)
-                    end
-    
-                    Script.Temp.HoldingItem = jeff.PrimaryPart
+    if Toggles.GrabBananaJeffToggle.Value and Script.IsFools and shared.Library.IsMobile and input.UserInputType == Enum.UserInputType.Touch then
+        if Script.Temp.HoldingItem then
+            return Script.Functions.ThrowBananaJeff()
+        end
+
+        local touchPos = input.Position
+        local ray = workspace.CurrentCamera:ViewportPointToRay(touchPos.X, touchPos.Y)
+        local result = workspace:Raycast(ray.Origin, ray.Direction * 500, RaycastParams.new())
+        
+        local target = result and result.Instance
+
+        if target and shared.isnetworkowner(target) then
+            if target.Name == "BananaPeel" then
+                Script.Temp.ItemHoldTrack:Play()
+
+                if not target:FindFirstChildOfClass("BodyGyro") then
+                    Instance.new("BodyGyro", target)
                 end
+
+                if not target:GetAttribute("Clip") then target:SetAttribute("Clip", target.CanCollide) end
+
+                target.CanTouch = false
+                target.CanCollide = false
+
+                Script.Temp.HoldingItem = target
+            elseif target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
+                Script.Temp.ItemHoldTrack:Play()
+
+                local jeff = target:FindFirstAncestorWhichIsA("Model")
+
+                for _, i in ipairs(jeff:GetDescendants()) do
+                    if i:IsA("BasePart") then
+                        if not i:GetAttribute("Clip") then i:SetAttribute("Clip", target.CanCollide) end
+
+                        i.CanTouch = false
+                        i.CanCollide = false
+                    end
+                end
+
+                if not jeff.PrimaryPart:FindFirstChildOfClass("BodyGyro") then
+                    Instance.new("BodyGyro", jeff.PrimaryPart)
+                end
+
+                Script.Temp.HoldingItem = jeff.PrimaryPart
             end
         end
     end

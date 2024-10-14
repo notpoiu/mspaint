@@ -29,6 +29,14 @@ function UICreator:CreateWindow()
     shared.NotifyStyle = "Linoria"
     shared.Notify = require("Notify")
 
+    --// Checker \\--
+    shared.CheckToggle = function(toggleName: string, value: boolean)
+        return shared.Toggles[toggleName] and shared.Toggles[toggleName].Value == value
+    end
+    shared.CheckOption = function(optionName: string, value: any)
+        return shared.Options[optionName] and (typeof(shared.Options[optionName].Value) == "table" and shared.Options[optionName].Value[value] or shared.Options[optionName].Value == value)
+    end
+
     --// Unload Handler \\--
     shared.Library:OnUnload(function()
         print("Unloading...")

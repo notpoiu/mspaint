@@ -252,10 +252,8 @@ Toggles.EnableJump:OnChanged(function(value)
         shared.Character:SetAttribute("CanJump", value)
     end
 
-    if Toggles.SpeedBypass ~= nil then
-        if not value and not Toggles.SpeedBypass.Value and Options.WalkSpeed.Max ~= 22 and not Script.FakeRevive.Enabled then
-            Options.WalkSpeed:SetMax(22)
-        end
+    if not value and shared.CheckToggle("SpeedBypass", true) and Options.WalkSpeed.Max ~= 22 and not Script.FakeRevive.Enabled then
+        Options.WalkSpeed:SetMax(22)
     end
 end)
 

@@ -30,52 +30,38 @@ function Script.Functions.SetupCurrentRoomConnection(room)
     shared.Connections["CurrentRoom"] = room.DescendantAdded:Connect(function(child)
         if not Toggles.ItemESP or not Toggles.GoldESP then return end
 
-        if Toggles.ItemESP ~= nil then
-            if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
-                Script.Functions.ItemESP(child)
-            end
+        if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
+            Script.Functions.ItemESP(child)
         end
 
-        if Toggles.GoldESP ~= nil then
-            if Toggles.GoldESP.Value and child.Name == "GoldPile" then
-                Script.Functions.GoldESP(child)
-            end
+        if Toggles.GoldESP.Value and child.Name == "GoldPile" then
+            Script.Functions.GoldESP(child)
         end
     end)
 end
 
 function Script.Functions.SetupRoomConnection(room)
-    if Options.NotifyEntity ~= nil then
-        if Options.NotifyEntity.Value["Halt Room"] and room:GetAttribute("RawName") == "HaltHallway" then
-            shared.Notify:Alert({
-                Title = "ENTITIES",
-                Description = "Halt will spawn in next room!",
-                Image = Script.EntityTable.NotifyReason["HaltRoom"].Image,
+    if Options.NotifyEntity.Value["Halt Room"] and room:GetAttribute("RawName") == "HaltHallway" then
+        shared.Notify:Alert({
+            Title = "ENTITIES",
+            Description = "Halt will spawn in next room!",
+            Image = Script.EntityTable.NotifyReason["HaltRoom"].Image,
 
-                Warning = true
-            })
-        end
+            Warning = true
+        })
     end
 
     for _, child in pairs(room:GetDescendants()) do
-        if Toggles.DeleteSeek ~= nil then
-            task.spawn(function()
-                if Toggles.DeleteSeek.Value and shared.RootPart and child.Name == "Collision" then
-                    Script.Functions.DeleteSeek(child)
-                end
-            end)
+        if Toggles.DeleteSeek.Value and shared.RootPart and child.Name == "Collision" then
+            task.spawn(Script.Functions.DeleteSeek, child)
         end
 
         task.spawn(Script.Functions.ChildCheck, child)
     end
 
     shared.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
-        if Toggles.DeleteSeek ~= nil then
-            task.spawn(function()
-                if Toggles.DeleteSeek.Value and shared.RootPart and child.Name == "Collision" then
-                    Script.Functions.DeleteSeek(child)
-                end
-            end)
+        if Toggles.DeleteSeek.Value and shared.RootPart and child.Name == "Collision" then
+            task.spawn(Script.Functions.DeleteSeek, child)
         end
 
         task.delay(0.1, Script.Functions.ChildCheck, child)
@@ -83,7 +69,7 @@ function Script.Functions.SetupRoomConnection(room)
 end
 
 function Script.Functions.SetupDropConnection(drop)
-    if Toggles.ItemESP ~= nil and Toggles.ItemESP.Value then
+    if Toggles.ItemESP.Value then
         Script.Functions.ItemESP(drop, true)
     end
 
@@ -99,7 +85,7 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     shared.Character = newCharacter
     if shared.Character then
-        if Toggles.EnableJump ~= nil and Toggles.EnableJump.Value then
+        if Toggles.EnableJump.Value then
             shared.Character:SetAttribute("CanJump", true)
         end
 
@@ -115,20 +101,18 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             local output, count = string.gsub(code, "_", "x")
             local padlock = workspace:FindFirstChild("Padlock", true)
 
-            if Options.AutoLibraryDistance ~= nil and Toggles.AutoLibrarySolver ~= nil then
-                if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
-                    Script.RemotesFolder.PL:FireServer(code)
-                end
+            if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
+                Script.RemotesFolder.PL:FireServer(code)
             end
 
-            if (Toggles.NotifyPadlock ~= nil and Toggles.NotifyPadlock.Value) and count < 5 then
+            if Toggles.NotifyPadlock.Value and count < 5 then
                 shared.Notify:Alert({
                     Title = "Padlock Code",
                     Description = string.format("Library Code: %s", output),
                     Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                 })
 
-                if Toggles.NotifyChat ~= nil and Toggles.NotifyChat.Value and count == 0 then
+                if Toggles.NotifyChat.Value and count == 0 then
                     shared.RBXGeneral:SendAsync(string.format("Library Code: %s", output))
                 end
             end
@@ -250,13 +234,11 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     shared.RootPart = shared.Character:WaitForChild("HumanoidRootPart")
     if shared.RootPart then
-        if Toggles.NoAccel ~= nil then 
-            if Toggles.NoAccel.Value then
-                Script.Temp.NoAccelValue = shared.RootPart.CustomPhysicalProperties.Density
-                
-                local existingProperties = shared.RootPart.CustomPhysicalProperties
-                shared.RootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
-            end
+        if Toggles.NoAccel.Value then
+            Script.Temp.NoAccelValue = shared.RootPart.CustomPhysicalProperties.Density
+            
+            local existingProperties = shared.RootPart.CustomPhysicalProperties
+            shared.RootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
         end
 
         Script.FeatureConnections.RootPart["Touched"] = shared.RootPart.Touched:Connect(function(touchedPart)
@@ -268,10 +250,8 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
 
     Script.Collision = shared.Character:WaitForChild("Collision")
     if Script.Collision then
-        if Toggles.UpsideDown ~= nil then
-            if Toggles.UpsideDown.Value then
-                Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
-            end
+        if Toggles.UpsideDown.Value then
+            Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
         end
 
         Script.CollisionClone = Script.Collision:Clone()
@@ -345,20 +325,18 @@ function Script.Functions.SetupOtherPlayerConnection(player: Player)
             local output, count = string.gsub(code, "_", "x")
             local padlock = workspace:FindFirstChild("Padlock", true)
 
-            if Options.AutoLibraryDistance ~= nil and Toggles.AutoLibrarySolver ~= nil then
-                if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
-                    Script.RemotesFolder.PL:FireServer(code)
-                end
+            if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
+                Script.RemotesFolder.PL:FireServer(code)
             end
 
-            if (Toggles.NotifyPadlock ~= nil and Toggles.NotifyPadlock.Value) and count < 5 then
+            if Toggles.NotifyPadlock.Value and count < 5 then
                 shared.Notify:Alert({
                     Title = "Padlock Code",
                     Description = string.format("Library Code: %s", output),
                     Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
                 })
 
-                if Toggles.NotifyChat ~= nil and Toggles.NotifyChat.Value and count == 0 then
+                if Toggles.NotifyChat.Value and count == 0 then
                     shared.RBXGeneral:SendAsync(string.format("Library Code: %s", output))
                 end
             end
