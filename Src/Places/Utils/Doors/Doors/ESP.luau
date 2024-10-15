@@ -216,7 +216,11 @@ function Script.Functions.ObjectiveESP(child)
                 if pumpEsp then pumpEsp.Destroy() end
             end)
         end
+    else 
+        return false
     end
+
+    return true
 end
 
 function Script.Functions.EntityESP(entity)

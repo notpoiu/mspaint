@@ -43,7 +43,9 @@ function Script.Functions.SetupRoomConnection(room)
 
     shared.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
         if tonumber(room.Name) == Script.CurrentRoom then
-            if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
+            if Script.Functions.ObjectiveESP(child) then
+                return
+            elseif Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
                 Script.Functions.ItemESP(child)
                 return
             elseif Toggles.GoldESP.Value and child.Name == "GoldPile" then
