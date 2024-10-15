@@ -190,6 +190,11 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             oldConnection:Disconnect()
         end
 
+        Script.Tracks.TwerkTrack = shared.Humanoid:LoadAnimation(Script.Anims.TwerkAnim)
+        if Toggles.Twerk.Value then
+            Script.Tracks.TwerkTrack:Play()
+        end
+
         Script.FeatureConnections.Humanoid["Move"] = shared.Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()
             if not Toggles.FastClosetExit then return end
 
@@ -220,15 +225,8 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end)
 
         if Script.IsFools then
-            local HoldingAnimation = Instance.new("Animation") do
-                HoldingAnimation.AnimationId = "rbxassetid://10479585177"
-                Script.Temp.ItemHoldTrack = shared.Humanoid:LoadAnimation(HoldingAnimation)
-            end
-
-            local ThrowAnimation = Instance.new("Animation") do
-                ThrowAnimation.AnimationId = "rbxassetid://10482563149"
-                Script.Temp.ItemThrowTrack = shared.Humanoid:LoadAnimation(ThrowAnimation)
-            end
+            Script.Tracks.ItemHoldTrack = shared.Humanoid:LoadAnimation(Script.Anims.HoldAnim)
+            Script.Tracks.ItemThrowTrack = shared.Humanoid:LoadAnimation(Script.Anims.ThrowAnim)
         end
     end
 

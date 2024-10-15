@@ -96,7 +96,7 @@ Script.LobbyElevators = workspace:WaitForChild("Lobby"):WaitForChild("LobbyEleva
 --// Functions \\--
 function Script.Functions.SetupVariables()
     if wax.shared.ExecutorSupport["require"] then
-        for achievementName, _ in pairs(wax.require(game:GetService("ReplicatedStorage").Achievements)) do
+        for achievementName, _ in pairs(wax.require(shared.ReplicatedStorage.Achievements)) do
             if table.find(Script.Achievements, achievementName) then continue end
     
             table.insert(Script.Achievements, achievementName)

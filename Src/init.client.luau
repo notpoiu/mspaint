@@ -15,6 +15,9 @@ Services:GetServices({
     "ProximityPromptService",
     "PathfindingService",
 
+    "CoreGui",
+    "StarterGui",
+
     "Workspace",
     "Lighting",
     "ReplicatedStorage",

@@ -710,8 +710,8 @@ elseif Script.IsFools then
         function Script.Functions.ThrowBananaJeff()
             local target = Script.Temp.HoldingItem
 
-            Script.Temp.ItemHoldTrack:Stop()
-            Script.Temp.ItemThrowTrack:Play()
+            Script.Tracks.ItemHoldTrack:Stop()
+            Script.Tracks.ItemThrowTrack:Play()
 
             task.wait(0.35)
 

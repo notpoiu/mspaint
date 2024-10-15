@@ -56,7 +56,7 @@ Script._mspaint_custom_captions = Instance.new("ScreenGui") do
 
         if Script._mspaint_custom_captions.Parent == shared.ReplicatedStorage then
             local success = pcall(function()
-                Script._mspaint_custom_captions.Parent = if gethui then gethui() else game:GetService("CoreGui")
+                Script._mspaint_custom_captions.Parent = if gethui then gethui() else shared.CoreGui
             end)
 
             if not success then

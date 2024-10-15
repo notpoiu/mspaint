@@ -312,6 +312,17 @@ Script.MinecartPathfind = {
     -- minecart chase [45 to 49]
 }
 
+Script.Anims = {}
+Script.Anims.HoldAnim = Instance.new("Animation"); Script.Anims.HoldAnim.AnimationId = "rbxassetid://10479585177"
+Script.Anims.ThrowAnim = Instance.new("Animation"); Script.Anims.ThrowAnim.AnimationId = "rbxassetid://10482563149"
+Script.Anims.TwerkAnim = Instance.new("Animation"); Script.Anims.TwerkAnim.AnimationId = "rbxassetid://12874447851"
+
+Script.Tracks = {
+    ItemHoldTrack = nil,
+    ItemThrowTrack = nil,
+    TwerkTrack = nil,
+}
+
 function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
@@ -362,7 +373,7 @@ Script._mspaint_custom_captions = Instance.new("ScreenGui") do
 
         if Script._mspaint_custom_captions.Parent == shared.ReplicatedStorage then
             local success = pcall(function()
-                Script._mspaint_custom_captions.Parent = if gethui then gethui() else game:GetService("CoreGui")
+                Script._mspaint_custom_captions.Parent = if gethui then gethui() else shared.CoreGui
             end)
 
             if not success then
@@ -941,10 +952,6 @@ shared.Connect:GiveSignal(shared.PlayerGui.ChildAdded:Connect(function(child)
 end))
 
 --// ESP Handler \\--
-if workspace.CurrentRooms:FindFirstChild(Script.CurrentRoom) then
-    task.spawn(Script.Functions.SetupCurrentRoomConnection, workspace.CurrentRooms[Script.CurrentRoom])
-end
-
 shared.Connect:GiveSignal(Script.LatestRoom:GetPropertyChangedSignal("Value"):Connect(function()
     Script.Functions.NotifyGlitch()
 end))
@@ -1045,8 +1052,6 @@ shared.Connect:GiveSignal(shared.LocalPlayer:GetAttributeChangedSignal("CurrentR
                 Script.Functions.GoldESP(asset)
             end
         end
-    
-        Script.Functions.SetupCurrentRoomConnection(currentRoomModel)
     end
 end))
 
@@ -1068,7 +1073,7 @@ shared.Connect:GiveSignal(shared.UserInputService.InputBegan:Connect(function(in
 
         if target and shared.isnetworkowner(target) then
             if target.Name == "BananaPeel" then
-                Script.Temp.ItemHoldTrack:Play()
+                Script.Tracks.ItemHoldTrack:Play()
 
                 if not target:FindFirstChildOfClass("BodyGyro") then
                     Instance.new("BodyGyro", target)
@@ -1081,16 +1086,16 @@ shared.Connect:GiveSignal(shared.UserInputService.InputBegan:Connect(function(in
 
                 Script.Temp.HoldingItem = target
             elseif target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
-                Script.Temp.ItemHoldTrack:Play()
+                Script.Tracks.ItemHoldTrack:Play()
 
                 local jeff = target:FindFirstAncestorWhichIsA("Model")
 
-                for _, i in ipairs(jeff:GetDescendants()) do
-                    if i:IsA("BasePart") then
-                        if not i:GetAttribute("Clip") then i:SetAttribute("Clip", target.CanCollide) end
+                for _, part in ipairs(jeff:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        if not part:GetAttribute("Clip") then part:SetAttribute("Clip", target.CanCollide) end
 
-                        i.CanTouch = false
-                        i.CanCollide = false
+                        part.CanTouch = false
+                        part.CanCollide = false
                     end
                 end
 
@@ -1309,7 +1314,7 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
                 if not target then return end
                 if isGrabbing and shared.isnetworkowner(target) then
                     if target.Name == "BananaPeel" then
-                        Script.Temp.ItemHoldTrack:Play()
+                        Script.Tracks.ItemHoldTrack:Play()
     
                         if not target:FindFirstChildOfClass("BodyGyro") then
                             Instance.new("BodyGyro", target)
@@ -1322,7 +1327,7 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
     
                         Script.Temp.HoldingItem = target
                     elseif target:FindFirstAncestorWhichIsA("Model").Name == "JeffTheKiller" then
-                        Script.Temp.ItemHoldTrack:Play()
+                        Script.Tracks.ItemHoldTrack:Play()
     
                         local jeff = target:FindFirstAncestorWhichIsA("Model")
     
@@ -1458,6 +1463,14 @@ shared.Library:OnUnload(function()
         shared.RootPart.CustomPhysicalProperties = PhysicalProperties.new(Script.Temp.NoAccelValue, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
     end
 
+    if Script.Tracks.ItemHoldTrack then Script.Tracks.ItemHoldTrack:Stop() end
+    if Script.Tracks.ItemThrowTrack then Script.Tracks.ItemThrowTrack:Stop() end
+    if Script.Tracks.TwerkTrack then Script.Tracks.TwerkTrack:Stop() end
+
+    for _, animation in pairs(Script.Anims) do
+        animation:Destroy()
+    end
+
     if Script.IsBackdoor then
         local clientRemote = Script.FloorReplicated.ClientRemote
         local internal_temp_mspaint = clientRemote:FindFirstChild("_mspaint")
@@ -1499,7 +1512,6 @@ shared.Library:OnUnload(function()
     if Script.CollisionClone then Script.CollisionClone:Destroy() end
 
     for _, antiBridge in pairs(Script.Temp.Bridges) do antiBridge:Destroy() end
-    if Script.Temp.FlyBody then Script.Temp.FlyBody:Destroy() end
 
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
