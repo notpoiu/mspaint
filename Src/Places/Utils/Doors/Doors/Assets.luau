@@ -36,7 +36,6 @@ function Script.Functions.ChildCheck(child)
         task.defer(function()
             if not child:GetAttribute("Hold") then child:SetAttribute("Hold", child.HoldDuration) end
             if not child:GetAttribute("Distance") then child:SetAttribute("Distance", child.MaxActivationDistance) end
-            if not child:GetAttribute("Enabled") then child:SetAttribute("Enabled", child.Enabled) end
             if not child:GetAttribute("Clip") then child:SetAttribute("Clip", child.RequiresLineOfSight) end
         end)
 
@@ -47,15 +46,13 @@ function Script.Functions.ChildCheck(child)
                 child.HoldDuration = 0
             end
     
-            if Toggles.PromptClip.Value and Script.Functions.PromptCondition(child) then
+            if Toggles.PromptClip.Value then
                 child.RequiresLineOfSight = false
             end
         end)
 
         table.insert(Script.PromptTable.GamePrompts, child)
-    end
-
-    if child:IsA("Model") then
+    elseif child:IsA("Model") then
         if child.Name == "ElevatorBreaker" and Toggles.AutoBreakerSolver.Value then
             Script.Functions.SolveBreakerBox(child)
         end

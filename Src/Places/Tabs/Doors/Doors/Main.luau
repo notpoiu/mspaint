@@ -301,10 +301,7 @@ Toggles.PromptClip:OnChanged(function(value)
             if value then
                 prompt.RequiresLineOfSight = false
             else
-                if prompt:GetAttribute("Enabled") and prompt:GetAttribute("Clip") then
-                    prompt.Enabled = prompt:GetAttribute("Enabled")
-                    prompt.RequiresLineOfSight = prompt:GetAttribute("Clip")
-                end
+                prompt.RequiresLineOfSight = prompt:GetAttribute("Clip") or true
             end
         end
     end

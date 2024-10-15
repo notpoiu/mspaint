@@ -1526,7 +1526,15 @@ shared.Library:OnUnload(function()
     end
     
     for _, object in pairs(workspace.CurrentRooms:GetDescendants()) do
-        if object:IsA("BasePart") then
+        if Script.Functions.PromptCondition(object) then
+            if not object:GetAttribute("Hold") then object:SetAttribute("Hold", object.HoldDuration) end
+            if not object:GetAttribute("Distance") then object:SetAttribute("Distance", object.MaxActivationDistance) end
+            if not object:GetAttribute("Clip") then object:SetAttribute("Clip", object.RequiresLineOfSight) end
+
+            object.HoldDuration = object:GetAttribute("Hold")
+            object.MaxActivationDistance = object:GetAttribute("Distance")
+            object.RequiresLineOfSight = object:GetAttribute("Clip")
+        elseif object:IsA("BasePart") then
             if not object:GetAttribute("Material") then object:SetAttribute("Material", object.Material) end
             if not object:GetAttribute("Reflectance") then object:SetAttribute("Reflectance", object.Reflectance) end
 
