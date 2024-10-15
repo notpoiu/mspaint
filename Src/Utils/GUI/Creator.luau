@@ -50,6 +50,8 @@ function UICreator:CreateWindow()
             connection:Disconnect()
         end
 
+        getgenv().mspaint_loading = false
+        getgenv().mspaint_loaded = false
         shared.Library.Unloaded = true
         print("Unloaded!")
     end)
