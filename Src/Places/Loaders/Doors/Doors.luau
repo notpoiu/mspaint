@@ -1512,6 +1512,28 @@ shared.Library:OnUnload(function()
             connection:Disconnect()
         end
     end
+    
+    for _, object in pairs(workspace.CurrentRooms:GetDescendants()) do
+        if object:IsA("BasePart") then
+            if not object:GetAttribute("Material") then object:SetAttribute("Material", object.Material) end
+            if not object:GetAttribute("Reflectance") then object:SetAttribute("Reflectance", object.Reflectance) end
+
+            object.Material = object:GetAttribute("Material")
+            object.Reflectance = object:GetAttribute("Reflectance")
+        elseif object:IsA("Decal") then
+            if not object:GetAttribute("Transparency") then object:SetAttribute("Transparency", object.Transparency) end
+
+            if not table.find(Script.SlotsName, object.Name) then
+                object.Transparency = object:GetAttribute("Transparency")
+            end
+        end
+    end
+
+    workspace.Terrain.WaterReflectance = 1
+    workspace.Terrain.WaterTransparency = 1
+    workspace.Terrain.WaterWaveSize = 0.05
+    workspace.Terrain.WaterWaveSpeed = 8
+    shared.Lighting.GlobalShadows = true
 
     print("Unloaded DOORS!")
 end)
