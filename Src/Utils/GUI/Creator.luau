@@ -10,6 +10,8 @@ shared.Toggles = getgenv().Linoria.Toggles
 shared.Options = getgenv().Linoria.Options
 
 getgenv()._internal_unload_mspaint = function()
+    getgenv().mspaint_loading = false
+    getgenv().mspaint_loaded = false
     task.spawn(shared.Library.Unload)
 end
 
@@ -48,8 +50,6 @@ function UICreator:CreateWindow()
             connection:Disconnect()
         end
 
-        getgenv().mspaint_loading = false
-        getgenv().mspaint_loaded = false
         shared.Library.Unloaded = true
         print("Unloaded!")
     end)
