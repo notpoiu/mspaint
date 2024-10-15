@@ -22,24 +22,6 @@ function Script.Functions.SetupCameraConnection(camera)
     end)
 end
 
-function Script.Functions.SetupCurrentRoomConnection(room)
-    if shared.Connections["CurrentRoom"] then
-        shared.Connections["CurrentRoom"]:Disconnect()
-    end
-
-    shared.Connections["CurrentRoom"] = room.DescendantAdded:Connect(function(child)
-        if not Toggles.ItemESP or not Toggles.GoldESP then return end
-
-        if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
-            Script.Functions.ItemESP(child)
-        end
-
-        if Toggles.GoldESP.Value and child.Name == "GoldPile" then
-            Script.Functions.GoldESP(child)
-        end
-    end)
-end
-
 function Script.Functions.SetupRoomConnection(room)
     if Options.NotifyEntity.Value["Halt Room"] and room:GetAttribute("RawName") == "HaltHallway" then
         shared.Notify:Alert({
@@ -60,6 +42,16 @@ function Script.Functions.SetupRoomConnection(room)
     end
 
     shared.Connections[room.Name .. "DescendantAdded"] = room.DescendantAdded:Connect(function(child)
+        if tonumber(room.Name) == Script.CurrentRoom then
+            if Toggles.ItemESP.Value and Script.Functions.ItemCondition(child) then
+                Script.Functions.ItemESP(child)
+                return
+            elseif Toggles.GoldESP.Value and child.Name == "GoldPile" then
+                Script.Functions.GoldESP(child)
+                return
+            end
+        end
+
         if Toggles.DeleteSeek.Value and shared.RootPart and child.Name == "Collision" then
             task.spawn(Script.Functions.DeleteSeek, child)
         end
