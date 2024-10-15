@@ -9,13 +9,12 @@ shared.ESPLibrary = ESPLibrary
 
 type ESP = {
     Color: Color3,
-    IsEntity: boolean,
-    IsDoubleDoor: boolean,
     Object: Instance,
     Offset: Vector3,
     Text: string,
     TextParent: Instance,
-    Type: string
+    Type: string,
+    Player: Player,
 }
 
 function Script.Functions.ESP(args: ESP)
@@ -26,25 +25,13 @@ function Script.Functions.ESP(args: ESP)
         Text = args.Text or "No Text",
         Color = args.Color or Color3.new(),
         Offset = args.Offset or Vector3.zero,
-        IsEntity = args.IsEntity or false,
-        IsDoubleDoor = args.IsDoubleDoor or false,
         Type = args.Type or "None",
+        Player = args.Player or false,
         OnDestroy = args.OnDestroy or nil,
 
         Invisible = false,
         Humanoid = nil
     }
-
-    if ESPManager.IsEntity and ESPManager.Object.PrimaryPart then
-        if ESPManager.Object.PrimaryPart.Transparency == 1 then
-            ESPManager.Invisible = true
-            ESPManager.Object.PrimaryPart.Transparency = 0.99
-        end
-
-        local humanoid = ESPManager.Object:FindFirstChildOfClass("Humanoid")
-        if not humanoid then humanoid = Instance.new("Humanoid", ESPManager.Object) end
-        ESPManager.Humanoid = humanoid
-    end
 
     local ESPInstance = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
@@ -76,28 +63,43 @@ function Script.Functions.ESP(args: ESP)
             if ESPManager.Humanoid then ESPManager.Humanoid:Destroy() end
         end
     })
-
-    table.insert(Script.ESPTable[args.Type], ESPInstance)
+    
+    if ESPManager.Player then
+        Script.ESPTable[ESPManager.Type][ESPManager.Player] = ESPInstance
+    else
+        table.insert(Script.ESPTable[ESPManager.Type], ESPInstance)
+    end
 
     return ESPInstance
 end
 
-function Script.Functions.PlayerESP(character: Model)
-    if not (character and character.PrimaryPart and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0) then return end
+function Script.Functions.PlayerESP(player: Player)
+    if not (player.Character and player.Character.PrimaryPart and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0) then return end
 
     local playerEsp = Script.Functions.ESP({
         Type = "Player",
-        Object = character,
-        Text = string.format("%s [%.1f]", character.Name, character.Humanoid.Health),
-        TextParent = character.PrimaryPart,
-        Color = Options.PlayerEspColor.Value
+        Object = player.Character,
+        Text = string.format("%s [%.1f]", player.Name, player.Character.Humanoid.Health),
+        TextParent = player.Character.PrimaryPart,
+        Player = player,
+        Color = if Toggles.ESPTeamColor.Value then player.TeamColor.Color else Options.PlayerEspColor.Value
     })
 
-    Script.FeatureConnections.Player[character.Name] = character.Humanoid.HealthChanged:Connect(function(newHealth)
+    Script.FeatureConnections.Player[player.Name .. "TeamColor"] = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+        if Toggles.ESPTeamColor.Value then
+            playerEsp.Update({
+                FillColor = player.TeamColor.Color,
+                OutlineColor = player.TeamColor.Color,
+                TextColor = player.TeamColor.Color,
+            })
+        end
+    end)
+
+    Script.FeatureConnections.Player[player.Name .. "Health"] = player.Character.Humanoid.HealthChanged:Connect(function(newHealth)
         if newHealth > 0 then
-            playerEsp.SetText(string.format("%s [%.1f]", character.Name, newHealth))
+            playerEsp.SetText(string.format("%s [%.1f]", player.Name, newHealth))
         else
-            if Script.FeatureConnections.Player[character.Name] then Script.FeatureConnections.Player[character.Name]:Disconnect() end
+            if Script.FeatureConnections.Player[player.Name .. "Health"] then Script.FeatureConnections.Player[player.Name .. "Health"]:Disconnect() end
             playerEsp.Destroy()
         end
     end)

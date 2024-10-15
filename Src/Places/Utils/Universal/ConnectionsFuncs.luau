@@ -52,14 +52,14 @@ end
 function Script.Functions.SetupOtherPlayerConnection(player: Player)
     if player.Character then
         if Toggles.PlayerESP and Toggles.PlayerESP.Value then
-            Script.Functions.PlayerESP(player.Character)
+            Script.Functions.PlayerESP(player)
         end
     end
 
     shared.Connect:GiveSignal(player.CharacterAdded:Connect(function(newCharacter)
         task.delay(0.1, function()
             if Toggles.PlayerESP and Toggles.PlayerESP.Value then
-                Script.Functions.PlayerESP(player.Character)
+                Script.Functions.PlayerESP(player)
             end
         end)
     end))

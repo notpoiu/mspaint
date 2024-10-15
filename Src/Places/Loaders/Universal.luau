@@ -14,6 +14,7 @@ Script.ESPTable = {
     Player = {},
     None = {}
 }
+Script.AimbotTween = nil
 
 shared.Character = shared.LocalPlayer.Character or shared.LocalPlayer.CharacterAdded:Wait()
 Script.GameName = "a roblox experience"
@@ -35,7 +36,10 @@ function Script.Functions.UpdateBloxstrapRPC()
     })
 end
 
+
+shared.Load("Utils", "Player")
 shared.Load("Utils", "Assets")
+shared.Load("Utils", "Aimbot")
 shared.Load("Utils", "ESP")
 
 shared.Load("Utils", "ConnectionsFuncs")
@@ -43,10 +47,12 @@ shared.Load("Utils", "ConnectionsFuncs")
 --// Tabs \\--
 Script.Tabs = {
     Main = shared.Window:AddTab("Main"),
+    Exploits = shared.Window:AddTab("Exploits"),
     Visuals = shared.Window:AddTab("Visuals")
 }
 
 shared.Load("Tabs", "Main")
+shared.Load("Tabs", "Exploits")
 shared.Load("Tabs", "Visuals")
 
 --// Code \\--
@@ -83,6 +89,29 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
                 part.CanCollide = false
             end        
         end
+
+        if Toggles.EnableAimbot.Value and (shared.Library.IsMobile or Options.EnableAimbotKey:GetState()) then
+            local closest = nil
+            if Options.AimbotClosestMethod.Value == "Mouse" then
+                closest = Script.Functions.GetClosestFromMouse()
+            elseif Options.AimbotClosestMethod.Value == "Character" then
+                closest = Script.Functions.GetClosestFromCharacter()
+            end
+
+            if closest then
+                if Toggles.AimbotSmooth.Value then
+                    Script.AimbotTween = shared.TweenService:Create(shared.Camera, TweenInfo.new(Options.AimbotSmoothness.Value / 100, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
+                        CFrame = CFrame.new(shared.Camera.CFrame.Position, closest[Options.AimbotTargetPart.Value].Position)
+                    })
+                    Script.AimbotTween:Play()
+                else
+                    shared.Camera.CFrame = CFrame.new(shared.Camera.CFrame.Position, closest[Options.AimbotTargetPart.Value].Position)
+                end
+            end
+        elseif Script.AimbotTween then
+            Script.AimbotTween:Cancel()
+            Script.AimbotTween = nil
+        end
     end
 end))
 
@@ -111,6 +140,12 @@ shared.Library:OnUnload(function()
                 reset = true
             }
         })
+    end
+
+    for _, espType in pairs(Script.ESPTable) do
+        for _, esp in pairs(espType) do
+            esp.Destroy()
+        end
     end
 end)
 

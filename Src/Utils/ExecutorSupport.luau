@@ -38,7 +38,7 @@ test("queue_on_teleport", queue_on_teleport, false)
 test("getcallingscript", getcallingscript, false)
 
 test("require", function()
-    wax.require(shared.Players.LocalPlayer:WaitForChild("PlayerScripts", math.huge):WaitForChild("PlayerModule", 5)) -- ReplicatedStorage:WaitForChild("ModuleScript")
+    wax.require(shared.Players.LocalPlayer:WaitForChild("PlayerScripts"):FindFirstChildWhichIsA("ModuleScript", true)) -- ReplicatedStorage:WaitForChild("ModuleScript")
 end)
 test("hookmetamethod", function()
     local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })

@@ -18,6 +18,11 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     end
 
     local ESPSettingsTab = ESPTabBox:AddTab("Settings") do
+        ESPSettingsTab:AddToggle("ESPTeamColor", {
+            Text = "Team Color",
+            Default = false,
+        })
+
         ESPSettingsTab:AddToggle("ESPRainbow", {
             Text = "Rainbow ESP",
             Default = false,
@@ -94,7 +99,7 @@ local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     end
 end
 
-local AmbientGroupBox = Tabs.Visuals:AddLeftGroupbox("Ambient") do
+local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
     AmbientGroupBox:AddToggle("Fullbright", {
         Text = "Fullbright",
         Default = false,
@@ -115,9 +120,9 @@ end
 Toggles.PlayerESP:OnChanged(function(value)
     if value then
         for _, player in pairs(shared.Players:GetPlayers()) do
-            if player == shared.LocalPlayer or not player.Character then continue end
+            if not (player ~= shared.LocalPlayer and player.Character) then continue end
             
-            Script.Functions.PlayerESP(player.Character)
+            Script.Functions.PlayerESP(player)
         end
     else
         for _, connection in pairs(Script.FeatureConnections.Player) do
@@ -129,7 +134,29 @@ Toggles.PlayerESP:OnChanged(function(value)
     end
 end)
 
+Options.PlayerEspColor:OnChanged(function(value)
+    if Toggles.ESPTeamColor then return end
+    for _, esp in pairs(Script.ESPTable.Player) do
+        esp.Update({
+            FillColor = value,
+            OutlineColor = value,
+            TextColor = value,
+        })
+    end
+end)
+
 --// ESP Settings \\--
+Toggles.ESPTeamColor:OnChanged(function(value)
+    for player, esp in pairs(Script.ESPTable.Player) do
+        local color = if value then player.TeamColor.Color else Options.PlayerEspColor.Value
+        esp.Update({
+            FillColor = color,
+            OutlineColor = color,
+            TextColor = color,
+        })
+    end
+end)
+
 Toggles.ESPRainbow:OnChanged(function(value)
     shared.ESPLibrary.Rainbow.Set(value)
 end)

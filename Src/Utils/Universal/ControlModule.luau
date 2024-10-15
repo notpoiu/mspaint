@@ -1,4 +1,4 @@
-local ControlModule = if wax.shared.ExecutorSupport["require"] then wax.require(shared.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule")) else { replaced = true }
+local ControlModule = if wax.shared.ExecutorSupport["require"] and shared.PlayerScripts:FindFirstChild("PlayerModule") then wax.require(shared.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule")) else { replaced = true }
 
 if ControlModule.replaced == true then
     ControlModule = {
