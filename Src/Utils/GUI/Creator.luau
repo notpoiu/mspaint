@@ -27,6 +27,7 @@ function UICreator:CreateWindow()
 
     --// Notificatins \\--
     shared.NotifyStyle = "Linoria"
+    shared.NotifyVolume = 2
     shared.Notify = require("Notify")
 
     --// Checker \\--

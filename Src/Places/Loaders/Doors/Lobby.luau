@@ -105,7 +105,7 @@ function Script.Functions.SetupVariables()
         local badgeList = Script.AchievementsFrame:WaitForChild("List", math.huge)
 
         if badgeList then
-            repeat task.wait(.5) until #badgeList:GetChildren() ~= 0
+            repeat task.wait(0.5) until #badgeList:GetChildren() ~= 0
             
             shared.Connect:GiveSignal(badgeList.ChildAdded:Connect(function(badge)
                 if not badge:IsA("ImageButton") then return end

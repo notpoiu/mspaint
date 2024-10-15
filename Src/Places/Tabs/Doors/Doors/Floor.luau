@@ -619,7 +619,7 @@ elseif Script.IsRooms then
                                 if moveToFinished then return end
                                 if (not Toggles.AutoRooms.Value or shared.Library.Unloaded) then return moveToCleanup() end
 
-                                repeat task.wait(.25) until (not shared.Character:GetAttribute("Hiding") and not shared.Character.PrimaryPart.Anchored)
+                                repeat task.wait(0.25) until (not shared.Character:GetAttribute("Hiding") and not shared.Character.PrimaryPart.Anchored)
 
                                 shared.Notify:Alert({
                                     Title = "Auto Rooms",

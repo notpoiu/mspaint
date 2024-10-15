@@ -7,7 +7,7 @@ function Linoria:Alert(options)
     if shared.Toggles.NotifySound and shared.Toggles.NotifySound.Value then
         local sound = Instance.new("Sound", shared.SoundService) do
             sound.SoundId = "rbxassetid://4590662766"
-            sound.Volume = 2
+            sound.Volume = shared.NotifyVolume
             sound.PlayOnRemove = true
             sound:Destroy()
         end

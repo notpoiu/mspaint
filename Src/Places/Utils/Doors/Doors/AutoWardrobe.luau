@@ -122,7 +122,7 @@ function Script.Functions.AutoWardrobe(child, index: number | nil)
                 until false == true
             end)
 
-            repeat task.wait(.15)
+            repeat task.wait(0.15)
                 local isSafe = isSafeCheck()
                 if didPlayerSeeEntity == true and isSafe == true then
                     task.spawn(function() 

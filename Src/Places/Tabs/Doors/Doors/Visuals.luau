@@ -225,6 +225,14 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Default = true,
         })
 
+        NotifySettingsTab:AddSlider("NotifyVolume", {
+            Text = "Notify Volume",
+            Default = 2,
+            Min = 0,
+            Max = 5,
+            Rounding = 1
+        })
+
         NotifySettingsTab:AddDropdown("NotifySide", {
             AllowNull = false,
             Values = {"Left", "Right"},
@@ -779,6 +787,10 @@ shared.Connect:GiveSignal(Script.RemotesFolder.HideMonster.OnClientEvent:Connect
         end
     end
 end))
+
+Options.NotifyVolume:OnChanged(function(value)
+    shared.NotifyVolume = value
+end)
 
 Options.NotifySide:OnChanged(function(value)
     shared.Library.NotifySide = value
