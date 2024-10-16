@@ -597,7 +597,7 @@ end))
 --// Entity Handler \\--
 shared.Connect:GiveSignal(workspace.ChildAdded:Connect(function(child)
     if not child:IsA("Model") then return end
-    
+
     task.delay(0.1, function()
         local shortName = Script.Functions.GetShortName(child.Name)
 
@@ -1447,6 +1447,11 @@ shared.Library:OnUnload(function()
         if voidModule then
             voidModule.Name = "Void"
         end
+    end
+
+    local voicelines = shared.ReplicatedStorage:FindFirstChild("_Voicelines", true)
+    if voicelines then
+        voicelines.Name = "Voicelines"
     end
 
     if Script.MainGame then
