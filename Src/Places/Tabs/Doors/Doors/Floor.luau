@@ -24,6 +24,14 @@ if Script.IsHotel then
         })
     end
 
+    local Hotel_FarmGroupBox = Tabs.Floor:AddLeftGroupbox("Farm") do
+        Hotel_FarmGroupBox:AddToggle("KnobFarm", {
+            Text = "Knob Farm",
+            Tooltip = "Only works in Room 100 and figure is spawned",
+            Default = false
+        })
+    end
+
     local Hotel_ModifiersGroupBox = Tabs.Floor:AddRightGroupbox("Modifiers") do
         Hotel_ModifiersGroupBox:AddToggle("NoVoiceActing", {
             Text = "No Voice Acting",
@@ -48,6 +56,40 @@ if Script.IsHotel then
                     if v:IsA("BasePart") then v.CanTouch = not value end
                 end
             end
+        end
+    end)
+
+    Toggles.KnobFarm:OnChanged(function(value)
+        local reviveCutscene = shared.ReplicatedStorage:FindFirstChild("ReviveCutscene", true) or shared.ReplicatedStorage:FindFirstChild("_ReviveCutscene", true)
+    
+        if reviveCutscene then
+            reviveCutscene.Name = if value then "_ReviveCutscene" else "ReviveCutscene"
+        end
+
+        if value then
+            task.spawn(function()
+                while task.wait(0.25) and Toggles.KnobFarm.Value and not shared.Library.Unloaded do
+                    repeat task.wait() until (Script.LatestRoom.Value == 50 or Script.LatestRoom.Value == 100) or not (Toggles.KnobFarm.Value and not shared.Library.Unloaded)
+                    if not (Toggles.KnobFarm.Value and not shared.Library.Unloaded) then break end
+
+                    if not Script.Alive then
+                        Script.RemotesFolder.Revive:FireServer()
+                        repeat task.wait(0.1) until Script.Alive
+                    end
+
+                    local figure = workspace.CurrentRooms:FindFirstChild("FigureRig", true)
+                    if figure then
+                        repeat
+                            task.wait()
+                            shared.Character:PivotTo(figure.Root.CFrame)
+                        until not Script.Alive or not (Toggles.KnobFarm.Value and not shared.Library.Unloaded)
+                        if not (Toggles.KnobFarm.Value and not shared.Library.Unloaded) then break end
+
+                        task.wait()
+                        Script.RemotesFolder.Statistics:FireServer()
+                    end
+                end
+            end)
         end
     end)
 

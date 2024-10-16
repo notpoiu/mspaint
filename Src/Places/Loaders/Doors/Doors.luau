@@ -1297,9 +1297,7 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
                     end)
                 end
             end
-        end
-
-        if Script.IsFools then
+        elseif Script.IsFools then
             local HoldingItem = Script.Temp.HoldingItem
             if HoldingItem and not shared.isnetworkowner(HoldingItem) then
                 shared.Notify:Alert({
