@@ -233,6 +233,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             shared.RootPart.CustomPhysicalProperties = PhysicalProperties.new(100, existingProperties.Friction, existingProperties.Elasticity, existingProperties.FrictionWeight, existingProperties.ElasticityWeight)
         end
 
+        Script.FeatureConnections.RootPart["RootChildAdded"] = shared.RootPart.ChildAdded:Connect(function(child)
+            if shared.CheckToggle("NoVoiceActing", true) and Script.Functions.VoiceCondition(child) then
+                child:Destroy() 
+            end
+        end)
+
         Script.FeatureConnections.RootPart["Touched"] = shared.RootPart.Touched:Connect(function(touchedPart)
             if tonumber(touchedPart.Name) and touchedPart.Name == touchedPart.Parent.Name then
                 shared.LocalPlayer:SetAttribute("CurrentRoom", tonumber(touchedPart.Name))
@@ -297,41 +303,50 @@ end
 
 function Script.Functions.SetupOtherPlayerConnection(player: Player)
     if player.Character then
-        if Toggles.PlayerESP and Toggles.PlayerESP.Value then
-            Script.Functions.PlayerESP(player.Character)
-        end
+        task.spawn(Script.Functions.SetupOtherCharacterConnection, player.Character)
     end
 
     shared.Connect:GiveSignal(player.CharacterAdded:Connect(function(newCharacter)
-        task.delay(0.1, function()
-            if Toggles.PlayerESP and Toggles.PlayerESP.Value then
-                Script.Functions.PlayerESP(player.Character)
-            end
-        end)
+        if Toggles.PlayerESP and Toggles.PlayerESP.Value then
+            task.delay(1, Script.Functions.PlayerESP, newCharacter)
+        end
 
-        shared.Connections[player.Name .. "ChildAdded"] = newCharacter.ChildAdded:Connect(function(child)
-            if not (child:IsA("Tool") and child.Name:match("LibraryHintPaper")) then return end
-
-            task.wait(0.1)
-            local code = Script.Functions.GetPadlockCode(child)
-            local output, count = string.gsub(code, "_", "x")
-            local padlock = workspace:FindFirstChild("Padlock", true)
-
-            if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
-                Script.RemotesFolder.PL:FireServer(code)
-            end
-
-            if Toggles.NotifyPadlock.Value and count < 5 then
-                shared.Notify:Alert({
-                    Title = "Padlock Code",
-                    Description = string.format("Library Code: %s", output),
-                    Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
-                })
-
-                if Toggles.NotifyChat.Value and count == 0 then
-                    shared.RBXGeneral:SendAsync(string.format("Library Code: %s", output))
-                end
-            end
-        end)
+        task.delay(1, Script.Functions.SetupOtherCharacterConnection, newCharacter)
     end))
+end
+
+function Script.Functions.SetupOtherCharacterConnection(character: Model)
+    shared.Connections[character.Name .. "ChildAdded"] = character.ChildAdded:Connect(function(child)
+        if not (child:IsA("Tool") and child.Name:match("LibraryHintPaper")) then return end
+
+        task.wait(0.1)
+        local code = Script.Functions.GetPadlockCode(child)
+        local output, count = string.gsub(code, "_", "x")
+        local padlock = workspace:FindFirstChild("Padlock", true)
+
+        if Toggles.AutoLibrarySolver.Value and tonumber(code) and Script.Functions.DistanceFromCharacter(padlock) <= Options.AutoLibraryDistance.Value then
+            Script.RemotesFolder.PL:FireServer(code)
+        end
+
+        if Toggles.NotifyPadlock.Value and count < 5 then
+            shared.Notify:Alert({
+                Title = "Padlock Code",
+                Description = string.format("Library Code: %s", output),
+                Reason = if tonumber(code) then "Solved the library padlock code" else "You are still missing some books",
+            })
+
+            if Toggles.NotifyChat.Value and count == 0 then
+                shared.RBXGeneral:SendAsync(string.format("Library Code: %s", output))
+            end
+        end
+    end)
+
+    local otherRootPart = character:WaitForChild("HumanoidRootPart")
+    if otherRootPart then
+        shared.Connections[character.Name .. "RootChildAdded"] = otherRootPart.ChildAdded:Connect(function(child)
+            if shared.CheckToggle("NoVoiceActing", true) and Script.Functions.VoiceCondition(child) then
+                child:Destroy() 
+            end
+        end)
+    end
 end

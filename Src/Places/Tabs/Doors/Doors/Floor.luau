@@ -25,6 +25,11 @@ if Script.IsHotel then
     end
 
     local Hotel_ModifiersGroupBox = Tabs.Floor:AddRightGroupbox("Modifiers") do
+        Hotel_ModifiersGroupBox:AddToggle("NoVoiceActing", {
+            Text = "No Voice Acting",
+            Default = false
+        })
+
         Hotel_ModifiersGroupBox:AddToggle("AntiA90", {
             Text = "Anti-A90",
             Default = false
@@ -43,6 +48,16 @@ if Script.IsHotel then
                     if v:IsA("BasePart") then v.CanTouch = not value end
                 end
             end
+        end
+    end)
+
+    Toggles.NoVoiceActing:OnChanged(function(value)
+        local voiceActing = shared.ReplicatedStorage:FindFirstChild("VoiceActing")
+        if not voiceActing then return end
+
+        local voicelines = voiceActing:FindFirstChild("Voicelines") or voiceActing:FindFirstChild("_Voicelines")
+        if voicelines then
+            voicelines.Name = if value then "_Voicelines" else "Voicelines"
         end
     end)
 

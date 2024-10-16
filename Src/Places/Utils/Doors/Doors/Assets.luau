@@ -20,6 +20,10 @@ function Script.Functions.ItemCondition(item)
     return item:IsA("Model") and (item:GetAttribute("Pickup") or item:GetAttribute("PropType")) and not item:GetAttribute("FuseID")
 end
 
+function Script.Functions.VoiceCondition(sound: Sound)
+    return sound:IsA("Sound") and table.find(Script.Voicelines, sound.SoundId)
+end
+
 function Script.Functions.ChildCheck(child)
     -- optimization (ty lsplash)
     if (child.Name == "AnimSaves" or child.Name == "Keyframe" or child:IsA("KeyframeSequence")) then
@@ -28,7 +32,7 @@ function Script.Functions.ChildCheck(child)
     end
     
     -- skip
-    if not (child:IsA("ProximityPrompt") or child:IsA("Model") or child:IsA("BasePart") or child:IsA("Decal")) then
+    if not (child:IsA("ProximityPrompt") or child:IsA("Model") or child:IsA("BasePart") or child:IsA("Decal") or child:IsA("Sound")) then
         return
     end
             
@@ -139,6 +143,8 @@ function Script.Functions.ChildCheck(child)
         if not table.find(Script.SlotsName, child.Name) then
             child.Transparency = 1
         end
+    elseif Script.Functions.VoiceCondition(child) and shared.CheckToggle("NoVoiceActing", true) then
+        child:Destroy()
     end
 end
 
@@ -152,10 +158,10 @@ function Script.Functions.GetNearestAssetWithCondition(condition: () -> ())
     for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
         if not room:FindFirstChild("Assets") then continue end
 
-        for i, v in pairs(room.Assets:GetChildren()) do
-            if condition(v) and Script.Functions.DistanceFromCharacter(v) < nearestDistance then
-                nearestDistance = Script.Functions.DistanceFromCharacter(v)
-                nearest = v
+        for _, asset in pairs(room.Assets:GetChildren()) do
+            if condition(asset) and Script.Functions.DistanceFromCharacter(asset) < nearestDistance then
+                nearestDistance = Script.Functions.DistanceFromCharacter(asset)
+                nearest = asset
             end
         end
     end

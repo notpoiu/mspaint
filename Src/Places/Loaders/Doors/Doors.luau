@@ -473,6 +473,13 @@ Script.Floor = Script.GameData:WaitForChild("Floor")
 Script.LatestRoom = Script.GameData:WaitForChild("LatestRoom")
 
 Script.LiveModifiers = shared.ReplicatedStorage:WaitForChild("LiveModifiers")
+Script.Voicelines = {}
+if shared.ReplicatedStorage:FindFirstChild("VoiceActing") and shared.ReplicatedStorage.VoiceActing:FindFirstChild("Voicelines") then
+    for _, voiceline: Sound in pairs(shared.ReplicatedStorage.VoiceActing.Voicelines:GetDescendants()) do
+        if not voiceline:IsA("Sound") then continue end
+        table.insert(Script.Voicelines, voiceline.SoundId)
+    end
+end
 
 Script.IsMines = Script.Floor.Value == "Mines"
 Script.IsRooms = Script.Floor.Value == "Rooms"
@@ -589,6 +596,8 @@ end))
 
 --// Entity Handler \\--
 shared.Connect:GiveSignal(workspace.ChildAdded:Connect(function(child)
+    if not child:IsA("Model") then return end
+    
     task.delay(0.1, function()
         local shortName = Script.Functions.GetShortName(child.Name)
 
@@ -653,6 +662,12 @@ shared.Connect:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     end
                 end
             end)
+
+            if shared.CheckToggle("NoVoiceActing", true) then
+                shared.Connect:GiveSignal(child.DescendantAdded:Connect(function(child)
+                    if Script.Functions.VoiceCondition(child) then child:Destroy() end
+                end))
+            end
         elseif Script.EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
             shared.Notify:Alert({
                 Title = "ENTITIES",
