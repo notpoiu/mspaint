@@ -157,10 +157,8 @@ shared.Library:OnUnload(function()
             object.Reflectance = object:GetAttribute("Reflectance")
         elseif object:IsA("Decal") then
             if not object:GetAttribute("Transparency") then object:SetAttribute("Transparency", object.Transparency) end
-
-            if not table.find(Script.SlotsName, object.Name) then
-                object.Transparency = object:GetAttribute("Transparency")
-            end
+            
+            object.Transparency = object:GetAttribute("Transparency")
         end
     end
 
