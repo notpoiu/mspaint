@@ -16,8 +16,10 @@ end
 
 function Twerk:Set(value: boolean)
     if not shared.Humanoid then return end
-    if not Twerk.TwerkTrack then Twerk:Setup() end
     
+    if not Twerk.TwerkAnimation then Twerk:Setup() end
+    if not Twerk.TwerkTrack then return end
+
     if value then
         Twerk.TwerkTrack:Play()
     else
