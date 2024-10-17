@@ -69,7 +69,7 @@ if Script.IsHotel then
         if value then
             task.spawn(function()
                 while task.wait(0.25) and Toggles.KnobFarm.Value and not shared.Library.Unloaded do
-                    repeat task.wait() until (Script.LatestRoom.Value == 50 or Script.LatestRoom.Value == 100) or not (Toggles.KnobFarm.Value and not shared.Library.Unloaded)
+                    repeat task.wait() until Script.LatestRoom.Value == 100 or not (Toggles.KnobFarm.Value and not shared.Library.Unloaded)
                     if not (Toggles.KnobFarm.Value and not shared.Library.Unloaded) then break end
 
                     if not Script.Alive then
