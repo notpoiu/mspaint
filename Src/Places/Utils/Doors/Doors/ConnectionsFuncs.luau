@@ -198,8 +198,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end)
 
         Script.FeatureConnections.Humanoid["Jump"] = shared.Humanoid:GetPropertyChangedSignal("JumpHeight"):Connect(function()
-            if not Toggles.SpeedBypass then return end
+            if not Script.IsFools and Toggles.EnableJump.Value then
+                shared.Humanoid.JumpHeight = Options.JumpBoost.Value
+            end
 
+            if not Toggles.SpeedBypass then return end
+            
             if not Toggles.SpeedBypass.Value and Script.LatestRoom.Value < 100 and not Script.FakeRevive.Enabled then
                 if shared.Humanoid.JumpHeight > 0 then
                     Script.LastSpeed = Options.WalkSpeed.Value

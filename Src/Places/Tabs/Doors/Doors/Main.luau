@@ -36,6 +36,15 @@ local PlayerGroupBox = Tabs.Main:AddLeftGroupbox("Player") do
         Default = false,
         Visible = not Script.IsFools
     })
+    PlayerGroupBox:AddSlider("JumpBoost", {
+        Text = "Jump Boost",
+        Default = 5,
+        Min = 0,
+        Max = 50,
+        Rounding = 0,
+        Compact = true,
+        Visible = not Script.IsFools
+    })
 
     PlayerGroupBox:AddToggle("NoAccel", {
         Text = "No Acceleration",
@@ -255,6 +264,11 @@ Toggles.EnableJump:OnChanged(function(value)
     if not value and shared.CheckToggle("SpeedBypass", true) and Options.WalkSpeed.Max ~= 22 and not Script.FakeRevive.Enabled then
         Options.WalkSpeed:SetMax(22)
     end
+end)
+
+Options.JumpBoost:OnChanged(function(value)
+    if Script.IsFools or not Toggles.EnableJump.Value then return end
+    shared.Humanoid.JumpHeight = value
 end)
 
 Toggles.NoAccel:OnChanged(function(value)
