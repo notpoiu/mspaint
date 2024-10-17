@@ -7,12 +7,12 @@ function Twerk:Setup()
     if not Twerk.TwerkAnimation then
         Twerk.TwerkAnimation = Instance.new("Animation")
         Twerk.TwerkAnimation.AnimationId = "rbxassetid://184574340"
-        Twerk.TwerkAnimation.Looped = true
     end
     
     if not shared.Humanoid then return end
 
     Twerk.TwerkTrack = shared.Humanoid:LoadAnimation(Twerk.TwerkAnimation)
+    Twerk.TwerkTrack.Looped = true
 end
 
 function Twerk:Set(value: boolean)
