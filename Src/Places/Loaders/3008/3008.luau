@@ -34,6 +34,13 @@ Script.ESPTable = {
     Player = {}
 }
 
+Script.Anims = {}
+Script.Anims.TwerkAnim = Instance.new("Animation"); Script.Anims.TwerkAnim.AnimationId = "rbxassetid://12874447851"
+
+Script.Tracks = {
+    TwerkTrack = nil,
+}
+
 Script.InteractableItems = {
 	"Medkit",
 	"Pizza",
