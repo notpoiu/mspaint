@@ -362,15 +362,18 @@ Script._mspaint_custom_captions = Instance.new("ScreenGui"); do
 
     UITextSizeConstraint.MaxTextSize = 35
 
+    local IsCaptionHidden = true
+    local CaptionsLastUsed = os.time()
+    
     function Script.Functions.HideCaptions()
+        IsCaptionHidden = true
         Script._mspaint_custom_captions.Parent = shared.ReplicatedStorage
     end
 
-    local CaptionsLastUsed = os.time()
     function Script.Functions.Captions(caption: string)
         CaptionsLastUsed = os.time()
 
-        if Script._mspaint_custom_captions.Parent == shared.ReplicatedStorage then
+        if IsCaptionHidden then
             local success = pcall(function()
                 Script._mspaint_custom_captions.Parent = if gethui then gethui() else shared.CoreGui
             end)
@@ -378,6 +381,8 @@ Script._mspaint_custom_captions = Instance.new("ScreenGui"); do
             if not success then
                 Script._mspaint_custom_captions.Parent = shared.PlayerGui
             end 
+
+            IsCaptionHidden = false
         end
         
         TextLabel.Text = caption

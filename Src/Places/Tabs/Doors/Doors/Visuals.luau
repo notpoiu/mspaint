@@ -793,8 +793,13 @@ shared.Connect:GiveSignal(Script.RemotesFolder.HideMonster.OnClientEvent:Connect
         while shared.Character:GetAttribute("Hiding") and Script.Alive and not shared.Library.Unloaded and Toggles.NotifyHideTime.Value do
             local remainingTime = math.max(0, finalTime - tick())
 
-            if wax.shared.ExecutorSupport["firesignal"] and Options.CaptionStyle.Value == "Doors" then
-                firesignal(Script.RemotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
+            if wax.shared.ExecutorSupport["firesignal"] then
+                if Options.NotifyStyle.Value == "Doors" then
+                    firesignal(Script.RemotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
+                elseif Options.NotifyStyle.Value == "Linoria" then
+                    Script.Functions.Captions(string.format("%.1f", remainingTime))
+                end
+
             else
                 Script.Functions.Captions(string.format("%.1f", remainingTime))
             end
