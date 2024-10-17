@@ -6,9 +6,8 @@ local Twerk = {
 function Twerk:Setup()
     if not Twerk.TwerkAnimation then
         Twerk.TwerkAnimation = Instance.new("Animation")
-        Twerk.TwerkAnimation.AnimationId = "rbxassetid://184574340"
+        Twerk.TwerkAnimation.AnimationId = "rbxassetid://12874447851"
     end
-    
     if not shared.Humanoid then return end
 
     Twerk.TwerkTrack = shared.Humanoid:LoadAnimation(Twerk.TwerkAnimation)
@@ -18,7 +17,7 @@ end
 function Twerk:Set(value: boolean)
     if not shared.Humanoid then return end
     if not Twerk.TwerkTrack then Twerk:Setup() end
-
+    
     if value then
         Twerk.TwerkTrack:Play()
     else
