@@ -133,6 +133,16 @@ function Script.Functions.ChildCheck(child)
                 clone.Parent = child.Parent
                 
                 table.insert(Script.Temp.Bridges, clone)
+            elseif Toggles.AntiPipeGap.Value and child.Name == "KillBrick" and child.Parent.Name == "Assets" then
+                local clone = child:Clone()
+                clone.Color = Color3.new(1, 1, 1)
+                clone.Name = "AntiPipeGap"
+                clone.Position += Vector3.new(0, 20, 0)
+                clone.Size = Vector3.new(9, 4, clone.Size.Z)
+                clone.Transparency = 0
+                clone.Parent = child.Parent
+                
+                table.insert(Script.Temp.PipeBridges, clone)
             elseif Toggles.AntiSeekFlood.Value and child.Name == "SeekFloodline" then
                 child.CanCollide = true
             end

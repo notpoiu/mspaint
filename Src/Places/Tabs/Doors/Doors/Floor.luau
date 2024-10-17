@@ -150,6 +150,11 @@ elseif Script.IsMines then
             Default = false
         })
 
+        Mines_AntiEntityGroupBox:AddToggle("AntiPipeGap", {
+            Text = "Anti-Pipe Gap",
+            Default = false
+        })
+
         Mines_AntiEntityGroupBox:AddToggle("AntiSeekFlood", {
             Text = "Anti-Seek Flood",
             Default = false
@@ -366,6 +371,32 @@ elseif Script.IsMines then
             end
         else
             for _, bridge in pairs(Script.Temp.Bridges) do
+                bridge:Destroy()
+            end
+        end
+    end)
+
+    Toggles.AntiPipeGap:OnChanged(function(value)
+        if value then
+            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                if not room:FindFirstChild("Assets") then continue end
+
+                for _, killBrick in pairs(room.Assets:GetChildren()) do
+                    if killBrick.Name == "KillBrick" then
+                        local clone = killBrick:Clone()
+                        clone.Color = Color3.new(1, 1, 1)
+                        clone.Name = "AntiPipeGap"
+                        clone.Position += Vector3.new(0, 20, 0)
+                        clone.Size = Vector3.new(9, 4, clone.Size.Z)
+                        clone.Transparency = 0
+                        clone.Parent = killBrick.Parent
+                        
+                        table.insert(Script.Temp.PipeBridges, clone)
+                    end
+                end
+            end
+        else
+            for _, bridge in pairs(Script.Temp.PipeBridges) do
                 bridge:Destroy()
             end
         end

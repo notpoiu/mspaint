@@ -40,6 +40,7 @@ Script.Temp = {
     AnchorFinished = {},
     AutoWardrobeEntities = {},
     Bridges = {},
+    PipeBridges = {},
     CollisionSize = Vector3.new(5.5, 3, 3),
     Guidance = {},
     PaintingDebounce = {},
@@ -1534,6 +1535,7 @@ shared.Library:OnUnload(function()
     if Script.CollisionClone then Script.CollisionClone:Destroy() end
 
     for _, antiBridge in pairs(Script.Temp.Bridges) do antiBridge:Destroy() end
+    for _, antiBridge in pairs(Script.Temp.PipeBridges) do antiBridge:Destroy() end
 
     for _, espType in pairs(Script.ESPTable) do
         for _, esp in pairs(espType) do
