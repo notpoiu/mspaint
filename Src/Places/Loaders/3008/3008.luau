@@ -187,10 +187,10 @@ function Script.Functions.UpdateBloxstrapRPC()
     if not wax.shared.BloxstrapRPC then return end
     
     wax.shared.BloxstrapRPC.SetRichPresence({
-        details = "Playing 3008 [ mspaint v2 ]",
+        details = "Playing 3008 [ mspaint v3 ]",
         state = string.lower(Script.CurrentDay.Text):gsub("^%l", string.upper),
         largeImage = {
-            hoverText = "Using mspaint v2"
+            hoverText = "Using mspaint v3"
         },
         smallImage = {
             assetId = 6925817108,
