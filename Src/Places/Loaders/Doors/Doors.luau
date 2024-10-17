@@ -662,12 +662,6 @@ shared.Connect:GiveSignal(workspace.ChildAdded:Connect(function(child)
                     end
                 end
             end)
-
-            if shared.CheckToggle("NoVoiceActing", true) then
-                shared.Connect:GiveSignal(child.DescendantAdded:Connect(function(child)
-                    if Script.Functions.VoiceCondition(child) then child:Destroy() end
-                end))
-            end
         elseif Script.EntityTable.NotifyMessage[child.Name] and Options.NotifyEntity.Value[shortName] then
             shared.Notify:Alert({
                 Title = "ENTITIES",
@@ -821,6 +815,16 @@ shared.Connect:GiveSignal(workspace.ChildAdded:Connect(function(child)
             shared.Connect:GiveSignal(childRemovedConnection)
         end
     end)
+
+    if shared.CheckToggle("NoVoiceActing", true) and table.find(Script.EntityTable.Names, child.Name) then
+        for _, sound in pairs(child:GetDescendants()) do
+            if Script.Functions.VoiceCondition(sound) then sound:Destroy() end
+        end
+
+        shared.Connect:GiveSignal(child.DescendantAdded:Connect(function(child)
+            if Script.Functions.VoiceCondition(child) then child:Destroy() end
+        end))
+    end
 end))
 
 --// Drops Connection \\--
