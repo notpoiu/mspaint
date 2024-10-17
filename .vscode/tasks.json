@@ -2,6 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "[mspaint] Clean Distribution",
+      "type": "shell",
+      "command": "rm -f Distribution/Script.luau",
+      "windows": {
+        "command": "del /f Distribution\\Script.luau"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "[mspaint] Windows - Build script",
       "type": "shell",
       "command": "lune run Build bundle input=\"default.project.json\" minify=false output=\"Distribution/Script.luau\" env-name=\"Script\" darklua-config-path=\"Build/DarkLua.json\" temp-dir-base=\"Distribution\" verbose=true",
@@ -11,7 +20,8 @@
       },
       "options": {
         "cwd": "${workspaceFolder}" 
-      }        
+      },
+      "dependsOn": "[mspaint] Clean Distribution"
     }
   ]
 }
