@@ -116,13 +116,6 @@ local AmbientGroupBox = Tabs.Visuals:AddRightGroupbox("Ambient") do
     })
 end
 
-local TrollingGroupBox = Tabs.Visuals:AddRightGroupbox("Trolling") do
-    TrollingGroupBox:AddToggle("Twerk", {
-        Text = "Twerk",
-        Default = false
-    })
-end
-
 --// ESP \\--
 Toggles.PlayerESP:OnChanged(function(value)
     if value then
@@ -294,8 +287,4 @@ Toggles.AntiLag:OnChanged(function(value)
     workspace.Terrain.WaterWaveSize = if value then 0 else 0.05
     workspace.Terrain.WaterWaveSpeed = if value then 0 else 8
     shared.Lighting.GlobalShadows = not value
-end)
-
-Toggles.Twerk:OnChanged(function(value)
-    shared.Twerk:Set(value)
 end)
