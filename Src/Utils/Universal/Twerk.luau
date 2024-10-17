@@ -1,0 +1,32 @@
+local Twerk = {
+    TwerkAnimation = nil,
+    TwerkTrack = nil,
+}
+
+function Twerk:Setup()
+    if not Twerk.TwerkAnimation then
+        Twerk.TwerkAnimation = Instance.new("Animation")
+        Twerk.TwerkAnimation.AnimationId = "rbxassetid://184574340"
+        Twerk.TwerkAnimation.Looped = true
+    end
+    
+    if not shared.Humanoid then return end
+
+    Twerk.TwerkTrack = shared.Humanoid:LoadAnimation(Twerk.TwerkAnimation)
+end
+
+function Twerk:Set(value: boolean)
+    if not shared.Humanoid then return end
+    if not Twerk.TwerkTrack then Twerk:Setup() end
+
+    if value then
+        Twerk.TwerkTrack:Play()
+    else
+        Twerk.TwerkTrack:Stop()
+    end
+end
+
+function Twerk:Enable() Twerk:Set(true) end
+function Twerk:Disable() Twerk:Set(false) end
+
+return Twerk

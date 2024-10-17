@@ -184,9 +184,9 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             oldConnection:Disconnect()
         end
 
-        Script.Tracks.TwerkTrack = shared.Humanoid:LoadAnimation(Script.Anims.TwerkAnim)
+        shared.Twerk:Setup()
         if Toggles.Twerk.Value then
-            Script.Tracks.TwerkTrack:Play()
+            shared.Twerk:Enable()
         end
 
         Script.FeatureConnections.Humanoid["Move"] = shared.Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(function()

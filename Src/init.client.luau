@@ -107,6 +107,7 @@ shared.PlayerGui = shared.LocalPlayer.PlayerGui
 shared.PlayerScripts = shared.LocalPlayer.PlayerScripts
 
 shared.Fly = require("Utils/Universal/Fly")
+shared.Twerk = require("Utils/Universal/Twerk")
 shared.ControlModule = require("Utils/Universal/ControlModule")
 
 local TextChannels = shared.TextChatService:FindFirstChild("TextChannels")

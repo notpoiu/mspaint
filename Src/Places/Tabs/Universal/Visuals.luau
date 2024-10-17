@@ -297,11 +297,5 @@ Toggles.AntiLag:OnChanged(function(value)
 end)
 
 Toggles.Twerk:OnChanged(function(value)
-    if not (shared.Humanoid and Script.Tracks.TwerkTrack) then return end
-
-    if value then
-        Script.Tracks.TwerkTrack:Play()
-    else
-        Script.Tracks.TwerkTrack:Stop()
-    end
+    shared.Twerk:Set(value)
 end)

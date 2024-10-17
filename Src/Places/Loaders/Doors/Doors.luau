@@ -316,19 +316,17 @@ Script.MinecartPathfind = {
 Script.Anims = {}
 Script.Anims.HoldAnim = Instance.new("Animation"); Script.Anims.HoldAnim.AnimationId = "rbxassetid://10479585177"
 Script.Anims.ThrowAnim = Instance.new("Animation"); Script.Anims.ThrowAnim.AnimationId = "rbxassetid://10482563149"
-Script.Anims.TwerkAnim = Instance.new("Animation"); Script.Anims.TwerkAnim.AnimationId = "rbxassetid://12874447851"
 
 Script.Tracks = {
     ItemHoldTrack = nil,
     ItemThrowTrack = nil,
-    TwerkTrack = nil,
 }
 
 function Script.Functions.Warn(message: string)
     warn("WARN - mspaint:", message)
 end
 
-Script._mspaint_custom_captions = Instance.new("ScreenGui") do
+Script._mspaint_custom_captions = Instance.new("ScreenGui"); do
     local Frame = Instance.new("Frame", Script._mspaint_custom_captions)
     local TextLabel = Instance.new("TextLabel", Frame)
     local UITextSizeConstraint = Instance.new("UITextSizeConstraint", TextLabel)
@@ -1488,7 +1486,7 @@ shared.Library:OnUnload(function()
 
     if Script.Tracks.ItemHoldTrack then Script.Tracks.ItemHoldTrack:Stop() end
     if Script.Tracks.ItemThrowTrack then Script.Tracks.ItemThrowTrack:Stop() end
-    if Script.Tracks.TwerkTrack then Script.Tracks.TwerkTrack:Stop() end
+    shared.Twerk:Disable()
 
     for _, animation in pairs(Script.Anims) do
         animation:Destroy()

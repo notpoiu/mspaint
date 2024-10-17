@@ -30,9 +30,9 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end
 
-        Script.Tracks.TwerkTrack = shared.Humanoid:LoadAnimation(Script.Anims.TwerkAnim)
+        shared.Twerk:Setup()
         if Toggles.Twerk.Value then
-            Script.Tracks.TwerkTrack:Play()
+            shared.Twerk:Enable()
         end
 
         shared.Connect:GiveSignal(shared.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
