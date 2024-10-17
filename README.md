@@ -1,4 +1,4 @@
-# mspaint
+# DEV - mspaint V2 (no longer maintained)
 A decent roblox doors script. Free and Open Source 🥶
 
 ```lua
