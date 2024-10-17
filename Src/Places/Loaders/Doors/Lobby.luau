@@ -141,6 +141,13 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     shared.Character = newCharacter
     shared.Humanoid = shared.Character:FindFirstChildWhichIsA("Humanoid")
     shared.RootPart = shared.Character:FindFirstChild("HumanoidRootPart") or shared.Character.PrimaryPart
+
+    if shared.Humanoid then
+        shared.Twerk:Setup()
+        if Toggles.Twerk.Value then
+            shared.Twerk:Enable()
+        end
+    end
 end
 
 shared.Load("Utils", "Preset")

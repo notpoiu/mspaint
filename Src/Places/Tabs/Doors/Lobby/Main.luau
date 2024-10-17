@@ -22,6 +22,11 @@ local SniperGroupbox = Tabs.Main:AddLeftGroupbox("Sniper") do
 end
 
 local OtherGroupbox = Tabs.Main:AddRightGroupbox("Other") do
+    OtherGroupbox:AddToggle("Twerk", {
+        Text = "Twerk",
+        Default = false
+    })
+
     OtherGroupbox:AddToggle("LoopAchievements", {
         Text = "Loop Achievements",
         Default = false
@@ -213,4 +218,8 @@ Toggles.LoopAchievements:OnChanged(function(value)
     if value then
         Script.Functions.LoopAchievements()
     end
+end)
+
+Toggles.Twerk:OnChanged(function(value)
+    shared.Twerk:Set(value)
 end)
