@@ -170,7 +170,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             if not Toggles.NotifyOxygen.Value then return end
             if shared.Character:GetAttribute("Oxygen") >= 100 then return end
 
-            if wax.shared.ExecutorSupport["firesignal"] then
+            if wax.shared.ExecutorSupport["firesignal"] and Options.CaptionStyle.Value == "Doors" then
                 firesignal(Script.RemotesFolder.Caption.OnClientEvent, string.format("Oxygen: %.1f", shared.Character:GetAttribute("Oxygen")))
             else
                 Script.Functions.Captions(string.format("Oxygen: %.1f", shared.Character:GetAttribute("Oxygen")))

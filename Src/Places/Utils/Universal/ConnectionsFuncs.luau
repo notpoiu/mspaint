@@ -22,6 +22,11 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
     if shared.Humanoid then
         Script.LastSpeed = shared.Humanoid.WalkSpeed
 
+        Script.Tracks.TwerkTrack = shared.Humanoid:LoadAnimation(Script.Anims.TwerkAnim)
+        if Toggles.Twerk.Value then
+            Script.Tracks.TwerkTrack:Play()
+        end
+
         shared.Connect:GiveSignal(shared.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
             if shared.Humanoid.WalkSpeed ~= Options.WalkSpeed.Value then
                 Script.LastSpeed = shared.Humanoid.WalkSpeed

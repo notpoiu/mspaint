@@ -6,6 +6,11 @@ local Options = shared.Options
 local Script = shared.Script
 local Tabs = Script.Tabs
 
+local CaptionStyles = {"Linoria"}
+if wax.shared.ExecutorSupport["firesignal"] then
+    table.insert(CaptionStyles, "Doors")
+end
+
 --// Visuals \\--
 local ESPTabBox = Tabs.Visuals:AddLeftTabbox() do
     local ESPTab = ESPTabBox:AddTab("ESP") do
@@ -249,6 +254,17 @@ local NotifyTabBox = Tabs.Visuals:AddRightTabbox() do
             Multi = false,
 
             Text = "Notification Style"
+        })
+
+        NotifySettingsTab:AddDivider()
+        
+        NotifySettingsTab:AddDropdown("CaptionStyle", {
+            AllowNull = false,
+            Values = CaptionStyles,
+            Default = "Linoria",
+            Multi = false,
+
+            Text = "Caption Style"
         })
     end
 end
@@ -742,7 +758,7 @@ if Script.IsBackdoor then
 
     shared.Connect:GiveSignal(clientRemote.Haste.Remote.OnClientEvent:Connect(function(value)
         if not value and Toggles.NotifyEntity.Value then
-            haste_incoming_progress = Instance.new("Part", shared.Workspace) do
+            haste_incoming_progress = Instance.new("Part", shared.Workspace); do
                 haste_incoming_progress.Anchored = true
                 haste_incoming_progress.CanCollide = false
                 haste_incoming_progress.Name = "_internal_mspaint_haste"
@@ -777,7 +793,7 @@ shared.Connect:GiveSignal(Script.RemotesFolder.HideMonster.OnClientEvent:Connect
         while shared.Character:GetAttribute("Hiding") and Script.Alive and not shared.Library.Unloaded and Toggles.NotifyHideTime.Value do
             local remainingTime = math.max(0, finalTime - tick())
 
-            if wax.shared.ExecutorSupport["firesignal"] then
+            if wax.shared.ExecutorSupport["firesignal"] and Options.CaptionStyle.Value == "Doors" then
                 firesignal(Script.RemotesFolder.Caption.OnClientEvent, string.format("%.1f", remainingTime))
             else
                 Script.Functions.Captions(string.format("%.1f", remainingTime))

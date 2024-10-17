@@ -16,6 +16,13 @@ Script.ESPTable = {
 }
 Script.AimbotTween = nil
 
+Script.Anims = {}
+Script.Anims.TwerkAnim = Instance.new("Animation"); Script.Anims.TwerkAnim.AnimationId = "rbxassetid://12874447851"
+
+Script.Tracks = {
+    TwerkTrack = nil,
+}
+
 shared.Character = shared.LocalPlayer.Character or shared.LocalPlayer.CharacterAdded:Wait()
 Script.GameName = "a roblox experience"
 
