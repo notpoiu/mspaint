@@ -74,7 +74,8 @@ if Script.IsHotel then
 
                     if not Script.Alive then
                         Script.RemotesFolder.Revive:FireServer()
-                        repeat task.wait(0.1) until Script.Alive
+                        repeat task.wait() until Script.Alive
+                        task.wait(1)
                     end
 
                     local figure = workspace.CurrentRooms:FindFirstChild("FigureRig", true)
