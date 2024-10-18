@@ -1212,6 +1212,15 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
                     Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and not Toggles.CollisionOffsetGodmode.Value
                 end
             end
+
+            if Toggles.CollisionOffsetGodmode.Value and Script.CollisionClone then
+                local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -50, 0), Script.NoCharRaycastParam)
+
+                if raycast then
+                    Script.Collision.Position = shared.RootPart.Position - Vector3.new(0, raycast.Distance - 0.9, 0)
+                    Script.CollisionClone.Position = Script.Collision.Position + Vector3.new(0, 2.5, 0)
+                end
+            end
         end
 
         if shared.Character:FindFirstChild("UpperTorso") then

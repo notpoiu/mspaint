@@ -265,7 +265,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
         end
 
-        Script.FeatureConnections.Player["GodmodeCanCollide"] = Script.Collision:GetPropertyChangedSignal("CanCollide"):Connect(function()
+        Script.FeatureConnections.Player["CollisionOffsetGodmodeCanCollide"] = Script.Collision:GetPropertyChangedSignal("CanCollide"):Connect(function()
             if not Toggles.CollisionOffsetGodmode.Value then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
@@ -274,7 +274,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Collision.CollisionCrouch.CanCollide = false
         end)
 
-        Script.FeatureConnections.Player["GodmodeCrouchCanCollide"] = Script.Collision.CollisionCrouch:GetPropertyChangedSignal("CanCollide"):Connect(function()
+        Script.FeatureConnections.Player["CollisionOffsetGodmodeCrouchCanCollide"] = Script.Collision.CollisionCrouch:GetPropertyChangedSignal("CanCollide"):Connect(function()
             if not Toggles.CollisionOffsetGodmode.Value then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
