@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "rm -f Distribution/Script.luau",
       "windows": {
-        "command": "del /f Distribution\\Script.luau"
+        "command": 'Remove-Item -Force "Distribution\Script.luau"'
       },
       "problemMatcher": []
     },
