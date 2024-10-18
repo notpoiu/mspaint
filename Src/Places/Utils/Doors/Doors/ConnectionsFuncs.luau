@@ -256,6 +256,41 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
         end
 
+        Script.FeatureConnections.Player["Godmode"] = Script.Collision:GetPropertyChangedSignal("CFrame"):Connect(function()
+            if not Toggles.Godmode.Value then return end
+            shared.RunService.Stepped:Wait()
+            
+            local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -100, 0))
+
+            if raycast then
+                Script.Collision.Position = shared.RootPart.Position - Vector3.new(0, raycast.Distance - 0.9, 0)
+            end
+        end)
+
+        Script.FeatureConnections.Player["GodmodeCanCollide"] = Script.Collision:GetPropertyChangedSignal("CanCollide"):Connect(function()
+            if not Toggles.Godmode.Value then return end
+
+            Script.Collision.CanCollide = false
+            shared.RootPart.CollisionGroup = "Player"
+            shared.RootPart.CollisionGroup = "PlayerCrouching"
+        end)
+
+        Script.FeatureConnections.Player["GodmodeCrouchCanCollide"] = Script.Collision.CollisionCrouch:GetPropertyChangedSignal("CanCollide"):Connect(function()
+            if not Toggles.Godmode.Value then return end
+
+            Script.Collision.CanCollide = false
+            Script.Collision.CollisionCrouch.CanCollide = false
+            shared.RootPart.CollisionGroup = "PlayerCrouching"
+            
+            local crouchAnimID = shared.Character.Animations.Crouch.AnimationId
+            for _, track in pairs(shared.Humanoid:GetPlayingAnimationTracks()) do
+                if track.Animation.AnimationId == crouchAnimID then
+                    track:Stop(0)
+                    break
+                end
+            end
+        end)
+
         Script.CollisionClone = Script.Collision:Clone()
         Script.CollisionClone.CanCollide = false
         Script.CollisionClone.Massless = true
