@@ -5,6 +5,9 @@ local Options = shared.Options
 --// Variables \\--
 local Script = shared.Script
 
+local GodmodeRaycastParams = RaycastParams.new()
+GodmodeRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
 --// Functions \\--
 function Script.Functions.CameraCheck(child)
     if child:IsA("BasePart") and child.Name == "Guidance" and Toggles.GuidingLightESP.Value then
@@ -79,6 +82,8 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     shared.Character = newCharacter
     if shared.Character then
+        GodmodeRaycastParams.FilterDescendantsInstances = {shared.Character}
+
         if Toggles.EnableJump.Value then
             shared.Character:SetAttribute("CanJump", true)
         end
@@ -256,12 +261,12 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
         end
 
-        --[[
+        
         Script.FeatureConnections.Player["Godmode"] = Script.Collision:GetPropertyChangedSignal("CFrame"):Connect(function()
             if not Toggles.Godmode.Value then return end
             shared.RunService.Stepped:Wait()
             
-            local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -100, 0))
+            local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -100, 0), GodmodeRaycastParams)
 
             if raycast then
                 Script.Collision.Position = shared.RootPart.Position - Vector3.new(0, raycast.Distance - 0.9, 0)
@@ -290,7 +295,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     break
                 end
             end
-        end)]]
+        end)
 
         Script.CollisionClone = Script.Collision:Clone()
         Script.CollisionClone.CanCollide = false
