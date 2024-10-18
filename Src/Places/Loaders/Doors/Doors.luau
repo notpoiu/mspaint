@@ -34,7 +34,27 @@ Script.ESPTable = {
     None = {}
 }
 
-Script.Functions.Minecart = {}
+Script.Functions.Minecart = {
+    pathfindQueue = {},
+    Pathfind = function(...) return true end, --thanks wax, really cool module loading fr fr dawg
+    Teleport = function(...) return true end, --thanks wax, really cool module loading fr fr dawg
+    DrawNodes = function(...) return true end, --thanks wax, really cool module loading fr fr dawg
+
+    debug = function(...)
+        --if Toggles.MinecartTeleportDebug.Value == false then return end
+        print(...)
+        local msg = {}
+        for _, v in pairs({ ... }) do
+            table.insert(msg, tostring(v))
+        end
+        -- shared.Notify:Alert({
+        --     Title = "[DEBUG Minecart TP]",
+        --     Description = table.concat(msg, " "),
+        --     Reason = ""
+        -- })
+    end
+}
+Script.Functions.Minecart.debug("WHA THE SUGMA")
 
 Script.Temp = {
     AnchorFinished = {},
@@ -314,11 +334,6 @@ Script.MinecartPathNodeColor = {
     Cyan = Color3.new(0, 1, 1),
     Orange = Color3.new(1, 0.5, 0),
     White = Color3.new(1, 1, 1),
-}
-
-Script.MinecartPathfind = {
-    -- ground chase [41 to 44]
-    -- minecart chase [45 to 49]
 }
 
 Script.Anims = {}
@@ -852,16 +867,22 @@ for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
     task.spawn(Script.Functions.SetupRoomConnection, room)
 
     if Script.IsMines then
-        task.spawn(Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+        task.spawn(Script.Functions.Minecart.Pathfind, room)
     end
 end
 shared.Connect:GiveSignal(workspace.CurrentRooms.ChildAdded:Connect(function(room)
     task.spawn(Script.Functions.SetupRoomConnection, room)
     
     if Script.IsMines then
-        task.spawn(Script.Functions.Minecart.Pathfind, room, tonumber(room.Name))
+        task.spawn(Script.Functions.Minecart.Pathfind, room)
     end
 end))
+if Script.IsMines then
+    shared.Connect:GiveSignal(Script.RemotesFolder.SendRunnerNodes.OnClientEvent:Connect(function(nodetree) --yea let's just not touch on that for now.
+        Script.Functions.Minecart.debug("[SendRunnerNodes] Nodes created for room: " .. tostring(Script.NextRoom))
+        table.insert(Script.Functions.Minecart.pathfindQueue, Script.NextRoom)
+    end))
+end
 
 --// Camera Connection \\--
 if shared.Camera then task.spawn(Script.Functions.SetupCameraConnection, shared.Camera) end

@@ -247,7 +247,7 @@ elseif Script.IsMines then
         Mines_BypassGroupBox:AddToggle("MinecartTeleportDebug", {
             Text = "Minecart Teleport Debug",
             Default = false,
-            Visible = false,
+            Visible = true,
         })
     end
     
@@ -414,8 +414,18 @@ elseif Script.IsMines then
         end
     end)
 
+    Toggles.MinecartTeleport:OnChanged(function(value)
+        if value then
+            for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+                task.spawn(Script.Functions.Minecart.Teleport, room)
+            end
+        end
+    end)
+
     Toggles.MinecartPathVisualiser:OnChanged(function(value)
-        Script.Functions.Minecart.DrawNodes()
+        for _, room in pairs(workspace.CurrentRooms:GetChildren()) do
+            task.spawn(Script.Functions.Minecart.DrawNodes, room)
+        end
     end)
 elseif Script.IsBackdoor then
     local Backdoors_AntiEntityGroupBox = Tabs.Floor:AddLeftGroupbox("Anti-Entity") do
