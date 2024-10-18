@@ -54,6 +54,14 @@ Script.FakeRevive = {
     Connections = {}
 }
 
+Script.GodmodeCollision = {
+    Enabled = false,
+    Reset = false,
+    Connections = {},
+    raycastParams = RaycastParams.new(),
+}
+Script.GodmodeCollision.raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
 Script.WhitelistConfig = {
     [45] = {firstKeep = 3, lastKeep = 2},
     [46] = {firstKeep = 2, lastKeep = 2},
@@ -1183,9 +1191,9 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
         
         if Script.Collision then
             if Toggles.Noclip.Value then
-                Script.Collision.CanCollide = not Toggles.Noclip.Value
+                Script.Collision.CanCollide = not Toggles.Noclip.Value and not Script.GodmodeCollision.Enabled
                 if Script.Collision:FindFirstChild("CollisionCrouch") then
-                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value
+                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and not Script.GodmodeCollision.Enabled
                 end
             end
         end
@@ -1413,6 +1421,19 @@ shared.Library:OnUnload(function()
         table.clear(Script.FakeRevive.Connections)
     end
 
+    --this takes a while to reset the collision sometimes...
+    if Script.GodmodeCollision.Enabled or not Script.GodmodeCollision.Reset then
+        task.spawn(function()
+            Script.GodmodeCollision.Enabled = false
+            repeat task.wait(0.5) until Script.GodmodeCollision.Reset
+
+            for _, connection in pairs(Script.GodmodeCollision.Connections) do
+                if connection.Connected then connection:Disconnect() end
+            end
+            table.clear(Script.GodmodeCollision.Connections)
+        end)
+    end
+
     if wax.shared.BloxstrapRPC then
         wax.shared.BloxstrapRPC.SetRichPresence({
             details = "<reset>",
@@ -1529,9 +1550,12 @@ shared.Library:OnUnload(function()
     end
 
     if Script.Collision then
-        Script.Collision.CanCollide = if Script.MainGameSrc then not Script.MainGameSrc.crouching else not shared.Character:GetAttribute("Crouching")
-        if Script.Collision:FindFirstChild("CollisionCrouch") then
-            Script.Collision.CollisionCrouch.CanCollide = if Script.MainGameSrc then Script.MainGameSrc.crouching else shared.Character:GetAttribute("Crouching")
+        if not Script.GodmodeCollision.Enabled then
+            Script.Collision.CanCollide = Script.MainGameSrc and not Script.MainGameSrc.crouching or not shared.Character:GetAttribute("Crouching")
+
+            if Script.Collision:FindFirstChild("CollisionCrouch") then
+                Script.Collision.CollisionCrouch.CanCollide = if Script.MainGameSrc then Script.MainGameSrc.crouching else shared.Character:GetAttribute("Crouching")
+            end
         end
     end
 

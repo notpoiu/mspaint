@@ -650,9 +650,9 @@ elseif Script.IsRooms then
                             if isStuck then
                                 repeat task.wait()
                                     Script.Collision.CanCollide = false
-                                    Script.Collision.CollisionCrouch.CanCollide = true
+                                    Script.Collision.CollisionCrouch.CanCollide = not Script.GodmodeCollision.Enabled
                                 until not isStuck or hasResetFailsafe
-                                Script.Collision.CanCollide = true
+                                Script.Collision.CanCollide = not Script.GodmodeCollision.Enabled
                             end
                             hasResetFailsafe = true
                         end
