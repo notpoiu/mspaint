@@ -1,17 +1,21 @@
 {
   "version": "2.0.0",
   "tasks": [
-    "tasks": [
-        {
-          "label": "[mspaint] Clean Distribution",
-          "type": "shell",
-          "command": "rm -f Distribution/Script.luau",
-          "windows": {
-            "command": "Remove-Item -Force \"Distribution\\Script.luau\""
-          },
-          "problemMatcher": []
-        }
-    ],
+    {
+      "label": "[mspaint] Clean Distribution",
+      "type": "shell",
+      "command": "rm -f Distribution/Script.luau",
+      "windows": {
+        "options": {
+          "shell": {
+            "executable": "C:\\Windows\\System32\\cmd.exe",
+            "args": ["/c"]
+          }
+        },
+        "command": "del /q /s Distribution\\*",
+      },
+      "problemMatcher": []
+    },
     {
       "label": "[mspaint] Windows - Build script",
       "type": "shell",
