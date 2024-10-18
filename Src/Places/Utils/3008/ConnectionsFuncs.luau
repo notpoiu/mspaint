@@ -58,7 +58,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end))
     end
 
-    if Toggles.Godmode.Value then
+    if Toggles.CollisionOffsetGodmode.Value then
         Script.DidGodmode = true
 
         repeat task.wait() until #Script.Map.Floor:GetChildren() > 0
@@ -197,7 +197,7 @@ end
 
 function Script.Functions.SetupExploitInfModulesConnection()
     shared.Connect:GiveSignal(Script.PlayerStats:WaitForChild("Energy").Value:GetPropertyChangedSignal("Text"):Connect(function()
-        if Toggles.InfiniteEnergy.Value and not Toggles.Godmode.Value then
+        if Toggles.InfiniteEnergy.Value and not Toggles.CollisionOffsetGodmode.Value then
             Script.Event:FireServer("DecreaseStat", {
                 Stats = {
                     Energy = -100
@@ -207,7 +207,7 @@ function Script.Functions.SetupExploitInfModulesConnection()
     end))
 
     shared.Connect:GiveSignal(Script.PlayerStats:WaitForChild("Hunger").Value:GetPropertyChangedSignal("Text"):Connect(function()
-        if Toggles.InfiniteHunger.Value and not Toggles.Godmode.Value then
+        if Toggles.InfiniteHunger.Value and not Toggles.CollisionOffsetGodmode.Value then
             Script.Event:FireServer("DecreaseStat", {
                 Stats = {
                     Hunger = -100

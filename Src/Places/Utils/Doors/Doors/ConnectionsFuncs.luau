@@ -82,7 +82,7 @@ end
 function Script.Functions.SetupCharacterConnection(newCharacter)
     shared.Character = newCharacter
     if shared.Character then
-        Script.GodmodeCollision.raycastParams.FilterDescendantsInstances = {shared.Character}
+        Script.NoCharRaycastParam.FilterDescendantsInstances = {shared.Character}
 
         if Toggles.EnableJump.Value then
             shared.Character:SetAttribute("CanJump", true)
@@ -266,7 +266,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end
 
         Script.FeatureConnections.Player["GodmodeCanCollide"] = Script.Collision:GetPropertyChangedSignal("CanCollide"):Connect(function()
-            if not Script.GodmodeCollision.Enabled then return end
+            if not Toggles.CollisionOffsetGodmode.Value then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
 
@@ -275,7 +275,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end)
 
         Script.FeatureConnections.Player["GodmodeCrouchCanCollide"] = Script.Collision.CollisionCrouch:GetPropertyChangedSignal("CanCollide"):Connect(function()
-            if not Script.GodmodeCollision.Enabled then return end
+            if not Toggles.CollisionOffsetGodmode.Value then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
 
