@@ -256,6 +256,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             Script.Collision.Rotation = Vector3.new(Script.Collision.Rotation.X, Script.Collision.Rotation.Y, -90)
         end
 
+        --[[
         Script.FeatureConnections.Player["Godmode"] = Script.Collision:GetPropertyChangedSignal("CFrame"):Connect(function()
             if not Toggles.Godmode.Value then return end
             shared.RunService.Stepped:Wait()
@@ -289,7 +290,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                     break
                 end
             end
-        end)
+        end)]]
 
         Script.CollisionClone = Script.Collision:Clone()
         Script.CollisionClone.CanCollide = false
