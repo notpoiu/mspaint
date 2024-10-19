@@ -290,18 +290,19 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
                 end
             end
         end)
+        
+        Script.Collision.CollisionCrouch.CanQuery = false
 
         Script.CollisionClone = Script.Collision:Clone()
         Script.CollisionClone.CanCollide = false
         Script.CollisionClone.Massless = true
+        Script.CollisionClone.CanQuery = false
         Script.CollisionClone.Name = "CollisionClone"
         if Script.CollisionClone:FindFirstChild("CollisionCrouch") then
             Script.CollisionClone.CollisionCrouch:Destroy()
         end
 
         Script.CollisionClone.Parent = shared.Character
-        
-        table.insert(Script.NoCharRaycastParam.FilterDescendantsInstances, Script.CollisionClone)
     end
 
     if Script.IsMines then
