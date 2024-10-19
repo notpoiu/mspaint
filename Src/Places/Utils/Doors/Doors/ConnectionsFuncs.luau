@@ -300,6 +300,8 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end
 
         Script.CollisionClone.Parent = shared.Character
+        
+        table.insert(Script.NoCharRaycastParam.FilterDescendantsInstances, Script.CollisionClone)
     end
 
     if Script.IsMines then

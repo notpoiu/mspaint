@@ -1214,7 +1214,7 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
             end
 
             if Toggles.CollisionOffsetGodmode.Value and Script.CollisionClone then
-                local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -50, 0), Script.NoCharRaycastParam)
+                local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -1000, 0), Script.NoCharRaycastParam)
 
                 if raycast then
                     Script.Collision.Position = shared.RootPart.Position - Vector3.new(0, raycast.Distance - 0.9, 0)
@@ -1464,6 +1464,13 @@ shared.Library:OnUnload(function()
 
         local speedBoostAssignObj = Script.IsFools and shared.Humanoid or shared.Character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
+
+        if Toggles.CollisionOffsetGodmode.Value and Script.Collision and shared.RootPart then
+            if Script.Collision.Position ~= shared.RootPart.Position then
+                Script.Collision.Position = shared.RootPart.Position
+                Script.CollisionClone.Position = Script.Collision.Position + Vector3.new(0, 2.5, 0) --idk what is the correct distance xD
+            end
+        end
     end
 
     if Script.Alive then
