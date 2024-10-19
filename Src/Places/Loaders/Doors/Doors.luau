@@ -1207,13 +1207,13 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
         
         if Script.Collision then
             if Toggles.Noclip.Value then
-                Script.Collision.CanCollide = not Toggles.Noclip.Value and not Toggles.CollisionOffsetGodmode.Value
+                Script.Collision.CanCollide = not Toggles.Noclip.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
                 if Script.Collision:FindFirstChild("CollisionCrouch") then
-                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and not Toggles.CollisionOffsetGodmode.Value
+                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
                 end
             end
 
-            if Toggles.CollisionOffsetGodmode.Value and Script.CollisionClone then
+            if (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) and Script.CollisionClone then
                 local raycast = workspace:Raycast(shared.RootPart.Position, Vector3.new(0, -1000, 0), Script.NoCharRaycastParam)
 
                 if raycast then
@@ -1465,7 +1465,7 @@ shared.Library:OnUnload(function()
         local speedBoostAssignObj = Script.IsFools and shared.Humanoid or shared.Character
         speedBoostAssignObj:SetAttribute("SpeedBoostBehind", 0)
 
-        if Toggles.CollisionOffsetGodmode.Value and Script.Collision and shared.RootPart then
+        if (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) and Script.Collision and shared.RootPart then
             if Script.Collision.Position ~= shared.RootPart.Position then
                 Script.Collision.Position = shared.RootPart.Position
                 Script.CollisionClone.Position = Script.Collision.Position + Vector3.new(0, 2.5, 0) --idk what is the correct distance xD
@@ -1568,7 +1568,7 @@ shared.Library:OnUnload(function()
         Script._mspaint_custom_captions:Destroy()
     end
 
-    if Script.Collision and not Toggles.CollisionOffsetGodmode.Value then
+    if Script.Collision and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
         Script.Collision.CanCollide = Script.MainGameSrc and not Script.MainGameSrc.crouching or not shared.Character:GetAttribute("Crouching")
 
         if Script.Collision:FindFirstChild("CollisionCrouch") then

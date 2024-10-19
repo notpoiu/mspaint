@@ -660,9 +660,9 @@ elseif Script.IsRooms then
                             if isStuck then
                                 repeat task.wait()
                                     Script.Collision.CanCollide = false
-                                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.CollisionOffsetGodmode.Value
+                                    Script.Collision.CollisionCrouch.CanCollide = (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
                                 until not isStuck or hasResetFailsafe
-                                Script.Collision.CanCollide = not Toggles.CollisionOffsetGodmode.Value
+                                Script.Collision.CanCollide = (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
                             end
                             hasResetFailsafe = true
                         end

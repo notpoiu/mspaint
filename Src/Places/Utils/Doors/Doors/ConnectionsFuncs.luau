@@ -266,7 +266,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end
 
         Script.FeatureConnections.Player["CollisionOffsetGodmodeCanCollide"] = Script.Collision:GetPropertyChangedSignal("CanCollide"):Connect(function()
-            if not Toggles.CollisionOffsetGodmode.Value then return end
+            if (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
 
@@ -275,7 +275,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end)
 
         Script.FeatureConnections.Player["CollisionOffsetGodmodeCrouchCanCollide"] = Script.Collision.CollisionCrouch:GetPropertyChangedSignal("CanCollide"):Connect(function()
-            if not Toggles.CollisionOffsetGodmode.Value then return end
+            if (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then return end
             Script.Collision.CollisionGroup = "PlayerCrouching"
             Script.Collision.CollisionCrouch.CollisionGroup = "PlayerCrouching"
 
