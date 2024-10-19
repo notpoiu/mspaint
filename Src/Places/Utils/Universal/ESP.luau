@@ -24,6 +24,7 @@ function Script.Functions.ESP(args: ESP)
         Object = args.Object,
         Text = args.Text or "No Text",
         Color = args.Color or Color3.new(),
+        MaxDistance = args.MaxDistance or 5000,
         Offset = args.Offset or Vector3.zero,
         Type = args.Type or "None",
         Player = args.Player or false,
@@ -36,6 +37,7 @@ function Script.Functions.ESP(args: ESP)
     local ESPInstance = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
         Model = ESPManager.Object,
+        MaxDistance = ESPManager.MaxDistance,
         StudsOffset = ESPManager.Offset,
 
         FillColor = ESPManager.Color,

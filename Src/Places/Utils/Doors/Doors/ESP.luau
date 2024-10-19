@@ -25,6 +25,7 @@ function Script.Functions.ESP(args: ESP)
         Object = args.Object,
         Text = args.Text or "No Text",
         Color = args.Color or Color3.new(),
+        MaxDistance = args.MaxDistance or 5000,
         Offset = args.Offset or Vector3.zero,
         IsEntity = args.IsEntity or false,
         IsDoubleDoor = args.IsDoubleDoor or false,
@@ -49,6 +50,7 @@ function Script.Functions.ESP(args: ESP)
     local ESPInstance = ESPLibrary.ESP.Highlight({
         Name = ESPManager.Text,
         Model = ESPManager.Object,
+        MaxDistance = ESPManager.MaxDistance,
         StudsOffset = ESPManager.Offset,
 
         FillColor = ESPManager.Color,
