@@ -291,6 +291,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
             end
         end)
         
+        Script.Collision.CanQuery = false
         Script.Collision.CollisionCrouch.CanQuery = false
 
         Script.CollisionClone = Script.Collision:Clone()
