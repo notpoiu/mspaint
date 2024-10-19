@@ -4,7 +4,7 @@ function Linoria:Alert(options)
     if not shared.Library then return warn("No Linoria library") end
     Linoria:Notify(options)
 
-    if shared.Toggles.NotifySound and shared.Toggles.NotifySound.Value then
+    if shared.CheckToggle("NotifySound", true) then
         local sound = Instance.new("Sound", shared.SoundService) do
             sound.SoundId = "rbxassetid://4590662766"
             sound.Volume = shared.NotifyVolume
