@@ -197,7 +197,7 @@ end
 
 function Script.Functions.SetupExploitInfModulesConnection()
     shared.Connect:GiveSignal(Script.PlayerStats:WaitForChild("Energy").Value:GetPropertyChangedSignal("Text"):Connect(function()
-        if Toggles.InfiniteEnergy.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
+        if Toggles.InfiniteEnergy.Value and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()) then
             Script.Event:FireServer("DecreaseStat", {
                 Stats = {
                     Energy = -100
@@ -207,7 +207,7 @@ function Script.Functions.SetupExploitInfModulesConnection()
     end))
 
     shared.Connect:GiveSignal(Script.PlayerStats:WaitForChild("Hunger").Value:GetPropertyChangedSignal("Text"):Connect(function()
-        if Toggles.InfiniteHunger.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
+        if Toggles.InfiniteHunger.Value and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()) then
             Script.Event:FireServer("DecreaseStat", {
                 Stats = {
                     Hunger = -100

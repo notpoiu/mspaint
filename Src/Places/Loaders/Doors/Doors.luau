@@ -54,7 +54,6 @@ Script.Functions.Minecart = {
         -- })
     end
 }
-Script.Functions.Minecart.debug("WHA THE SUGMA")
 
 Script.Temp = {
     AnchorFinished = {},
@@ -1207,9 +1206,9 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
         
         if Script.Collision then
             if Toggles.Noclip.Value then
-                Script.Collision.CanCollide = not Toggles.Noclip.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
+                Script.Collision.CanCollide = not Toggles.Noclip.Value and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())
                 if Script.Collision:FindFirstChild("CollisionCrouch") then
-                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
+                    Script.Collision.CollisionCrouch.CanCollide = not Toggles.Noclip.Value and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())
                 end
             end
 
@@ -1568,7 +1567,7 @@ shared.Library:OnUnload(function()
         Script._mspaint_custom_captions:Destroy()
     end
 
-    if Script.Collision and (not Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
+    if Script.Collision and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()) then
         Script.Collision.CanCollide = Script.MainGameSrc and not Script.MainGameSrc.crouching or not shared.Character:GetAttribute("Crouching")
 
         if Script.Collision:FindFirstChild("CollisionCrouch") then
