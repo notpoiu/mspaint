@@ -4,7 +4,7 @@ local repo = "https://raw.githubusercontent.com/deividcomsono/LinoriaLib/refs/he
 
 shared.Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+shared.SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 shared.Toggles = getgenv().Linoria.Toggles
 shared.Options = getgenv().Linoria.Options
@@ -95,19 +95,17 @@ function UICreator:CreateSettingsTab()
 
     shared.Library.ToggleKeybind = shared.Options.MenuKeybind
 
-    shared.SaveManager = SaveManager
-
     ThemeManager:SetLibrary(shared.Library)
-    SaveManager:SetLibrary(shared.Library)
+    shared.SaveManager:SetLibrary(shared.Library)
 
-    SaveManager:IgnoreThemeSettings()
+    shared.SaveManager:IgnoreThemeSettings()
 
-    SaveManager:SetFolder("mspaint/" .. string.lower(shared.ScriptLoader))
+    shared.SaveManager:SetFolder("mspaint/" .. string.lower(shared.ScriptLoader))
 
-    SaveManager:BuildConfigSection(SettingsTab)
+    shared.SaveManager:BuildConfigSection(SettingsTab)
     ThemeManager:ApplyToTab(SettingsTab)
 
-    SaveManager:LoadAutoloadConfig()
+    shared.SaveManager:LoadAutoloadConfig()
 
     shared.Connect:GiveSignal(shared.LocalPlayer.OnTeleport:Connect(function()
         if not shared.Toggles.ExecuteOnTeleport.Value or getgenv().queued_to_teleport then return end
