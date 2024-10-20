@@ -1636,5 +1636,8 @@ shared.Library:OnUnload(function()
     print("Unloaded DOORS!")
 end)
 
-shared.SaveManager:SetSubFolder(Script.Floor.Value)
+task.spawn(function()
+    repeat task.wait() until shared.SaveManager ~= nil
+    shared.SaveManager:SetSubFolder(Script.Floor.Value)
+end)
 getgenv().mspaint_loaded = true
