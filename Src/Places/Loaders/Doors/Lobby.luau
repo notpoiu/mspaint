@@ -168,5 +168,4 @@ shared.Connect:GiveSignal(shared.LocalPlayer.CharacterAdded:Connect(function(new
     task.delay(1, Script.Functions.SetupCharacterConnection, newCharacter)
 end))
 
-shared.SaveManager:SetSubFolder("Lobby")
 getgenv().mspaint_loaded = true
