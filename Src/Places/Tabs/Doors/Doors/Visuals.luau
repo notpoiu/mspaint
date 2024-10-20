@@ -319,6 +319,46 @@ local SelfTabBox = Tabs.Visuals:AddRightTabbox() do
             Rounding = 1,
             Compact = true,
         })
+
+        if wax.shared.ExecutorSupport["require"] then
+            SelfTab:AddDivider()
+        end
+
+        SelfTab:AddToggle("ViewmodelOffset", {
+            Text = "Viewmodel Offset",
+            Default = false,
+            Visible = wax.shared.ExecutorSupport["require"]
+        })
+
+        SelfTab:AddSlider("ToolOffsetX", {
+            Text = "X",
+            Default = 0,
+            Min = -5,
+            Max = 5,
+            Rounding = 1,
+            Compact = true,
+            Visible = wax.shared.ExecutorSupport["require"]
+        })
+
+        SelfTab:AddSlider("ToolOffsetY", {
+            Text = "Y",
+            Default = 0,
+            Min = -5,
+            Max = 5,
+            Rounding = 1,
+            Compact = true,
+            Visible = wax.shared.ExecutorSupport["require"]
+        })
+
+        SelfTab:AddSlider("ToolOffsetZ", {
+            Text = "Z",
+            Default = 0,
+            Min = -5,
+            Max = 5,
+            Rounding = 1,
+            Compact = true,
+            Visible = wax.shared.ExecutorSupport["require"]
+        })
     end
 
     local EffectsTab = SelfTabBox:AddTab("Effects") do
@@ -902,5 +942,14 @@ Toggles.NoSpiderJumpscare:OnChanged(function(value)
 
     if module then
         module.Name = if value then "_SpiderJumpscare" else "SpiderJumpscare"
+    end
+end)
+
+Toggles.ViewmodelOffset:OnChanged(function(value)
+    if not value and shared.Character and shared.Character:FindFirstChildOfClass("Tool") and Script.MainGameSrc then
+        local tool = shared.Character:FindFirstChildOfClass("Tool")
+
+        if not tool:GetAttribute("ToolOffset") then return end
+        Script.MainGameSrc.tooloffset = tool:GetAttribute("ToolOffset")
     end
 end)

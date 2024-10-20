@@ -1171,12 +1171,16 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
         Script.MainGameSrc.fovtarget = Options.FOV.Value
 
         if Toggles.NoCamBob.Value then
-            Script.MainGameSrc.bobspring.Position = Vector3.new()
-            Script.MainGameSrc.spring.Position = Vector3.new()
+            Script.MainGameSrc.bobspring.Position = Vector3.zero
+            Script.MainGameSrc.spring.Position = Vector3.zero
         end
 
         if Toggles.NoCamShake.Value then
             Script.MainGameSrc.csgo = CFrame.new()
+        end
+
+        if Toggles.ViewmodelOffset.Value then
+            Script.MainGameSrc.tooloffset = Vector3.new(Options.ToolOffsetX.Value, Options.ToolOffsetY.Value, Options.ToolOffsetZ.Value)
         end
     elseif shared.Camera then
         if isThirdPersonEnabled then
@@ -1445,6 +1449,13 @@ shared.Library:OnUnload(function()
         table.clear(Script.FakeRevive.Connections)
     end
 
+    if shared.Character and shared.Character:FindFirstChildOfClass("Tool") and Script.MainGameSrc then
+        local tool = shared.Character:FindFirstChildOfClass("Tool")
+
+        if not tool:GetAttribute("ToolOffset") then return end
+        Script.MainGameSrc.tooloffset = tool:GetAttribute("ToolOffset")
+    end
+    
     if wax.shared.BloxstrapRPC then
         wax.shared.BloxstrapRPC.SetRichPresence({
             details = "<reset>",
