@@ -101,6 +101,10 @@ function UICreator:CreateSettingsTab()
     shared.SaveManager:IgnoreThemeSettings()
 
     shared.SaveManager:SetFolder("mspaint/" .. string.lower(shared.ScriptLoader))
+		
+		if shared.SubFolder then
+				shared.SaveManager:SetSubFolder(shared.SubFolder)
+		end
 
     shared.SaveManager:BuildConfigSection(SettingsTab)
     ThemeManager:ApplyToTab(SettingsTab)
