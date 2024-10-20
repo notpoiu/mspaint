@@ -1157,12 +1157,6 @@ end))
 
 --// Main RenderStepped \\--
 shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
-    if not Toggles.ShowCustomCursor.Value and shared.Library.Toggled then
-        shared.UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        shared.UserInputService.MouseIcon = "rbxassetid://2833720882"
-        shared.UserInputService.MouseIconEnabled = true
-    end
-
     local isThirdPersonEnabled = Toggles.ThirdPerson.Value and (shared.Library.IsMobile or Options.ThirdPersonKey:GetState())
     if Script.MainGameSrc then
         if isThirdPersonEnabled then
