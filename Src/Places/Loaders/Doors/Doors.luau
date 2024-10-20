@@ -1630,5 +1630,5 @@ shared.Library:OnUnload(function()
     print("Unloaded DOORS!")
 end)
 
-shared.SaveManager:SetSubFolder(Script.Floor.Value)
+shared.SubFolder = Script.Floor.Value
 getgenv().mspaint_loaded = true
