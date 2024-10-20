@@ -95,6 +95,8 @@ function UICreator:CreateSettingsTab()
 
     shared.Library.ToggleKeybind = shared.Options.MenuKeybind
 
+    shared.SaveManager = SaveManager
+
     ThemeManager:SetLibrary(shared.Library)
     SaveManager:SetLibrary(shared.Library)
 
