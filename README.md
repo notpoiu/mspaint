@@ -12,6 +12,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/notpoiu/mspaint/main/
 # Addons
 You can find documentation on how to create an addon here: https://docs.upio.dev/mspaint/addons/getting_started
 
+# Website
+our website is at https://mspaint.upio.dev (source code here at https://github.com/notpoiu/webmspaint)
+
 # Contributing
 Please make sure to follow the [contributor guidelines](CONTRIBUTING).
 
