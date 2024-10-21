@@ -58,7 +58,7 @@ function Script.Functions.SetupCharacterConnection(newCharacter)
         end))
     end
 
-    if (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
+    if Toggles.Godmode.Value then
         Script.DidGodmode = true
 
         repeat task.wait() until #Script.Map.Floor:GetChildren() > 0
