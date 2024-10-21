@@ -34,6 +34,8 @@ test("delfile", delfile, false)
 test("delfolder", delfolder, false)
 test("loadfile", loadfile, false)
 
+test("getrenv", getrenv, false)
+
 test("queue_on_teleport", queue_on_teleport, false)
 test("getcallingscript", getcallingscript, false)
 
