@@ -37,7 +37,7 @@ jobs:
           rokit install
 
       - name: Bundle
-        run: lune run Build bundle input='default.project.json' minify=true output='Distribution/Script.luau' env-name='Script' darklua-config-path='Build/DarkLua.json' temp-dir-base='Distribution' verbose=true ci-mode=true
+        run: lune run Build bundle input='default.project.json' minify=false output='Distribution/Script.luau' env-name='Script' darklua-config-path='Build/DarkLua.json' temp-dir-base='Distribution' verbose=true ci-mode=true
 
       - name: Upload Minified Script to Artifacts
         uses: actions/upload-artifact@v4
