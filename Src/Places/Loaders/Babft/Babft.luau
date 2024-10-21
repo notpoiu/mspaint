@@ -161,6 +161,8 @@ shared.Library:OnUnload(function()
         end
     end
 
+    Script.AutoFarmPart:Destroy()
+
     shared.Twerk:Disable()
 end)
 
