@@ -1572,7 +1572,7 @@ shared.Library:OnUnload(function()
         Script._mspaint_custom_captions:Destroy()
     end
 
-    if Script.Collision and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()) then
+    if Script.Collision and not (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
         Script.Collision.CanCollide = Script.MainGameSrc and not Script.MainGameSrc.crouching or not shared.Character:GetAttribute("Crouching")
 
         if Script.Collision:FindFirstChild("CollisionCrouch") then
