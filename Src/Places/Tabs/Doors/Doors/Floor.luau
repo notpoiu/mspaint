@@ -662,7 +662,7 @@ elseif Script.IsRooms then
                                     Script.Collision.CanCollide = false
                                     Script.Collision.CollisionCrouch.CanCollide = not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())
                                 until not isStuck or hasResetFailsafe
-                                Script.Collision.CanCollide = not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())
+                                Script.Collision.CanCollide = not (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()))
                             end
                             hasResetFailsafe = true
                         end
