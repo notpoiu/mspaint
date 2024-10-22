@@ -16,7 +16,7 @@ You can find documentation on how to create an addon here: https://docs.upio.dev
 our website is at https://mspaint.upio.dev (source code here at https://github.com/notpoiu/webmspaint)
 
 # Contributing
-Please make sure to follow the [contributor guidelines](CONTRIBUTING).
+Please make sure to follow the [contributor guidelines](CONTRIBUTING.md).
 
 > [!IMPORTANT]
 > This script now uses the [wax bundler](https://github.com/latte-soft/wax) to organize code
