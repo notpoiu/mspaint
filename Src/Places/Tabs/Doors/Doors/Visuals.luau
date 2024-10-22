@@ -372,6 +372,11 @@ local SelfTabBox = Tabs.Visuals:AddRightTabbox() do
             Default = false
         })
 
+        EffectsTab:AddToggle("NoEntityJumpscare", {
+            Text = "No Jumpscare",
+            Default = false
+        })
+
         EffectsTab:AddToggle("NoSpiderJumpscare", {
             Text = "No Spider Jumpscare",
             Default = false
@@ -942,6 +947,15 @@ Toggles.NoSpiderJumpscare:OnChanged(function(value)
 
     if module then
         module.Name = if value then "_SpiderJumpscare" else "SpiderJumpscare"
+    end
+end)
+
+Toggles.NoEntityJumpscare:OnChanged(function(value)
+    if not Script.MainGame then return end
+    local jumpscaresFolder = Script.MainGame:FindFirstChild("Jumpscares", true) or Script.MainGame:FindFirstChild("_Jumpscares", true)
+
+    if jumpscaresFolder then
+        jumpscaresFolder.Name = if value then "_Jumpscares" else "Jumpscares"
     end
 end)
 
