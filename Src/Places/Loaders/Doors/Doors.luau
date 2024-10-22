@@ -956,8 +956,6 @@ shared.Connect:GiveSignal(shared.PlayerGui.ChildAdded:Connect(function(child)
                     end
 
                     if Script.MainGame:WaitForChild("RemoteListener", 5) then
-                        local modules = Script.MainGame:FindFirstChild("Modules", true)
-                        if not modules then return end
 
                         if Toggles.NoEntityJumpscare.Value then
                             local jumpscaresFolder = Script.MainGame:FindFirstChild("Jumpscares", true)
@@ -966,6 +964,9 @@ shared.Connect:GiveSignal(shared.PlayerGui.ChildAdded:Connect(function(child)
                                 jumpscaresFolder.Name = "_Jumpscares"
                             end
                         end
+
+                        local modules = Script.MainGame:FindFirstChild("Modules", true)
+                        if not modules then return end
                     
                         if Toggles.AntiDread.Value then
                             local module = modules:FindFirstChild("Dread", true)
