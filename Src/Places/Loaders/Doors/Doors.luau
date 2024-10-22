@@ -1160,14 +1160,7 @@ shared.Connect:GiveSignal(shared.UserInputService.InputBegan:Connect(function(in
     end
 end))
 
---// Main RenderStepped \\--
 shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
-    if not Toggles.ShowCustomCursor.Value and shared.Library.Toggled then
-        shared.UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-        shared.UserInputService.MouseIcon = "rbxassetid://2833720882"
-        shared.UserInputService.MouseIconEnabled = true
-    end
-
     local isThirdPersonEnabled = Toggles.ThirdPerson.Value and (shared.Library.IsMobile or Options.ThirdPersonKey:GetState())
     if Script.MainGameSrc then
         if isThirdPersonEnabled then
@@ -1176,12 +1169,16 @@ shared.Connect:GiveSignal(shared.RunService.RenderStepped:Connect(function()
         Script.MainGameSrc.fovtarget = Options.FOV.Value
 
         if Toggles.NoCamBob.Value then
-            Script.MainGameSrc.bobspring.Position = Vector3.new()
-            Script.MainGameSrc.spring.Position = Vector3.new()
+            Script.MainGameSrc.bobspring.Position = Vector3.zero
+            Script.MainGameSrc.spring.Position = Vector3.zero
         end
 
         if Toggles.NoCamShake.Value then
             Script.MainGameSrc.csgo = CFrame.new()
+        end
+
+        if Toggles.ViewmodelOffset.Value then
+            Script.MainGameSrc.tooloffset = Vector3.new(Options.ToolOffsetX.Value, Options.ToolOffsetY.Value, Options.ToolOffsetZ.Value)
         end
     elseif shared.Camera then
         if isThirdPersonEnabled then
@@ -1450,6 +1447,13 @@ shared.Library:OnUnload(function()
         table.clear(Script.FakeRevive.Connections)
     end
 
+    if shared.Character and shared.Character:FindFirstChildOfClass("Tool") and Script.MainGameSrc then
+        local tool = shared.Character:FindFirstChildOfClass("Tool")
+
+        if not tool:GetAttribute("ToolOffset") then return end
+        Script.MainGameSrc.tooloffset = tool:GetAttribute("ToolOffset")
+    end
+    
     if wax.shared.BloxstrapRPC then
         wax.shared.BloxstrapRPC.SetRichPresence({
             details = "<reset>",
@@ -1572,7 +1576,7 @@ shared.Library:OnUnload(function()
         Script._mspaint_custom_captions:Destroy()
     end
 
-    if Script.Collision and not (Toggles.CollisionOffsetGodmode.Value or shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState()) then
+    if Script.Collision and not (Toggles.CollisionOffsetGodmode.Value and (shared.Library.IsMobile or Options.CollisionOffsetGodmodeKey:GetState())) then
         Script.Collision.CanCollide = Script.MainGameSrc and not Script.MainGameSrc.crouching or not shared.Character:GetAttribute("Crouching")
 
         if Script.Collision:FindFirstChild("CollisionCrouch") then
@@ -1630,4 +1634,5 @@ shared.Library:OnUnload(function()
     print("Unloaded DOORS!")
 end)
 
+shared.SubFolder = Script.Floor.Value
 getgenv().mspaint_loaded = true
