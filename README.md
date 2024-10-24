@@ -1,4 +1,7 @@
 # mspaint
+> [!IMPORTANT]
+> This script is now depricated
+
 A decent script hub that is free and open source 🥶
 
 ```lua
